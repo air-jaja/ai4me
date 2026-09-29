@@ -1,0 +1,26 @@
+# Configuration Prometheus — collecte des indicateurs du projet churn.
+# Les seuils d'alerte ne figurent pas ici : ils vivent dans
+# src/churn_saas/monitoring/alertes.py, avec leur action et leur responsable.
+# Un collecteur collecte, il ne décide pas.
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  # Indicateurs techniques du service de scoring (latence, codes de retour).
+  - job_name: churn-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8000"]
+
+  # Indicateurs métier et de dérive publiés par le lot mensuel.
+  # Le lot pouvant tourner hors conteneur pendant le développement, la cible hôte
+  # est déclarée en second.
+  - job_name: churn-lot-mensuel
+    static_configs:
+      - targets: ["host.docker.internal:9109"]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

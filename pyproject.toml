@@ -1,0 +1,145 @@
+# =============================================================================
+# pyproject.toml — Projet de certification CISIA
+# Cas d'usage : prédiction de résiliation client (churn) B2B SaaS
+# -----------------------------------------------------------------------------
+# Carte d'identité du projet : métadonnées, dépendances, configuration des
+# outils qualité. Source déclarative ; `uv.lock` en fige la résolution exacte.
+#
+#   uv sync                      -> dépendances de base + groupe dev
+#   uv sync --group notebook     -> ajoute Jupyter
+#   uv sync --all-groups         -> tout, y compris les options
+#   uv sync --frozen             -> reproduit l'environnement sans toucher au verrou
+# =============================================================================
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "churn-saas-cisia"
+version = "1.0.0"
+description = "Prédiction de résiliation client B2B SaaS — production de certification CISIA"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+authors = [{ name = "Haja RAKOTOVOALAVO PETERA", email = "haja.rakotovoalavo@beau-soleil-consulting.fr" }]
+
+# --- Dépendances de base ------------------------------------------------------
+# Strictement ce qu'exige l'exécution du notebook de bout en bout.
+# Toute dépendance ajoutée ici doit être justifiable devant le jury.
+dependencies = [
+    "pandas>=2.2",          # manipulation des données tabulaires, parsing CSV
+    "numpy>=2.0",           # calcul numérique
+    "scikit-learn>=1.5",    # modélisation, validation croisée, métriques
+    "joblib>=1.4",          # sérialisation du pipeline entraîné (§ 10)
+    "scipy>=1.13",          # test de Kolmogorov-Smirnov pour la dérive (§ 13)
+    "matplotlib>=3.8",      # figures, dont le diagramme de cycle de vie (§ 2)
+    "seaborn>=0.13",        # visualisations exploratoires (§ 6)
+    "pyarrow>=16.0",        # lecture/écriture Parquet des instantanés versionnés (§ 3)
+]
+
+[dependency-groups]
+# Installé par défaut par `uv sync`.
+dev = [
+    "pytest>=8.0",          # tests du pipeline de nettoyage (étape 1 de la CI, § 10)
+    "ruff>=0.5",            # linter et formateur
+    "pre-commit>=3.7",      # exécution des contrôles avant commit
+]
+
+# Nécessaire pour exécuter et exporter le notebook livré au jury.
+notebook = [
+    "jupyterlab>=4.2",
+    "ipykernel>=6.29",
+    "nbconvert>=7.16",      # exécution non interactive : test d'intégration du notebook
+    "jinja2>=3.1",          # génération de la fiche modèle depuis le gabarit (§ packaging)
+]
+
+# --- Groupes de la plateforme d'industrialisation -----------------------------
+# Chacun sert une compétence identifiée du référentiel. Aucun n'est requis pour
+# exécuter le notebook : celui-ci reste installable avec les seules dépendances
+# de base, ce qui garantit qu'un correcteur puisse le rejouer sans la stack.
+
+# C4/C5 — Explicabilité locale : pourquoi CE compte précis est-il signalé ?
+# Complète l'importance globale des variables, qui ne répond pas à cette question.
+explicabilite = [
+    "shap>=0.46",
+]
+
+# C4 — Optimisation d'hyperparamètres avec élagage.
+# Optuna explore par échantillonnage bayésien (TPE) et interrompt les essais sans
+# avenir. À budget égal il couvre davantage d'espace qu'une grille exhaustive, et à
+# couverture égale il consomme moins : c'est un choix d'éco-conception, pas son
+# contraire (voir docs/README_choix_methodologiques.md § 8).
+optimisation = [
+    "optuna>=3.6",
+    "codecarbon>=2.4",      # mesure de l'empreinte du calcul — preuve chiffrée
+]
+
+# C5/C6/C9 — Traçabilité des expérimentations et registre de modèles.
+# Remplace la convention de versioning manuelle décrite au § 10 par un dispositif
+# outillé : promotion staging -> production, comparaison de versions, rollback.
+suivi = [
+    "mlflow>=2.14",
+]
+
+# C3/C7 — Stockage relationnel, conforme au modèle de stockage retenu au § 3.
+stockage = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.1",   # pilote PostgreSQL 3 ; sans lui SQLAlchemy cherche psycopg2
+]
+
+# C6/C7 — Orchestration du lot mensuel : ingestion -> préparation -> scoring -> écriture.
+orchestration = [
+    "prefect>=3.0",
+]
+
+# C8/C9 — Exposition des indicateurs et de la dérive à Prometheus.
+observabilite = [
+    "prometheus-client>=0.20",
+    "prometheus-fastapi-instrumentator>=7.0",
+]
+
+# C6 — Service de scoring exécutable (§ 10).
+api = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+]
+
+# Raccourci : toute la plateforme d'un coup, pour `docker compose` et la CI.
+plateforme = [
+    { include-group = "api" },
+    { include-group = "stockage" },
+    { include-group = "orchestration" },
+    { include-group = "observabilite" },
+    { include-group = "suivi" },
+    { include-group = "explicabilite" },
+    { include-group = "optimisation" },
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/churn_saas"]
+
+# Le gabarit de fiche modèle est embarqué dans le paquet : la génération de la
+# model card ne doit pas dépendre de l'arborescence du dépôt.
+[tool.hatch.build.targets.wheel.force-include]
+"src/churn_saas/packaging/modelcard_template.md" = "churn_saas/packaging/modelcard_template.md"
+
+# --- Qualité du code ----------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv*", "venv*", "dist", "build", "data"]
+
+[tool.ruff.lint]
+# E pycodestyle · F pyflakes · I tri des imports · UP modernisation · B pièges courants
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = ["--color=yes", "-ra", "--tb=short"]
+
+# Le notebook est un livrable narratif, pas du code de production : la longueur
+# de ligne et le tri des imports y sont tolérés. En revanche F401 (import inutile),
+# F821 (nom indéfini) et B905 restent actifs — ce sont des erreurs réelles.
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*.ipynb" = ["E501", "I001", "E402"]

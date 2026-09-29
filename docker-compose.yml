@@ -1,0 +1,90 @@
+# =============================================================================
+#  docker-compose.yml — plateforme locale du projet churn SaaS
+# -----------------------------------------------------------------------------
+#  Cinq services, chacun rattaché à une compétence du référentiel :
+#
+#    api         service de scoring (C6)          -> port 8000
+#    db          PostgreSQL, entrepôt des scores (C3, C7) -> port 5432
+#    mlflow      suivi des expérimentations et registre de modèles (C5, C9) -> 5000
+#    prometheus  collecte des indicateurs (C8, C9) -> port 9090
+#    grafana     restitution des indicateurs (C8)  -> port 3000
+#
+#  Réseau interne : chaque service est joignable par son NOM. L'API contacte la
+#  base via `db:5432`, Prometheus contacte l'API via `api:8000`. Aucune adresse IP.
+#
+#  Les secrets viennent du fichier .env (voir .env.example), jamais du YAML.
+# =============================================================================
+
+services:
+
+  api:
+    build: .
+    image: churn-saas-api:${IMAGE_TAG:-v1.0}
+    ports: ["8000:8000"]
+    environment:
+      CHURN_DB_URL: postgresql+psycopg://churn:${POSTGRES_PASSWORD}@db:5432/churn
+      CHURN_MODEL_PATH: /app/models/churn_model.joblib
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      # Le modèle est monté, pas embarqué : un réentraînement ne force pas la
+      # reconstruction de l'image (voir le commentaire du Dockerfile).
+      - ./models:/app/models:ro
+    depends_on:
+      db:
+        # `service_healthy` et non `service_started` : l'API ne doit pas tenter de
+        # se connecter à une base qui n'accepte pas encore de connexions.
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: churn
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: churn
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U churn"]
+      interval: 5s
+      retries: 5
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.1.1
+    ports: ["5000:5000"]
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg://churn:${POSTGRES_PASSWORD}@db:5432/churn
+    volumes: ["mlruns:/mlruns"]
+    depends_on:
+      db:
+        condition: service_healthy
+    # Le registre stocke ses métadonnées dans PostgreSQL et ses artefacts dans un
+    # volume : les deux ont des cycles de vie différents (notebook § 3).
+    command: >
+      mlflow server
+      --host 0.0.0.0 --port 5000
+      --backend-store-uri postgresql+psycopg://churn:${POSTGRES_PASSWORD}@db:5432/churn
+      --default-artifact-root /mlruns
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports: ["9090:9090"]
+    volumes: ["./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    extra_hosts:
+      # Permet à Prometheus de joindre un exporteur lancé sur l'hôte (port 9109),
+      # utile quand le lot mensuel tourne hors conteneur pendant le développement.
+      - "host.docker.internal:host-gateway"
+    depends_on: [api]
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on: [prometheus]
+
+volumes:
+  pgdata: {}
+  mlruns: {}

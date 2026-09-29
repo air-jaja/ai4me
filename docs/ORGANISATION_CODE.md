@@ -1,0 +1,122 @@
+# Organisation du code : un seul code, un notebook auto-porteur
+
+## Le problème à résoudre
+
+Deux exigences s'opposent en apparence.
+
+Le règlement impose un notebook **compréhensible sans explication orale** et exécutable.
+Le lecteur doit voir le raisonnement *et* le code.
+
+Le bon sens d'ingénierie impose un code **écrit une fois, testé une fois**. Du code
+dupliqué diverge toujours : on corrige un bug d'un côté, pas de l'autre, et les tests ne
+portent que sur l'une des deux versions.
+
+Les deux solutions naïves échouent :
+
+| Solution naïve | Pourquoi elle échoue |
+|---|---|
+| Tout le code dans le notebook | Intestable par `pytest`, non réutilisable au scoring, et le *training-serving skew* devient inévitable |
+| Tout le code dans `src/`, le notebook n'appelle que des fonctions | Le jury ne voit plus le code : le notebook n'est plus auto-porteur |
+| Le code aux deux endroits | Divergence garantie. La pire des trois. |
+
+## La solution retenue
+
+**Une seule source de vérité : `src/churn_saas/`.** Testée par `pytest`, importée par le
+notebook, réutilisée par le service de scoring.
+
+**Le notebook affiche le code au moment où il l'explique**, en le lisant dans le module :
+
+```python
+from churn_saas.notebook import afficher_source
+from churn_saas.donnees.silver import nettoyer_decimal_texte
+
+afficher_source(nettoyer_decimal_texte)   # le code s'affiche ici, coloré
+resultat = nettoyer_decimal_texte(df["taux_adoption_pct"])
+```
+
+Le code affiché **est** le code exécuté : `afficher_source` le lit dans le module au
+moment de l'affichage. Il ne peut pas diverger — un test le vérifie
+(`tests/test_notebook.py`).
+
+Le notebook reste donc auto-porteur : le lecteur voit le code, les résultats, et le
+raisonnement, dans l'ordre. Mais ce code n'existe qu'à un seul endroit.
+
+### Cellule d'amorçage, à placer en section 5
+
+```python
+from churn_saas.notebook import preparer_import
+RACINE = preparer_import()   # rend churn_saas importable, installé ou non
+```
+
+`preparer_import` remonte l'arborescence jusqu'à trouver `src/churn_saas` et l'ajoute au
+chemin d'import. Le notebook s'exécute donc même chez un correcteur qui a simplement
+décompressé l'archive, sans lancer `uv sync`.
+
+## Découpage par activité
+
+Un dossier par activité du cycle de vie, un fichier de tests par dossier. Retrouver le
+code d'une étape ne demande aucune connaissance de l'implémentation.
+
+| Activité | Module | Contenu | Tests | Section |
+|---|---|---|---|---|
+| 1 · Gestion des données | `donnees/` | `ingestion` bronze · `silver` nettoyage · `gold` anti-fuite | `test_donnees.py` | 3, 5, 7 |
+| 2 · Contrôle des features | `features/` | `construction` ratios · `controle` schéma, fuite, leurres | `test_features.py` | 6, 7 |
+| 3 · Modélisation | `modelisation/` | `baseline` régression logistique · `selection` candidat et comparaison | — | 8, 9 |
+| 4 · Évaluation | `evaluation/` | `metriques` · `decision` valeur espérée · `impact` MRR | `test_evaluation.py` | 9, 12 |
+| 5 · Packaging | `packaging/` | `artefacts` sérialisation et fiche · `model_card` génération | `test_packaging.py` | 10 |
+| 6 · Industrialisation | `industrialisation/` | `scoring` lot mensuel · `service` appel unitaire | — | 10, 11 |
+| 7 · Monitoring | `monitoring/` | `derive` PSI et KS · `alertes` seuils et actions | `test_monitoring.py` | 12, 13 |
+
+### Deux frontières portent une décision, pas une commodité
+
+**silver → gold.** C'est au passage au gold que les colonnes interdites sont retirées. La
+règle est générale — aucune variable postérieure à la décision — et non une liste de noms
+à exclure. `donnees/gold.py` porte la table des motifs : fuite temporelle, identifiant,
+RGPD, artefact de process, cible secondaire. Chaque exclusion a son motif propre, et ces
+motifs ne sont pas interchangeables devant le jury.
+
+**lot mensuel ≠ service unitaire.** `industrialisation/scoring.py` décide : il voit tout
+le portefeuille et peut classer. `industrialisation/service.py` ne décide pas : il voit
+un compte à la fois, et la règle de priorisation dépend du rang dans l'ensemble. Le
+service ne renvoie donc aucun champ `decision` — cette absence est volontaire et
+documentée.
+
+## Ce que les tests protègent
+
+Les tests ne visent pas la couverture. Ils visent **ce qui casse silencieusement** :
+
+| Test | Ce qu'il empêche |
+|---|---|
+| `test_jointure_catalogue_sans_perte_malgre_la_casse` | Une jointure `STARTER`/`starter` qui perd des lignes sans lever d'erreur |
+| `test_nombres_stockes_en_texte` | Une virgule décimale mal convertie, qui donne NaN au lieu d'un nombre |
+| `test_gold_retire_les_colonnes_interdites` | La réintroduction accidentelle d'une variable en fuite |
+| `test_detection_generique_de_fuite` | Une fuite future, non anticipée : le contrôle ne cible aucun nom de colonne |
+| `test_classement_insensible_a_l_efficacite_de_retention` | La perte de l'argument de robustesse du § 9 |
+| `test_ratio_protege_contre_la_division_par_zero` | Un infini qui se propage silencieusement dans le modèle |
+| `test_la_source_affichee_est_celle_du_module` | La divergence entre le code montré au jury et le code exécuté |
+
+## Migration progressive du notebook
+
+Le notebook actuel porte son code en ligne. Le basculement se fait section par section,
+sans rupture :
+
+1. Ajouter la cellule d'amorçage en section 5.
+2. Pour chaque fonction déjà écrite dans le notebook, la déplacer dans le module de son
+   activité, puis remplacer sa définition par `afficher_source(...)` suivi de l'appel.
+3. Ajouter le test correspondant dans `tests/test_<activité>.py`.
+4. Vérifier : `make test` puis `make executer-notebook`.
+
+**L'ordre compte.** Déplacer le code avant d'écrire le test laisse une fenêtre où rien ne
+protège la fonction. Écrire le test d'abord est préférable quand le comportement attendu
+est clair.
+
+## Ce que cette organisation apporte au jury
+
+| Compétence | Preuve apportée |
+|---|---|
+| C3 | Les fonctions de nettoyage sont testées, pas seulement décrites |
+| C5 | La grille d'hyperparamètres et le protocole de comparaison sont du code, pas un tableau |
+| C6 | La chaîne de préparation est littéralement la même à l'entraînement et au scoring — le *training-serving skew* est empêché par construction, pas par vigilance |
+| C6 | Les tests constituent l'étape 1 de la chaîne CI décrite en section 10 : elle existe, elle tourne |
+| C8 | Les trois niveaux d'impact sont calculés par une fonction testée, pas affirmés |
+| C9 | Le calcul de dérive est exécutable, avec ses seuils et les actions associées |

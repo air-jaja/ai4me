@@ -1,0 +1,25 @@
+# Environnement
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Données — versionnées hors dépôt (voir docs/README_choix_methodologiques.md § 3)
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+
+# Modèles sérialisés — artefacts de build, non versionnés dans Git
+models/*
+!models/.gitkeep
+
+# Sorties
+reports/figures/*
+!reports/figures/.gitkeep
+emissions.csv
+
+# Outils
+.pytest_cache/
+.ruff_cache/
+.env

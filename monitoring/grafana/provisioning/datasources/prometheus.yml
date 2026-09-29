@@ -1,0 +1,11 @@
+# Provisioning Grafana : la source de données est configurée au démarrage,
+# sans intervention manuelle. Le tableau de bord est donc reproductible.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false

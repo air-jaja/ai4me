@@ -1,0 +1,273 @@
+# Plan d'actions — Certification CISIA
+## Cas d'usage : prédiction du churn B2B SaaS
+
+**Version :** 4.1 — 26/09/2026
+**Remplace :** v4.0 du 26/09 — vérification de la plateforme tranchée, ordre de repli corrigé.
+**Remplace :** v3.0 du 23/09. Recalée sur le dépôt Git structuré, la plateforme
+d'industrialisation et la fenêtre réelle restante.
+**Périmètre :** notebook + support de soutenance. Questionnaire professionnel hors périmètre.
+
+---
+
+## 1. État des livrables
+
+| Livrable | État | Volume |
+|---|---|---|
+| `notebooks/cas_usage_churn_saas.ipynb` | 16 sections, journal de bord partout, 5 annexes. **Aucune sortie : jamais exécuté** | 102 000 car., 29 cellules |
+| `src/churn_saas/` | 7 activités, 41 modules. Tests verts, linter propre | 27 tests |
+| Dépôt Git | `pyproject.toml`, `uv.lock` (265 paquets), CI, pre-commit, Makefile | — |
+| Plateforme Docker | `Dockerfile`, `docker-compose.yml`, Prometheus, Grafana. **Jamais construite** | 5 services |
+| `docs/README_choix_methodologiques.md` | v3.0, aligné | — |
+| `docs/suivi_projet_ia.md` | Suivi par phase, public non spécialiste | — |
+| `docs/ORGANISATION_CODE.md` | Motif « un seul code, notebook auto-porteur » | — |
+| Support de soutenance | **Non commencé** | — |
+
+**Fenêtre restante :** du 26 au 30 septembre, 5 jours, à 10–12 h/jour → **50 à 60 h**.
+**Charge restante estimée : ≈ 49 h.** La marge confortable de la v3.0 a été consommée par
+la construction de la plateforme. Il n'y a plus de réserve : les arbitrages de repli du § 7
+doivent être connus **avant** d'en avoir besoin.
+
+---
+
+## 2. Ce qui a changé depuis la v3.0
+
+| Changement | Conséquence sur le plan |
+|---|---|
+| Le code est sorti du notebook vers `src/churn_saas/`, découpé par activité | Le lot C de la v3.0 est en grande partie absorbé : sérialisation, PSI, décision, impact sont écrits et testés |
+| MLflow, Optuna, SHAP, SQLAlchemy/PostgreSQL, Prefect, Prometheus ajoutés | Trois décisions d'outillage révisées (§ 3). Nouvelles promesses à honorer (§ 6) |
+| Plateforme Docker à 5 services décrite dans les sections 10, 11 et 13 | **Nouveau risque** : des affirmations non vérifiées (§ 5) |
+| Un bug d'import découvert par le linter dans la section 12 | Corrigé. Démontre l'utilité de la chaîne CI décrite au § 10 |
+| La date de départ a glissé de 3 jours | Le gel du notebook reste au 28/09 au soir : c'est la contrainte, pas une préférence |
+
+---
+
+## 3. Décisions arrêtées
+
+À ne rouvrir que si l'exécution les invalide — auquel cas le retour s'inscrit à l'Annexe D
+du notebook.
+
+### Décisions de cadrage
+
+| # | Décision | Fondement |
+|---|---|---|
+| 1 | Supervisé, classification binaire | Label `churn` disponible, 28 % de positifs |
+| 2 | Usage en **priorisation**, pas en détection exhaustive | 10 % des churners portent 72 % du MRR perdu |
+| 3 | Classement par **valeur espérée** (p × CLV × u) | Le seuil optimal varie d'un facteur 130 selon la valeur du compte |
+| 4 | Point de fonctionnement ancré sur la **capacité** (≈ 140/mois) | Contrainte réelle, contrairement à une contrainte de précision arbitraire |
+| 5 | PR-AUC pour la sélection | Déséquilibre modéré mais réel ; exactitude inutilisable |
+| 6 | `valeur_vie_client_eur` = pondération, jamais feature | Consigne explicite de l'énoncé |
+| 7 | `sante_compte_fin_periode` exclue | Fuite temporelle, confirmée empiriquement (corrélation −0,881) |
+| 8 | Explicabilité exigée | Le CSM doit comprendre le signalement |
+| 9 | Décision humaine obligatoire | Supervision humaine, cohérent avec le § 4 |
+
+### Décisions d'outillage révisées
+
+| # | Outil | Position initiale | Motif du revirement |
+|---|---|---|---|
+| 10 | **Optuna** | Écarté au nom de l'éco-conception | L'argument portait sur l'étendue de la recherche, pas sur l'outil. TPE + élagage consomme moins qu'une grille exhaustive à couverture égale. Budget borné à 30 essais — c'est ce chiffre qu'il faut défendre |
+| 11 | **MLflow** | Écarté, « surdimensionné » | La convention de nommage ne survit ni à plusieurs réentraînements ni à plusieurs opérateurs |
+| 12 | **SHAP, CodeCarbon** | Options ouvertes | L'un rend le signalement actionnable compte par compte, l'autre transforme un argument déclaratif en mesure |
+
+**Hypothèses à rappeler en soutenance :** efficacité de rétention 25 % (sensibilité
+15–40 %), coût de contact CSM ≈ 135 €, capacité ≈ 140 comptes/mois, résiliations réparties
+sur ≈ 12 mois.
+
+---
+
+## 4. Travaux restants, par activité du cycle de vie
+
+### Données · Features *(9,5 h)*
+| # | Action | Charge |
+|---|---|---|
+| D1 | Stratégie d'imputation colonne par colonne. **Vérifier d'abord si un manquant est corrélé au churn** : il serait alors un signal, pas un défaut | 2,5 h |
+| D2 | Interprétation narrative de l'EDA — le notebook prépare les graphiques, pas leur lecture | 3 h |
+| D3 | Démonstration chiffrée de la fuite, avant/après exclusion | 1 h |
+| D4 | Confirmation empirique des leurres via importance des variables | 1,5 h |
+| D5 | Migrer le nettoyage du notebook vers `donnees/silver.py` + `afficher_source` | 1,5 h |
+
+### Modélisation · Évaluation *(12 h)*
+| # | Action | Charge |
+|---|---|---|
+| M1 | Validation croisée, arbitrage régression logistique vs forêt aléatoire | 3 h |
+| M2 | Optimisation Optuna, 30 essais, sous `mesurer_empreinte` | 1,5 h |
+| M3 | Régression CLV — alimente la règle de décision, plus un exercice secondaire | 2,5 h |
+| M4 | Boucle **évaluation → features** : entraîner sur variables brutes, relever le PR-AUC, ajouter les variables construites, relever à nouveau, documenter l'écart (§ 9 et Annexe D) | 2 h |
+| M5 | Application de la règle de décision et coupure à la capacité | 1,5 h |
+| M6 | Explicabilité SHAP sur 2–3 comptes, avec la mise en garde attribution ≠ cause | 1,5 h |
+
+### Packaging · Industrialisation *(5,5 h)*
+| # | Action | Charge |
+|---|---|---|
+| P1 | Sérialiser le modèle avec sa `FicheModele`, recharger, scorer `churn_saas_echantillon.csv` | 1,5 h |
+| P2 | Générer la **fiche modèle** depuis le gabarit, l'attacher au livrable | 1 h |
+| P3 | Journaliser l'entraînement dans MLflow (au moins une exécution visible) | 1 h |
+| P4 | **Schéma d'architecture** — cellule 21, toujours vide | 2 h |
+
+### Clôture du notebook *(6 h)*
+| # | Action | Charge |
+|---|---|---|
+| N1 | Tableau des hyperparamètres retenus, avec la grille explorée | 0,5 h |
+| N2 | Résumé exécutif — **à écrire en dernier** | 1 h |
+| N3 | Conclusion et recommandations | 1,5 h |
+| N4 | Audit du journal de bord : présent partout, distinct du texte d'analyse, reflétant une décision réelle | 1 h |
+| N5 | Page de garde : nom, date de remise, version, `pip freeze` | 0,5 h |
+| N6 | **Ré-exécution complète, kernel neuf, zéro erreur** — bloquant | 1,5 h |
+
+### Soutenance *(14 h)*
+| # | Action | Charge |
+|---|---|---|
+| S1 | Rédaction du support, ≈ 20 slides + 4 d'annexe. Trame minutée en **Annexe C du notebook** | 6 h |
+| S2 | Mise en forme | 2 h |
+| S3 | **Deux répétitions chronométrées** | 2 h |
+| S4 | Banque de réponses écrites, 3 phrases max, avec le numéro de section | 4 h |
+
+### Remise *(2 h)*
+Vérification de l'Annexe B, zip `[Nom_prenom_certification IA]`, test de décompression
+depuis un autre dossier.
+
+---
+
+## 5. Vérification de la plateforme — **tranché : option A**
+
+Les sections 10, 11 et 13 décrivent cinq services, une chaîne CI/CD et une collecte
+d'indicateurs. Tant que rien n'a été exécuté, ce sont des affirmations. Docker Desktop
+étant opérationnel, la preuve est à deux heures de distance.
+
+| # | Action | Charge |
+|---|---|---|
+| V1 | `cp .env.example .env`, renseigner `POSTGRES_PASSWORD`, puis `make up` | 0,5 h |
+| V2 | `make smoke` → `/ready` renvoie 200 avec la version du modèle. Capture | 0,25 h |
+| V3 | Interface MLflow sur `:5000` — l'exécution journalisée par P3 y est visible. Capture | 0,25 h |
+| V4 | Prometheus sur `:9090`, page *Targets* : `churn-api` en état `UP`. Capture | 0,25 h |
+| V5 | Grafana sur `:3000`, source de données provisionnée automatiquement. Capture | 0,25 h |
+| V6 | Intégrer les quatre captures en annexe du notebook, avec une phrase de contexte | 0,5 h |
+
+**Ordre d'exécution.** V1 se fait **avant** P1 et P3 : le modèle doit exister dans
+`models/` pour que `/ready` réponde 200, et le serveur MLflow doit tourner pour que P3
+journalise. Lancer la stack le 26 au soir permet de la laisser tourner pendant toute la
+phase de modélisation.
+
+**Ce que la preuve apporte.** À la question « l'avez-vous fait tourner ? », une capture
+d'écran répond en une phrase. Sans elle, la meilleure réponse possible reste une
+description — et une description de ce qu'on n'a pas fait s'entend.
+
+**Si la stack refuse de démarrer** et que le déblocage dépasse une heure : ne pas insister.
+Ajouter une phrase dans les sections 10, 11 et 13 indiquant que la plateforme est conçue et
+versionnée dans le dépôt mais non déployée. C'est moins démonstratif, mais inattaquable —
+et une heure perdue à déboguer Docker le 28 se paierait sur le support.
+
+---
+
+## 6. Promesses textuelles à honorer
+
+Le notebook annonce des analyses qui doivent exister dans les résultats. Une promesse non
+tenue coûte plus cher qu'une promesse non faite : le jury la lit dans le texte et cherche
+la sortie correspondante.
+
+| Promesse | Section | Production attendue | Outil disponible |
+|---|---|---|---|
+| Sensibilité de l'efficacité de rétention testée de 15 % à 40 % | 9 | Tableau montrant la stabilité du classement | `evaluation.decision.sensibilite_classement` |
+| Suivi du taux de rétention **par segment de taille** | 4 | Analyse d'équité par `taille_entreprise`, `secteur`, `pays` | À écrire |
+| Variables leurres identifiées sans sur-interprétation | 8 | Importance avec les leurres en bas de classement | `features.controle.verifier_leurres` |
+| Cibles de performance fixées avant entraînement | 8 | Confrontation explicite cible/résultat | — |
+| Empreinte carbone mesurée | 8 | Sortie de CodeCarbon | `modelisation.optimisation.mesurer_empreinte` |
+| Explicabilité compte par compte | 8 | Facteurs SHAP sur 2–3 comptes | `evaluation.explicabilite` |
+| Valeurs de référence des contrôles de cohérence | 5 | 5 035 lignes, 35 doublons, 28 % de churn | `donnees.ingestion.inventaire` |
+| Liste priorisée livrée aux CSM | 12 | Table `client_id`/proba/CLV/valeur espérée/rang | `industrialisation.scoring` |
+| Seuil propre à chaque compte | 9 | Colonne `seuil_compte` | `evaluation.decision` |
+| Calcul du PSI | 12, 13 | Rapport de dérive exécuté | `monitoring.derive` |
+| Trois niveaux d'impact MRR | 12 | Tableau exposé / couvert / préservé | `evaluation.impact` |
+
+**La plus exposée reste l'analyse d'équité par segment.** La section 4 s'y engage au titre
+des mesures compensant le biais introduit par la priorisation par valeur. C'est vous qui
+avez soulevé le problème : le jury vous y ramènera. Sans cette sortie, l'engagement éthique
+reste verbal. C'est le seul élément de la liste pour lequel aucun code n'existe encore.
+
+---
+
+## 7. Planning 26 → 01 octobre
+
+| Date | Jour | Activité du cycle | Travaux | Volume |
+|---|---|---|---|---|
+| 26/09 | Sam | Données, Features | D1 imputation · D3 fuite · D4 leurres · D5 migration du nettoyage · **V1 démarrage de la stack Docker, à laisser tourner** | 11 h |
+| 27/09 | Dim | Features, Modélisation | D2 EDA narrative · M1 validation croisée · M2 Optuna + empreinte · M4 boucle évaluation → features | 11 h |
+| 28/09 | Lun | Évaluation, Packaging | M3 CLV · M5 règle de décision · M6 SHAP · sensibilité · **analyse d'équité** · P1 sérialisation · P2 fiche modèle · P3 MLflow · **V2–V6 captures de la plateforme** · P4 schéma · N1 hyperparamètres · N2 résumé · N3 conclusion · N4 audit · N5 page de garde · **N6 ré-exécution → GEL** | 12 h |
+| 29/09 | Mar | — | S1 rédaction du support · S2 mise en forme | 10 h |
+| 30/09 | Mer | — | S3 deux répétitions chronométrées · S4 banque de questions · zip et contrôles | 10 h |
+| 01/10 | Jeu | — | Marge, relecture à froid, envoi | — |
+
+**Total : 54 h planifiées pour 51 h de charge** (49 h + 2 h de vérification de la plateforme). La marge tombe à 3 h, contre 35 h dans la v3.0. Chaque retard se paiera sur le support de soutenance, qui pèse 50 % du cas d'usage.
+
+**Le 28/09 est surchargé.** C'est délibéré : le gel du notebook ne peut pas glisser sans
+compromettre la cohérence des chiffres du support. Si la journée déborde, appliquer les
+arbitrages ci-dessous plutôt que de repousser le gel.
+
+---
+
+## 8. Arbitrages de repli, par ordre de sacrifice
+
+À décider maintenant, pas dans l'urgence du 28 au soir. L'ordre suit le **coût de
+l'abandon**, du moins cher au plus cher.
+
+| Ordre | À sacrifier | Coût de l'abandon | Gain de temps |
+|---|---|---|---|
+| 1 | **D5 migration du nettoyage** vers `donnees/silver.py` | **Nul pour le jury.** Le notebook reste auto-porteur avec son code en ligne, et le module existe déjà, testé. Seule la démonstration du motif « un seul code » y perd | 1,5 h |
+| 2 | **M2 Optuna** — conserver `GridSearchCV` | Faible. La grille bornée reste défendable. Impose de retirer la mention d'Optuna du § 8 du notebook | 1,5 h |
+| 3 | **M6 SHAP** — conserver l'importance globale des variables | Moyen. Affaiblit C4 sur l'explicabilité locale, et laisse sans réponse « pourquoi ce compte-ci ? » | 1,5 h |
+
+**Ne figurent plus dans cette liste**, et ne doivent pas y revenir :
+
+| Élément | Motif |
+|---|---|
+| **P3 MLflow** | Le serveur tourne dès `make up`. Journaliser une exécution coûte ~30 min et produit une preuve visible pour C5, C6 et C9. Le sacrifier reviendrait à économiser une demi-heure en perdant la démonstration d'un dispositif déjà construit |
+| **§ 5 vérification de la plateforme** | Docker étant opérationnel, le coût est de 2 h pour lever le principal risque de crédibilité du dossier |
+| **P4 schéma d'architecture** | Exigence explicite de C7. La cellule 21 est vide depuis le début |
+| **N6 ré-exécution complète** | Conditionne la crédibilité de tout le livrable |
+| **Analyse d'équité par segment** | Engagement éthique explicite du § 4, et seule promesse sans code existant |
+| **S3 répétitions chronométrées** | La soutenance pèse 50 % du cas d'usage |
+
+**Règle de cohérence.** Tout élément sacrifié doit être **retiré du texte du notebook**. Un
+outil mentionné mais non utilisé est pire qu'un outil absent : le jury le remarquera, et
+cela jettera un doute sur le reste.
+
+---
+
+## 9. Checklist de remise
+
+**Notebook**
+- [ ] 16 sections dans l'ordre imposé
+- [ ] Journal de bord dans chaque grande étape, distinct du texte d'analyse
+- [ ] Ré-exécution complète kernel neuf, aucune erreur
+- [ ] Sorties visibles dans le fichier remis
+- [ ] **Exécutable avec les seules dépendances de base** — un correcteur doit pouvoir le rejouer sans la plateforme
+- [ ] Toutes les promesses du § 6 honorées, ou retirées du texte
+- [ ] Annexes A à E complètes, Annexe D comportant au moins trois itérations
+- [ ] Aucune cellule indéfendable en 30 secondes
+
+**Dépôt**
+- [ ] `uv sync --frozen` fonctionne depuis l'archive
+- [ ] `make test` et `make lint` passent
+- [ ] Aucun secret versionné — `.env` absent, `gitleaks` passé
+
+**Support**
+- [ ] PPT ou PDF, 30 minutes vérifiées au chronomètre
+- [ ] Chaque chiffre traçable dans le notebook
+- [ ] Slides d'annexe préparées
+
+**Zip**
+- [ ] Nommé `[Nom_prenom_certification IA]`
+- [ ] Notebook + support + données + modèle sérialisé + fiche modèle
+- [ ] Décompression testée depuis un autre dossier
+
+---
+
+## 10. Points ouverts
+
+| # | Question | Décision | Date |
+|---|---|---|---|
+| ~~1~~ | ~~§ 5 : option A ou B~~ | **Option A — exécuter et capturer** | 26/09 |
+| ~~2~~ | ~~Docker Desktop opérationnel ?~~ | **Oui** | 26/09 |
+| 3 | Capacité CSM réelle — 140/mois est une hypothèse | | |
+| 4 | Efficacité de rétention — 25 % retenu | | |
+| 5 | Modèle final : régression logistique ou forêt aléatoire | | |
+| 6 | Date exacte de soutenance → contrôle de la règle J-7 | | |

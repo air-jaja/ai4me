@@ -1,0 +1,422 @@
+# Cas d'usage churn SaaS — Notes méthodologiques
+
+Ce document explique **pourquoi** le notebook est structuré ainsi, section par section, et liste les points
+restant à compléter. Il complète le notebook, il ne le remplace pas.
+
+**Version 3.0 — 26/09/2026.** Intègre la plateforme d'industrialisation (MLflow, Optuna,
+SHAP, SQLAlchemy/PostgreSQL, Prefect, Prometheus) et révise trois décisions d'outillage.
+
+**Version 2.0 — 23/09/2026.** Recalée sur l'état réel du notebook après intégration des critères du
+référentiel CISIA, du cycle de vie projet et des constats chiffrés issus des données.
+
+> ### Ce qui a changé depuis la v1.0
+>
+> Trois choix méthodologiques ont été **révisés à la lumière des données**, et non simplement précisés :
+>
+> 1. **L'asymétrie des coûts n'est pas uniforme** (§ 4). La v1.0 posait que le coût d'un faux négatif est
+>    « structurellement supérieur » à celui d'un faux positif. Les données le démentent pour une partie du
+>    portefeuille : le rapport varie de 1,5 à plus de 300 selon la valeur du compte.
+> 2. **Le seuil global est abandonné** (§ 9) au profit d'un classement par valeur espérée. La contrainte de
+>    précision ≥ 0,30 de la v1.0 est supprimée : elle ne reposait sur rien.
+> 3. **L'API ne renvoie plus de décision binaire** (§ 10). La décision dépend du classement de tout le
+>    portefeuille, pas d'un compte isolé.
+>
+> ### Révisions de la v3.0 — outillage
+>
+> 4. **Optuna est retenu** (§ 8), après avoir été écarté au nom de l'éco-conception. L'argument portait
+>    sur l'étendue de la recherche, pas sur l'outil : l'échantillonnage TPE avec élagage consomme moins
+>    qu'une grille exhaustive à couverture égale. Le budget reste borné et demeure l'arbitrage à défendre.
+> 5. **MLflow est retenu** (§ 10), après avoir été jugé surdimensionné. La convention de nommage ne
+>    survit ni à plusieurs réentraînements ni à plusieurs opérateurs ; MLflow l'outille sans la changer.
+> 6. **SHAP et CodeCarbon**, options ouvertes en v2.0, sont retenus. Le premier rend le signalement
+>    actionnable compte par compte ; le second transforme un argument d'éco-conception en mesure.
+> 7. **Le stockage relationnel annoncé au § 3 est mis en œuvre** (PostgreSQL via SQLAlchemy), de même que
+>    l'orchestration du lot (Prefect) et l'exposition des indicateurs (Prometheus, Grafana). Ces éléments
+>    étaient décrits comme cibles ; ils deviennent effectifs.
+>
+> Les autres choix de la v1.0 sont confirmés et conservés.
+
+---
+
+## 0. Principe général
+
+Le notebook suit **exactement** le plan imposé (16 sections, 0 à 15). Chaque section contient un paragraphe
+de **journal de bord** distinct du texte d'analyse : exigence explicite du règlement, et moyen pour le jury
+de distinguer immédiatement *ce qui a été décidé et pourquoi* de *l'analyse elle-même*.
+
+Le code reste **partiel à certains endroits** (imputation, régression CLV, PSI). Le notebook fixe la
+démarche et les garde-fous ; les choix numériques fins doivent être tranchés après lecture des résultats
+réels — sinon le journal de bord perd son sens, ne pouvant justifier une décision non prise.
+
+### Deux lectures coexistent : le plan imposé et le cycle de vie
+
+Le plan gouverne l'**ordre des sections**, le cycle de vie gouverne l'**ordre du travail**.
+
+| Étape du cycle | Sections |
+|---|---|
+| Cadrage | 2, 4 |
+| Données | 3, 5 |
+| Features | 6, 7 |
+| Modélisation | 8, 9 |
+| Évaluation | 9 (validation avant service), 12 (mesure en exploitation) |
+| Packaging | 10 |
+| Industrialisation | 10, 11 |
+| Monitoring | 13 |
+
+**Écart assumé.** Le règlement place l'implémentation (10) et l'architecture (11) *avant* la mesure de
+performance (12), alors que le cycle évalue avant de packager. Ce n'est pas une incohérence :
+l'évaluation se déroule en deux temps — validation avant mise en service (§ 9), mesure en exploitation
+(§ 12). À dire explicitement en soutenance, sinon le jury peut y voir une confusion.
+
+**Les trois boucles de rétroaction** sont documentées là où elles se sont produites : *modélisation →
+cadrage* (§ 8), *évaluation → features* (§ 9), *monitoring → données* (§ 13). L'Annexe D du notebook les
+récapitule. Une démarche scientifique se reconnaît moins aux hypothèses confirmées qu'aux hypothèses
+invalidées : les deux retours au cadrage documentés remettent chacun en cause un présupposé initial.
+
+---
+
+## 1. Résumé exécutif
+Rédigé **en dernier**, malgré sa position en tête. Le jury lit cette section en premier : elle doit refléter
+les résultats finaux, pas une intention de départ.
+
+## 2. Cadrage métier — [C1]
+
+**Choix :** cibler le churn *à l'échéance contractuelle* plutôt qu'un churn « à tout moment ».
+**Pourquoi :** c'est la seule fenêtre où l'énoncé situe l'action Customer Success. Élargir la cible sans
+cadrage explicite serait une dérive de périmètre non justifiée pour C1.
+
+**Choix (nouveau) :** objectif de **priorisation** et non de détection exhaustive.
+**Pourquoi :** les données montrent que 10 % des comptes qui résilient portent 72 % du revenu perdu. Le
+problème n'est pas de détecter tous les départs mais ceux qui comptent. Ce constat a provoqué un retour au
+cadrage, documenté comme itération 2 dans l'Annexe D.
+
+**Choix (nouveau) :** la **capacité de traitement CSM** est une contrainte de cadrage, pas un paramètre
+d'ajustement a posteriori.
+**Pourquoi :** un modèle qui signale plus de comptes que l'équipe ne peut en traiter ne produit aucune
+action supplémentaire. Hypothèse retenue : ≈ 140 comptes/mois.
+
+**Choix (nouveau) :** expliciter le **périmètre temporel** du jeu de données.
+**Pourquoi :** le fichier est un instantané, pas un flux. Les 1 400 résiliations sont un cumul sur la
+période couverte. Sans hypothèse de répartition (≈ 12 mois, soit 115–120 échéances à risque par mois), tout
+raisonnement en volumétrie mensuelle est vide de sens.
+
+**Choix (nouveau) :** fixer dès le cadrage la **périodicité de révision des indicateurs** (trimestrielle).
+**Pourquoi :** exigence explicite de C9, qui rattache cette périodicité à la phase de cadrage et non à la
+phase de suivi.
+
+## 3. Données : disponibilité, gouvernance, alternatives — [C1] [C3]
+
+**Choix :** jointure `churn_saas_complet` ↔ `catalogue_plans` sur `plan`, casse normalisée avant jointure.
+**Pourquoi :** `plan` apparaît en `STARTER` dans le fichier complet et en casse différente dans le
+catalogue. Une jointure directe échouerait **silencieusement**. Piège classique de qualité de données, à
+traiter en section 7 mais à documenter ici pour la traçabilité de gouvernance.
+
+**Choix (nouveau) :** justifier le **modèle de stockage** — relationnel pour l'exploitation courante,
+stockage objet pour les instantanés d'entraînement.
+**Pourquoi :** critère explicite de C3. Les deux répondent à des besoins distincts : interrogation des
+données métier d'un côté, conservation d'instantanés immuables de l'autre — ces derniers étant la condition
+de la reproductibilité exigée en section 10.
+
+**Choix (nouveau) :** documenter le **cycle de vie du jeu de données** (collecte → purge) avec responsables,
+et mentionner sa soumission au DPO et au commanditaire.
+**Pourquoi :** C3 exige que le cycle de vie soit non seulement documenté mais **soumis aux parties
+prenantes**. La durée de conservation des scores est laissée ouverte à dessein : le suivi de dérive demande
+de la profondeur, la minimisation des données demande l'inverse. L'arbitrage n'appartient pas à l'équipe
+technique.
+
+**Choix (nouveau) :** documenter des **scénarios de dégradation** en cas d'indisponibilité d'une source.
+**Pourquoi :** un pipeline qui échoue dès qu'une source manque n'est pas exploitable en production. C1 exige
+explicitement des solutions alternatives.
+
+## 4. Éthique, société, conformité — [C2]
+
+**Choix :** exclusion de `client_id`, `commentaire_csm`, `groupe_experimentation` pour des motifs
+**distincts** de l'anti-fuite technique (identifiant, RGPD/texte libre, artefact expérimental).
+**Pourquoi :** l'énoncé distingue C2 (éthique) de C3 (préparation technique). Justifier ces exclusions par
+« ça pollue le modèle » serait insuffisant pour C2 : il faut l'argument éthique ou réglementaire propre à
+chaque variable, pas un argument statistique.
+
+**Choix (nouveau) :** nommer les cadres applicables — RGPD, AI Act (risque minimal, avec justification du
+classement), lignes directrices européennes pour une IA digne de confiance, recommandations CNIL.
+**Pourquoi :** C2 exige que les chartes éthiques européennes et françaises soient « connues et appliquées ».
+Les citer sans montrer leur application au cas d'usage ne suffit pas.
+
+**Choix (nouveau) :** formuler deux **dilemmes éthiques** avec la position retenue, et identifier les acteurs
+à informer.
+**Pourquoi :** critère explicite de C2. Le premier dilemme — signaler un compte à risque peut précipiter son
+départ — conduit à privilégier des actions de valeur plutôt qu'un geste commercial défensif immédiat.
+
+**Choix révisé :** ~~orientation vers un seuil qui privilégie le rappel~~ → **l'asymétrie des coûts existe
+mais n'est pas uniforme.**
+**Pourquoi la v1.0 était inexacte :** elle affirmait que le coût d'un faux négatif est *structurellement*
+supérieur à celui d'un faux positif. Le coût d'un faux négatif étant proportionnel à la valeur du compte, le
+rapport C_FN/C_FP vaut environ **1,5 au premier décile de valeur** et **plus de 300 au dernier**. Sur les
+plus petits comptes, les deux erreurs coûtent à peu près la même chose. La formulation initiale aurait été
+contredite par le tableau de la section 9 du notebook, qui affiche un seuil de 0,40 pour ces comptes.
+**Ce qui en découle :** non pas un seuil global privilégiant le rappel, mais une règle de décision propre à
+chaque compte (§ 9). Le rappel reste prioritaire sur la précision pour les comptes à forte valeur, qui
+concentrent l'essentiel du revenu à risque. La position éthique précède toujours la décision technique — cet
+enchaînement de la v1.0 est conservé, seule la conclusion change.
+
+**Choix (nouveau) :** traiter explicitement la **conséquence éthique de la priorisation par valeur**.
+**Pourquoi :** la règle retenue rend les petits comptes structurellement moins prioritaires. Ce n'est pas une
+discrimination au sens juridique — la valeur d'un compte est un critère commercial légitime — mais c'est un
+arbitrage qui doit être exposé, chiffré et compensé (quota réservé, suivi par segment, traitement
+différencié). **Décision de principe :** ne pas corriger l'effet dans le modèle mais dans la politique
+d'action. Altérer le score pour le rendre « équitable » masquerait l'arbitrage au lieu de l'exposer.
+
+## 5. Chargement et compréhension des données — [C3]
+
+**Choix :** dresser l'inventaire (types, % manquants, doublons) **avant** toute transformation.
+**Pourquoi :** sans état des lieux initial documenté, il est impossible de démontrer objectivement l'effet du
+nettoyage.
+
+**Constats factuels vérifiés sur le fichier fourni :** BOM UTF-8 en tête, décimales en virgule sous
+guillemets (`"33,3"`), dates mêlées (`31/01/2024` vs `2024-02-06`), casse hétérogène (`SANTÉ` vs `Santé`),
+**35 doublons stricts** sur 5 035 lignes → 5 000 comptes uniques.
+
+**Valeurs de référence (nouveau).** Taux de churn **28,0 %**. Manquants : `commentaire_csm` 55,5 %,
+`delai_reponse_support_h` 10 %, `csat` 8 %, `heures_usage_30j` 6 %, `taux_adoption_pct` /
+`retards_paiement_12m` / `secteur` 5 %, `pays` / `nb_integrations` 4 %, `revenu_mensuel_recurrent_eur` 3 %.
+**Pourquoi les inscrire :** tout écart constaté après exécution signale un problème de chargement ou de
+parsing. La régularité des taux suggère une absence introduite aléatoirement — hypothèse **à vérifier** avant
+de choisir l'imputation : un manquant corrélé au churn serait lui-même un signal.
+
+## 6. EDA — [C3]
+
+**Choix :** lecture univariée puis bivariée (vs `churn`) plutôt qu'une matrice de corrélation globale.
+**Pourquoi :** une matrice de corrélation est difficile à commenter devant un jury en partie non technique ;
+des boxplots par variable vs churn sont directement interprétables en soutenance.
+
+**Choix :** visualiser explicitement `sante_compte_fin_periode` vs `churn` en alerte dédiée.
+**Pourquoi :** c'est la variable de fuite. La rendre visible dès l'EDA démontre qu'elle a été **détectée par
+l'analyse**, et non retirée parce que l'énoncé le suggérait. C'est ce qui valorise C3.
+
+## 7. Préparation des données — [C3]
+
+**Choix technique :** fonctions `nettoyer_decimal_texte` et `parser_dates_multiformat` génériques et
+réutilisables plutôt que des conversions ad hoc.
+**Pourquoi :** elles sont **réutilisées telles quelles** en section 10 pour le scoring. Factoriser évite la
+divergence entre pipeline d'entraînement et pipeline de scoring (*training-serving skew*).
+
+**Choix :** exclusion de `sante_compte_fin_periode` de la matrice de features, mais conservation dans `df`
+pour analyse descriptive hors modèle.
+**Pourquoi :** la variable reste utile pour *décrire* les comptes a posteriori. Seule son utilisation comme
+feature d'un modèle *pré-décision* pose un problème de fuite temporelle.
+
+**Choix :** `couleur_theme_interface` et `code_datacenter` **conservées** (pas exclues a priori),
+contrairement à `groupe_experimentation`.
+**Pourquoi :** ce sont des candidats leurres à confirmer **empiriquement** (importance quasi nulle attendue).
+Les exclure a priori priverait de la démonstration d'interprétabilité demandée par l'énoncé.
+`groupe_experimentation` est exclue par principe (C2) : artefact de process interne, pas variable métier.
+**Précision (nouveau) :** un artefact expérimental n'est pas un leurre. Un leurre n'a aucun pouvoir
+prédictif ; un artefact peut en avoir un, mais illégitime. La distinction compte d'autant plus que la
+section 12 s'appuie sur l'existence de `groupe_experimentation` comme indice qu'un dispositif de test existe
+côté métier — exclue des features, utile au raisonnement.
+
+## 8. Choix du modèle — [C4]
+
+**Choix :** régression logistique (baseline) + Random Forest (comparaison), split stratifié, `class_weight`
+équilibré plutôt que ré-échantillonnage.
+**Pourquoi :** `class_weight="balanced"` est la solution la plus simple à justifier à l'oral — pas de données
+synthétiques créées, pas de risque de sur-apprentissage lié au SMOTE sur un jeu modeste et riche en
+catégorielles. **Précision (nouveau) :** pondération et ajustement du point de fonctionnement sont **comparés
+séparément, jamais cumulés d'emblée** — cumulés, leurs effets se confondent et aucun ne peut être justifié.
+
+**Choix :** `OneHotEncoder` plutôt que `LabelEncoder`.
+**Pourquoi :** `secteur`, `pays`, `plan` sont nominales. Un `LabelEncoder` introduirait un ordre arbitraire
+que les modèles linéaires interpréteraient comme une relation d'ordre.
+
+**Précision (nouveau) sur le déséquilibre.** Le taux de churn est de **28 %** : déséquilibre **modéré**, non
+sévère. Le PR-AUC reste le critère de sélection, mais l'écart avec le ROC-AUC sera moins marqué qu'en classe
+rare. **Ne pas surjouer l'argument du déséquilibre en soutenance** — il est réel mais mesuré.
+
+**Choix (nouveau) :** fixer les **cibles de performance avant l'entraînement** (PR-AUC > baseline, rappel
+prioritaire sur les comptes à forte valeur, inférence < 1 s, réentraînement < 10 min, interprétabilité).
+**Pourquoi :** une cible définie a posteriori s'ajuste au résultat obtenu et ne démontre rien.
+
+**Choix (nouveau) :** évaluer les **solutions sur étagère** (module CRM, AutoML, modèle pré-entraîné) et
+justifier le développement sur mesure. Critère explicite de C4.
+
+**Choix (nouveau) :** traiter l'**éco-conception** — grille d'hyperparamètres bornée, préférence pour le
+modèle léger à performance équivalente, réentraînement trimestriel plutôt que mensuel.
+**Pourquoi :** critère explicite de C4, qui exige en outre que ces contraintes soient portées à la
+connaissance des acteurs (traitées au titre du coût total de possession, § 11).
+
+**Choix (nouveau) :** expliciter la nature **probabiliste** de la sortie. Le modèle renvoie une probabilité,
+pas une décision. Critère explicite de C4, et fondement de la règle de décision du § 9.
+
+## 9. Entraînement, validation, ajustement — [C5]
+
+**Choix :** sélection du modèle final sur PR-AUC + stabilité en validation croisée, pas sur l'AUC seule.
+**Pourquoi :** l'AUC est optimiste en classe déséquilibrée ; le PR-AUC est explicitement demandé par
+l'énoncé.
+
+**Résultat observé à l'exécution du squelette v1.0, à titre indicatif :** AUC test ≈ 0,86, PR-AUC test
+≈ 0,69 — performance élevée mais **non suspecte** (pas de quasi-séparation), cohérent avec une fuite
+correctement neutralisée.
+
+**Choix révisé :** ~~seuil maximisant le rappel sous contrainte de précision ≥ 0,30~~ → **classement par
+valeur espérée, coupure à la capacité de traitement.**
+
+**Pourquoi la v1.0 était insuffisante.** La contrainte de précision ≥ 0,30 ne reposait sur rien : pourquoi
+0,30 plutôt que 0,25 ou 0,40 ? Elle produisait un seuil de ~0,03, dont la v1.0 signalait elle-même qu'il
+devait être « retravaillé ». Le calcul par les coûts montre pourquoi : ce seuil de 0,03 correspond en fait au
+point de fonctionnement rationnel d'un **gros** compte (dernier décile : 0,003 ; troisième quartile : 0,011).
+Appliqué à tout le portefeuille, il était donc cohérent pour une minorité de comptes et absurde pour la
+majorité.
+
+**Règle retenue.** Pour un compte de probabilité *p*, l'action devient rationnelle lorsque
+*p* > C_FP / (C_FP + C_FN), soit *p** = 1/(1+*r*) avec *r* = C_FN/C_FP. Comme C_FN est proportionnel à la
+valeur du compte, le seuil optimal varie d'un **facteur 130** entre déciles extrêmes. Les comptes sont donc
+triés par **valeur espérée** = *p* × CLV × *u*, et l'équipe traite les *K* premiers (*K* = capacité
+mensuelle). Formulation équivalente à un seuil propre à chaque compte, mais plus simple à expliquer et à
+implémenter.
+
+**Trois raisons rendent ce choix solide en soutenance :**
+1. Il est économiquement fondé — chaque compte est traité selon son propre coût d'erreur.
+2. Il utilise `valeur_vie_client_eur` exactement comme l'énoncé le prévoit : pondération de décision, jamais
+   variable explicative. La cible secondaire devient une composante de la chaîne de décision au lieu d'un
+   exercice annexe.
+3. Il est **insensible à l'hypothèse la plus fragile**. L'efficacité de rétention *u* est un facteur commun à
+   tous les comptes : elle ne modifie pas l'ordre du classement, seulement l'estimation du gain absolu. Un
+   seuil global, lui, se déplacerait d'un facteur 4 pour *u* variant de 15 % à 40 %.
+
+**Choix (nouveau) :** reporter l'**intervalle de confiance** avec le rappel.
+**Pourquoi :** sur un jeu de test de 20 % (≈ 280 churns), l'IC95 % sur un rappel de 0,70 vaut ±5,4 points.
+Deux points de fonctionnement donnant 70 % et 74 % ne sont pas distinguables. Le seuil est arrêté sur une
+valeur ronde et justifiée, pas sur un optimum à la troisième décimale. **Le dire soi-même vaut mieux que de
+l'entendre en question.**
+
+**Choix (nouveau) :** décrire explicitement les **hyperparamètres** testés et la méthode de recherche
+(`GridSearchCV`, 5 folds, optimisation du PR-AUC). Critère explicite de C5.
+
+**Hypothèses à assumer devant le jury :** efficacité de rétention 25 % (sensibilité testée 15–40 %), coût
+d'un contact CSM ≈ 135 €, capacité ≈ 140 comptes/mois.
+
+## 10. Implémentation et mise en exploitation — [C6]
+
+**Choix révisé :** ~~exposer `proba_churn` et `decision` dans l'API~~ → **l'API n'expose aucune décision.**
+**Pourquoi le changement :** l'intuition de la v1.0 était bonne — exposer la seule décision binaire appauvrit
+l'usage métier. Mais elle reste en deçà : avec une règle de priorisation par valeur, la décision **ne peut
+pas** être calculée compte par compte, puisqu'elle dépend du rang dans le classement de tout le portefeuille
+et de la capacité. Le service renvoie donc `proba_churn`, `valeur_vie_client_eur`, `valeur_esperee_eur` et la
+version du modèle. La coupure est appliquée dans le **lot mensuel**, qui dispose de la vue d'ensemble.
+
+**Choix (nouveau) :** décrire une **chaîne CI/CD** en sept étapes avec points de blocage.
+**Pourquoi :** C6 exige un processus de livraison et déploiement continu **mis en œuvre**, pas évoqué.
+L'étape clé est le contrôle qualité modèle : aucun modèle ne remplace le précédent sans avoir démontré qu'il
+fait mieux sur le même jeu de validation. Le déploiement reste soumis à validation humaine, cohérent avec le
+refus de l'automatisation décisionnelle posé en § 4.
+
+**Choix (nouveau) :** versionner **conjointement** code, données d'entraînement et modèle.
+**Pourquoi :** un modèle reproductible à partir du seul code est une illusion si le jeu d'entraînement a
+changé entre-temps.
+
+**Choix (nouveau) :** documenter les **besoins d'intégration**, y compris le flux de retour métier (action
+menée, issue réelle du compte).
+**Pourquoi :** ce dernier flux est le plus souvent oublié et le plus important — sans lui, la performance en
+production est inobservable et le suivi du § 13 reste théorique.
+
+## 11. Architecture cible — [C7]
+
+**Choix :** scoring batch mensuel plutôt que temps réel.
+**Pourquoi :** la décision de rétention n'est pas prise dans la seconde ; un rafraîchissement mensuel est
+aligné sur le cycle d'échéance. Le temps réel serait une sur-ingénierie à savoir argumenter.
+
+**Choix (nouveau) :** **chiffrer** deux scénarios d'architecture et porter le chiffrage au commanditaire.
+**Pourquoi :** critère explicite de C7. Un arbitrage d'architecture non chiffré n'est pas un arbitrage, c'est
+une préférence technique. Les montants sont des ordres de grandeur assumés, signalés comme tels.
+
+**Choix (nouveau) :** documenter les **acteurs interrogés** et les contraintes remontées.
+**Pourquoi :** C7 exige que les acteurs métiers, le commanditaire et les acteurs techniques soient
+interrogés. Le cas étant pédagogique, ces échanges sont **reconstitués à partir de l'énoncé et présentés
+comme tels** — mieux vaut l'assumer que laisser le jury le découvrir.
+
+**Précision (nouveau) :** le lot mensuel ne traite pas tout le portefeuille. Il cible les comptes dont
+l'échéance approche, croisés avec leur score — cohérent avec le cadrage « churn à l'échéance » du § 2.
+
+## 12. Mesure de performance et impacts — [C8]
+
+**Choix :** traduire la performance technique en indicateurs métier.
+**Pourquoi :** l'énoncé exige explicitement une traduction métier, pas seulement des métriques techniques.
+
+**Choix révisé :** ~~« revenu potentiellement sauvé » = TP × MRR moyen × taux de succès~~ → **distinguer trois
+niveaux.**
+**Pourquoi le changement :** la formule de la v1.0 amalgamait ce qui relève du modèle et ce qui relève des
+équipes. Les trois niveaux sont :
+1. MRR **exposé** — ce qui part si rien n'est fait.
+2. MRR **couvert** — ce que la priorisation permet d'atteindre à capacité donnée. **C'est le seul niveau dont
+   le modèle est responsable.**
+3. MRR **préservé** — ce qui est réellement sauvé, qui dépend en outre de l'efficacité des actions.
+
+Attribuer le troisième niveau au modèle surestime son apport d'un facteur égal à l'inverse de l'efficacité de
+rétention. Le taux de succès reste une **hypothèse explicite**, jamais un résultat mesuré.
+
+**Choix (nouveau) :** associer à chaque indicateur un **seuil d'alerte, une action déclenchée et un
+responsable nommé**.
+**Pourquoi :** critère explicite de C8. Un indicateur sans seuil ne se surveille pas ; un seuil sans action
+associée ne sert à rien.
+
+**Choix (nouveau) :** exiger un **groupe témoin** avant toute revendication d'impact.
+**Pourquoi :** les comptes signalés étant par construction les plus à risque, comparer leur rétention à la
+moyenne du portefeuille produit une mesure flatteuse et fausse. La présence de `groupe_experimentation`
+suggère qu'un dispositif existe côté métier.
+
+**Repères chiffrés :** MRR mensuel du portefeuille ≈ 17,2 M€ ; MRR porté par les comptes qui résilient
+≈ 4,0 M€ (23 %) ; plafond de couverture ≈ 72 % du MRR à risque avec les 10 % de churners les plus valorisés.
+
+## 13. Amélioration continue — [C9]
+
+**Choix :** réentraînement trimestriel par défaut **+** déclenchement anticipé sur alerte de dérive.
+**Pourquoi :** un rythme fixe seul ignore les ruptures brutales ; un déclenchement sur alerte seul manque de
+filet si le monitoring rate un signal faible. C'est la combinaison qui se défend.
+
+**Choix (nouveau) :** interposer une **étape de qualification** entre l'alerte et le réentraînement, et
+formaliser le retour à l'étape Données en sept étapes.
+**Pourquoi :** un incident de collecte et une dérive réelle produisent la même alerte mais appellent des
+réponses opposées — correction du pipeline dans un cas, réapprentissage dans l'autre. Réentraîner sur des
+données dont la dérive n'a pas été comprise revient à apprendre le problème plutôt qu'à le corriger.
+
+**Choix (nouveau) :** versionner la **distribution de référence du PSI** comme un artefact à part entière.
+**Pourquoi :** sans mise à jour lors du réentraînement, le système compare indéfiniment les données courantes
+à un état ancien — il signale une dérive déjà absorbée ou cesse d'en détecter de nouvelles. C'est le point le
+plus souvent manqué d'un dispositif de monitoring.
+
+**Choix (nouveau) :** décrire un **système d'évaluation automatisé intégré au CI/CD**, avec les métriques de
+robustesse et d'obsolescence. Critère explicite de C9. **L'automatisation porte sur l'évaluation, jamais sur
+la décision de mise en production.**
+
+## 14–15. Conclusion et annexes
+
+Rédigées en dernier. Le notebook comporte quatre annexes :
+- **A — Reproductibilité** : versions, dépendances, paramètres (`pip freeze` ou équivalent).
+- **B — Traçabilité** : les 41 critères du référentiel rattachés à leur section. Permet au jury de cocher sa
+  grille sans chercher, et sert de contrôle d'exhaustivité avant remise.
+- **C — Correspondance notebook ↔ soutenance** : découpage minuté des 30 minutes, et questions fréquentes
+  rattachées à leur section de réponse.
+- **D — Journal des itérations** : les retours en arrière effectués, avec constat, étape de retour,
+  modification et effet mesuré.
+
+---
+
+## Ce qu'il reste à faire
+
+1. **Imputation** — finaliser colonne par colonne. Vérifier d'abord si un manquant est corrélé au churn : il
+   serait alors un signal, pas un défaut.
+2. **Arbitrage de modèle** — trancher entre régression logistique et Random Forest sur les vrais résultats de
+   validation croisée.
+3. **Règle de décision** — appliquer le classement par valeur espérée, produire la coupure à la capacité, et
+   **exécuter l'analyse de sensibilité annoncée** (*u* de 15 % à 40 %).
+4. **Régression CLV** — exécuter et interpréter. Elle n'est plus un exercice secondaire : elle alimente la
+   règle de décision.
+5. **Boucle évaluation → features** — entraîner sur variables brutes, relever le PR-AUC, ajouter les
+   variables construites, relever à nouveau, documenter l'écart (§ 9 et Annexe D). Seule boucle qui ne peut
+   pas être écrite à l'avance.
+6. **Analyse d'équité par segment** — promise en § 4 au titre des mesures compensant le biais de la
+   priorisation par valeur. Sans elle, l'engagement éthique reste verbal.
+7. **Interprétations narratives** — EDA et importance des variables. Le notebook prépare les graphiques, pas
+   leur lecture commentée.
+8. **Cellules de code vides** — schéma d'architecture (§ 11), calcul de PSI (§ 13), test de bout en bout sur
+   l'échantillon (§ 10).
+9. **Résumé exécutif et conclusion** — une fois tous les résultats obtenus.
