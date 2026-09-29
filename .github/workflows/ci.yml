@@ -1,0 +1,32 @@
+# Chaîne d'intégration continue — étapes 1 et 2 décrites au notebook § 10.
+# Objectif : aucun code de nettoyage ne part en production sans avoir été testé.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  qualite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Installer Python
+        run: uv python install
+
+      - name: Synchroniser l'environnement depuis le verrou
+        # --frozen : échoue si uv.lock n'est pas à jour avec pyproject.toml.
+        # C'est le garde-fou de reproductibilité du dépôt.
+        run: uv sync --frozen --group dev
+
+      - name: Linter
+        run: uv run ruff check .
+
+      - name: Tests
+        run: uv run pytest

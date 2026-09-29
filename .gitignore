@@ -5,9 +5,10 @@ __pycache__/
 .ipynb_checkpoints/
 
 # Données — versionnées hors dépôt (voir docs/README_choix_methodologiques.md § 3)
-data/raw/*
-data/interim/*
-data/processed/*
+#         - Choix technique : mis dans Git-LFS
+# data/raw/*
+# data/interim/*
+# data/processed/*
 !data/**/.gitkeep
 
 # Modèles sérialisés — artefacts de build, non versionnés dans Git
@@ -17,7 +18,9 @@ models/*
 # Sorties
 reports/figures/*
 !reports/figures/.gitkeep
-emissions.csv
+# Données — versionnées hors dépôt (voir docs/README_choix_methodologiques.md § 3)
+#         - Choix technique : mis dans Git-LFS
+# emissions.csv
 
 # Outils
 .pytest_cache/

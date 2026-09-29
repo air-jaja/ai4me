@@ -1,1 +1,20 @@
+*.sh 			text eol=lf
+*.ps1 			text eol=crlf
+*.py 			text eol=lf
+*.yml 			text eol=lf
+*.yaml 			text eol=lf
+*.md 			text eol=lf
+*.dvc      		text eol=lf
+dvc.lock   		text eol=lf
+dvc.yaml   		text eol=lf
+.dvcignore 		text eol=lf
+*.joblib		filter=lfs diff=lfs merge=lfs -text
+# MLFlow
+*.db 			filter=lfs diff=lfs merge=lfs -text
+# DATAS
+*.zip 			filter=lfs diff=lfs merge=lfs -text
+*.csv 			filter=lfs diff=lfs merge=lfs -text
+/data/**/*.csv  	filter=lfs diff=lfs merge=lfs -text
+/data/**/*.parquet  	filter=lfs diff=lfs merge=lfs -text
+
 data/raw/*.csv !text !filter !merge !diff
