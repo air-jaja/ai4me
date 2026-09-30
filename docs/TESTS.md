@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**171 cas de test** issus de 65 fonctions, répartis sur 10 fichiers.
+**170 cas de test** issus de 64 fonctions, répartis sur 10 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -34,7 +34,7 @@ soutenance.
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 6 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
-| [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
+| [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 2 |
 | [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 95 |
 | [Non-régression du cadrage](#non-régression-du-cadrage) | `test_non_regression_cadrage.py` | Transverse | C1, C4, C5 | 9 |
 
@@ -165,7 +165,6 @@ soutenance.
 |---|---|---|---|
 | 1 | `test_la_source_affichee_est_celle_du_module` | `afficher_source` reads the code from the module, so it cannot drift. | This is the invariant that allows a self-contained notebook with no duplicated code. |
 | 2 | `test_le_tableau_affiche_ne_tronque_aucune_cellule` | A truncated table is a lost argument: the renderer must never elide content. | — |
-| 3 | `test_le_rendu_ne_depend_pas_d_ipython` | The markup must be produced even without IPython installed. | Caught on a fresh clone installed with the `dev` group only: the function ignored `retourner_html` on the fallback path and returned None. The defect was invisible in a notebook environment, where IPython is always present - exactly the kind of gap a test run in the development environment alone never sees. |
 
 ### Conventions de travail
 

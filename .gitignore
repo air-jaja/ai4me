@@ -27,3 +27,4 @@ reports/figures/*
 .pytest_cache/
 .ruff_cache/
 .env
+*.bundle
