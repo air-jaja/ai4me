@@ -9,7 +9,7 @@
 # comparison artefact, not a deliverable.
 CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
 
-.PHONY: aide install install-plateforme kernel test test-doc test-doc-check lint format check \
+.PHONY: aide install install-plateforme kernel test test-ci test-doc test-doc-check lint format check \
         notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
@@ -19,6 +19,7 @@ aide:
 	@echo "  install-plateforme  Ajoute MLflow, Optuna, SHAP, SQLAlchemy, Prefect, Prometheus"
 	@echo "  kernel              Enregistre le noyau Jupyter du projet (VS Code, Jupyter)"
 	@echo "  test                Suite de tests"
+	@echo "  test-ci             Suite de tests dans un environnement identique à la CI"
 	@echo "  test-doc            Régénère docs/TESTS.md depuis les fichiers de tests"
 	@echo "  test-doc-check      Vérifie que docs/TESTS.md correspond aux tests livrés"
 	@echo "  lint                Style du code"
@@ -51,6 +52,16 @@ kernel:
 test:
 	uv run pytest -q
 
+# The local environment holds every group; the CI installs only `dev`. A dependency
+# inherited transitively therefore passes here and fails there. This target runs the
+# suite in a throwaway environment built exactly like the pipeline's.
+ENV_CI := .venv-ci
+
+test-ci:
+	@UV_PROJECT_ENVIRONMENT=$(ENV_CI) uv sync --frozen --group dev --quiet
+	@UV_PROJECT_ENVIRONMENT=$(ENV_CI) uv run --no-sync pytest -q
+	@rm -rf $(ENV_CI)
+
 # The catalogue is generated, never hand-written: a stale inventory claims coverage
 # that no longer exists.
 test-doc:
@@ -73,8 +84,10 @@ lint:
 format:
 	uv run ruff format src tests
 
-# Mirrors the CI, in the same order. Passing here means the pipeline will pass.
-check: test lint test-doc-check
+# Mirrors the CI, in the same order and in the same environment. Running `test` here
+# instead of `test-ci` would use the local environment, where every group is
+# installed - which is how a missing dependency reached the pipeline once.
+check: test-ci lint test-doc-check
 	uv run ruff format --check src tests tools
 	@echo "Tous les contrôles sont passés."
 
