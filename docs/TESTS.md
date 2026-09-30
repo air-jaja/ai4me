@@ -9,9 +9,9 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**58 cas de test** issus de 56 fonctions, répartis sur 9 fichiers.
+**75 cas de test** issus de 61 fonctions, répartis sur 9 fichiers.
 
-_Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le total des cas correspond à ce que rapporte `pytest --collect-only`._
+_Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
 ## Principe : tester ce qui casse sans bruit
 
@@ -27,7 +27,7 @@ soutenance.
 
 | Domaine | Fichier | Activité du cycle de vie | Compétences | Cas |
 |---|---|---|---|---|
-| [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 3 |
+| [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 20 |
 | [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 7 |
 | [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 18 |
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 4 |
@@ -49,9 +49,14 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_aucun_module_ne_porte_le_nom_d_un_paquet` | A module and a package with the same name must never coexist. | — |
-| 2 | `test_seuls_les_modules_transverses_restent_a_la_racine` | Only cross-cutting modules belong at package root; the rest lives in activities. | — |
-| 3 | `test_chaque_activite_expose_une_interface` | Every activity package declares __all__, which documents its public surface. | — |
+| 1 | `test_les_sept_activites_existent` | Each lifecycle activity has its own package. | No activity, no separation. |
+| 2 | `test_aucun_paquet_hors_des_sept_activites` | A package outside the agreed seven means an activity was invented along the way. | `stockage` lived here for a while before being folded into activity 6: the score warehouse holds what the batch *produces*, not what it consumes. |
+| 3 | `test_chaque_activite_annonce_son_numero` _(×7)_ | The package docstring states which lifecycle activity it implements. | — |
+| 4 | `test_chaque_activite_expose_une_interface` _(×7)_ | `__all__` is the activity's contract: what the other activities may rely on. | — |
+| 5 | `test_aucun_module_ne_porte_le_nom_d_un_paquet` | A module and a package with the same name must never coexist. | Python resolves the package and the code keeps running, so the duplicate is invisible until someone edits the wrong file. |
+| 6 | `test_seuls_les_modules_transverses_restent_a_la_racine` | Every module belongs to an activity, except those serving all of them. | — |
+| 7 | `test_les_dependances_respectent_l_ordre_du_cycle_de_vie` | An activity may only rely on those the declaration allows. | Without this check the split survives on the filename alone: a backward dependency - data management calling the model, say - would make the two activities inseparable while the folders still suggest otherwise. |
+| 8 | `test_les_activites_communiquent_par_leur_interface_publique` | Cross-activity imports target the package, never one of its submodules. | Reaching into `..donnees.gold` rather than `..donnees` ties the caller to an internal layout it does not own: any reorganisation inside the activity then breaks code elsewhere. `__all__` exists precisely to prevent that. |
 
 ### Nettoyage et niveaux de raffinage
 

@@ -17,7 +17,7 @@ from .empreinte import (
     manifeste_stable,
     verifier_manifeste,
 )
-from .gold import construire_gold, separer_cible
+from .gold import MOTIFS_EXCLUSION, construire_gold, separer_cible
 from .gouvernance import comparer_stockage, table_cycle_de_vie, table_sensibilite
 from .ingestion import charger_bronze, inventaire
 from .schema import auditer_qualite, controler_jointure, decrire_schema
@@ -30,6 +30,7 @@ __all__ = [
     "construire_silver",
     "construire_gold",
     "separer_cible",
+    "MOTIFS_EXCLUSION",
     # Schema and quality
     "decrire_schema",
     "auditer_qualite",

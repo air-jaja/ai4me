@@ -15,7 +15,9 @@ cleaning chain would invalidate three deliverables at once" is the reason the te
 from __future__ import annotations
 
 import ast
+import pathlib
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -129,22 +131,40 @@ def _parametres(noeud: ast.FunctionDef) -> str:
     return ", ".join(f"`{n}`" for n in noms) if noms else "—"
 
 
-def _expansion_parametrage(noeud: ast.FunctionDef) -> int:
-    """Number of cases a test expands into.
+def _collecte_pytest() -> dict[str, int]:
+    """Ask pytest how many cases each test function actually expands into.
 
-    A parametrised test is one function but several cases. Reporting the function count
-    would understate the suite; reporting only the collected count, without saying why the
-    two differ, would look like an inconsistency with `pytest --collect-only`.
+    Counting parametrised cases by reading the source only works when the parameter list
+    is a literal. `@parametrize("x", sorted(MAPPING))` defeats any static count, and a
+    catalogue that silently undercounts contradicts `pytest --collect-only` - exactly the
+    kind of small inconsistency that costs credibility.
+
+    Falls back to one case per function if pytest cannot be run, and the caller says so.
     """
-    for decorateur in noeud.decorator_list:
-        if isinstance(decorateur, ast.Call) and "parametrize" in ast.unparse(decorateur.func):
-            for argument in decorateur.args:
-                if isinstance(argument, ast.List | ast.Tuple):
-                    return len(argument.elts)
-    return 1
+    try:
+        resultat = subprocess.run(
+            [sys.executable, "-m", "pytest", "--collect-only", "-q", "--no-header"],
+            cwd=RACINE,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+
+    comptes: dict[str, int] = {}
+    for ligne in resultat.stdout.splitlines():
+        if "::" not in ligne or not ligne.startswith("tests/"):
+            continue
+        chemin, _, reste = ligne.partition("::")
+        nom = reste.split("[")[0].strip()
+        comptes[f"{pathlib.PurePath(chemin).name}::{nom}"] = (
+            comptes.get(f"{pathlib.PurePath(chemin).name}::{nom}", 0) + 1
+        )
+    return comptes
 
 
-def cataloguer(fichier: Path) -> list[dict[str, str]]:
+def cataloguer(fichier: Path, comptes: dict[str, int]) -> list[dict[str, str]]:
     """Extract one row per test function from a test module."""
     arbre = ast.parse(fichier.read_text(encoding="utf-8"))
     cas = []
@@ -157,7 +177,7 @@ def cataloguer(fichier: Path) -> list[dict[str, str]]:
                 "intention": _premiere_phrase(ast.get_docstring(noeud)),
                 "raison": _reste(ast.get_docstring(noeud)),
                 "fixtures": _parametres(noeud),
-                "cas": _expansion_parametrage(noeud),
+                "cas": comptes.get(f"{fichier.name}::{noeud.name}", 1),
                 "ligne": str(noeud.lineno),
             }
         )
@@ -169,6 +189,7 @@ def rendre_markdown() -> str:
     fichiers = [f for f in ORDRE if (DOSSIER_TESTS / f).exists()]
     fichiers += sorted(f.name for f in DOSSIER_TESTS.glob("test_*.py") if f.name not in ORDRE)
 
+    comptes = _collecte_pytest()
     total_fonctions = 0
     total_cas = 0
     sections = []
@@ -176,7 +197,7 @@ def rendre_markdown() -> str:
 
     for nom_fichier in fichiers:
         chemin = DOSSIER_TESTS / nom_fichier
-        cas = cataloguer(chemin)
+        cas = cataloguer(chemin, comptes)
         total_fonctions += len(cas)
         cas_fichier = sum(c["cas"] for c in cas)
         total_cas += cas_fichier
@@ -227,8 +248,14 @@ def rendre_markdown() -> str:
         f"répartis sur {len(fichiers)} fichiers.",
         "",
         "_Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique "
-        "exécutée plusieurs fois. Le total des cas correspond à ce que rapporte "
-        "`pytest --collect-only`._",
+        "exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, "
+        "non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en "
+        "dur échapperait à toute analyse statique._"
+        + (
+            ""
+            if comptes
+            else "\n\n> ⚠️ Collecte pytest indisponible : les cas paramétrés sont comptés pour un."
+        ),
         "",
         "## Principe : tester ce qui casse sans bruit",
         "",

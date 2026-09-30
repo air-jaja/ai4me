@@ -24,9 +24,9 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 
 from ..config import EFFICACITE_RETENTION
-from ..industrialisation.scoring import preparer
-from ..industrialisation.service import reponse_scoring_unitaire
-from ..packaging.artefacts import charger_modele
+from ..packaging import charger_modele
+from .scoring import preparer
+from .service import reponse_scoring_unitaire
 
 app = FastAPI(
     title="Scoring churn — aide à la décision",

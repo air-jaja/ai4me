@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from ..donnees.gold import MOTIFS_EXCLUSION
+from ..donnees import MOTIFS_EXCLUSION
 
 
 def controler_schema(

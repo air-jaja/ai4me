@@ -15,7 +15,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-from ..packaging.artefacts import FicheModele
+from .artefacts import FicheModele
 
 
 @contextmanager
