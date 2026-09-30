@@ -212,3 +212,37 @@ def test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal(tmp_path):
     contenu = destination.read_text(encoding="utf-8")
     assert "→" in contenu, "Le caractère qui déclenchait l'échec doit être présent"
     assert contenu.startswith("# Catalogue des tests")
+
+
+def test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne(tmp_path):
+    """Files our code writes and Git versions must end with a newline.
+
+    Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the
+    CI fails, and the diff shows a single character on a file whose content never changed.
+    The noise then trains everyone to run `--no-verify`, which is how a guardrail dies.
+
+    Covers the three writers: the data manifest, the model card written next to the
+    serialised model, and the generated model card.
+    """
+    from sklearn.dummy import DummyClassifier
+
+    from churn_saas.donnees import construire_manifeste, ecrire_manifeste
+    from churn_saas.packaging import FicheModele, generer_model_card, sauvegarder_modele
+
+    source = tmp_path / "donnees.csv"
+    source.write_text("a\n1\n", encoding="utf-8")
+    chemin = ecrire_manifeste(
+        construire_manifeste({"source": source}, version_donnees="v1", racine=tmp_path),
+        tmp_path / "manifeste.json",
+    )
+    assert chemin.read_bytes().endswith(b"\n"), "manifeste sans saut de ligne final"
+
+    modele = DummyClassifier(strategy="prior").fit([[0], [1]], [0, 1])
+    artefact = sauvegarder_modele(modele, FicheModele(nom="essai", version="1.0"), dossier=tmp_path)
+    assert artefact.with_suffix(".json").read_bytes().endswith(b"\n"), (
+        "fiche modèle sans saut de ligne final"
+    )
+
+    carte = tmp_path / "MODEL_CARD.md"
+    generer_model_card({"model_id": "essai"}, destination=carte)
+    assert carte.read_bytes().endswith(b"\n"), "model card sans saut de ligne final"

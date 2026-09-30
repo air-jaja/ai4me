@@ -50,8 +50,12 @@ def sauvegarder_modele(modele: Any, fiche: FicheModele, dossier: Path | str = MO
     base = fiche.nom_fichier()
     chemin_modele = dossier / f"{base}.joblib"
     joblib.dump(modele, chemin_modele)
+    # Trailing newline: a versioned text file without one is rewritten at every commit
+    # by `end-of-file-fixer`, failing the hook for a file whose content never changed.
     (dossier / f"{base}.json").write_text(
-        json.dumps(asdict(fiche), indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(asdict(fiche), indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+        newline="\n",
     )
     return chemin_modele
 

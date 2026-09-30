@@ -89,10 +89,16 @@ def construire_manifeste(
 
 
 def ecrire_manifeste(manifeste: dict[str, Any], destination: Path | str) -> Path:
-    """Write the manifest as JSON. Versioned in Git: it is small and it is the contract."""
+    """Write the manifest as JSON. Versioned in Git: it is small and it is the contract.
+
+    The trailing newline is not cosmetic. A versioned text file without one is rewritten
+    by `end-of-file-fixer` at every commit, which fails the pre-commit hook and the CI -
+    for a file whose content never changed.
+    """
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(manifeste, indent=2, ensure_ascii=False), encoding="utf-8")
+    texte = json.dumps(manifeste, indent=2, ensure_ascii=False) + "\n"
+    destination.write_text(texte, encoding="utf-8", newline="\n")
     return destination
 
 

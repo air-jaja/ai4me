@@ -46,5 +46,8 @@ def generer_model_card(
         rendu = _substitution_minimale(texte_gabarit, contexte)
 
     if destination is not None:
-        Path(destination).write_text(rendu, encoding="utf-8")
+        # Trailing newline, for the same reason as the manifest: a file lacking one is
+        # rewritten by `end-of-file-fixer` at every commit.
+        texte = rendu if rendu.endswith("\n") else rendu + "\n"
+        Path(destination).write_text(texte, encoding="utf-8", newline="\n")
     return rendu
