@@ -1,5 +1,7 @@
 """Activity 1 (step 2) - schema, quality audit, governance and data fingerprinting."""
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
@@ -264,3 +266,39 @@ def test_le_manifeste_se_relit_a_l_identique(tmp_path):
 
     chemin = ecrire_manifeste(manifeste, tmp_path / "manifeste.json")
     assert charger_manifeste(chemin) == manifeste
+
+
+def test_le_manifeste_enregistre_des_chemins_relatifs(tmp_path, monkeypatch):
+    """Paths are stored relative to the repository root, never absolute.
+
+    An absolute path ties the manifest to the machine that wrote it. Regenerated on a
+    workstation and committed, it can no longer be verified anywhere else - CI included,
+    where every source would be reported as missing. The check would then fail for a
+    reason unrelated to the data it is meant to protect.
+    """
+    from churn_saas.donnees import construire_manifeste
+
+    (tmp_path / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    dossier = tmp_path / "data" / "raw"
+    dossier.mkdir(parents=True)
+    source = dossier / "donnees.csv"
+    source.write_text("a\n1\n", encoding="utf-8")
+
+    manifeste = construire_manifeste({"source": source}, version_donnees="v1", racine=tmp_path)
+    chemin = manifeste["fichiers"]["source"]["chemin"]
+    assert chemin == "data/raw/donnees.csv"
+    assert not Path(chemin).is_absolute()
+
+
+def test_le_manifeste_relatif_se_verifie_depuis_une_autre_racine(tmp_path):
+    """A relative manifest verifies wherever the repository is cloned."""
+    from churn_saas.donnees import construire_manifeste, verifier_manifeste
+
+    (tmp_path / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    dossier = tmp_path / "data"
+    dossier.mkdir()
+    source = dossier / "donnees.csv"
+    source.write_text("a\n1\n", encoding="utf-8")
+
+    manifeste = construire_manifeste({"source": source}, version_donnees="v1", racine=tmp_path)
+    assert bool(verifier_manifeste(manifeste, racine=tmp_path)["conforme"].all())

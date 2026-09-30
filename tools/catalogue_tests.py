@@ -9,11 +9,16 @@ Each test is expected to carry a docstring explaining *what defect it prevents* 
 what it asserts. "Checks that recall is 0.7" is a restatement of the code; "a change to the
 cleaning chain would invalidate three deliverables at once" is the reason the test exists.
 
-    uv run python tools/catalogue_tests.py > docs/TESTS.md
+    uv run python tools/catalogue_tests.py
+
+The catalogue is written by the script itself, in UTF-8. Redirecting its output would tie
+the result to the terminal's encoding: on Windows `sys.stdout` opens in cp1252, which
+cannot represent the arrows and accents the document contains.
 """
 
 from __future__ import annotations
 
+import argparse
 import ast
 import pathlib
 import re
@@ -76,17 +81,28 @@ CONTEXTE: dict[str, dict[str, str]] = {
         "competences": "C3, C6",
         "protege": "L'unicité du code affiché et l'absence de troncature des tableaux",
     },
+    "test_recapitulatif.py": {
+        "titre": "Récapitulatif de la suite",
+        "activite": "Transverse",
+        "competences": "—",
+        "protege": (
+            "Les taux affichés en fin de run : un taux faux donnerait confiance sans raison"
+        ),
+    },
     "test_conventions.py": {
         "titre": "Conventions de travail",
         "activite": "Transverse",
         "competences": "—",
         "protege": ("Les règles de langue : commentaires en anglais, contenu affiché en français"),
     },
-    "test_non_regression_cadrage.py": {
-        "titre": "Non-régression du cadrage",
+    "test_non_regression.py": {
+        "titre": "Non-régression des phases terminées",
         "activite": "Transverse",
-        "competences": "C1, C4, C5",
-        "protege": "Les chiffres cités dans trois livrables et dans la soutenance",
+        "competences": "C1, C2, C3, C4, C5",
+        "protege": (
+            "Les chiffres publiés dans les carnets, les documents et la soutenance — "
+            "un fichier par projet, une section par phase close"
+        ),
     },
 }
 
@@ -100,7 +116,8 @@ ORDRE = [
     "test_monitoring.py",
     "test_notebook.py",
     "test_conventions.py",
-    "test_non_regression_cadrage.py",
+    "test_recapitulatif.py",
+    "test_non_regression.py",
 ]
 
 
@@ -288,5 +305,40 @@ def rendre_markdown() -> str:
     return "\n".join(entete) + "\n" + "\n".join(sections)
 
 
+DESTINATION_PAR_DEFAUT = RACINE / "docs" / "TESTS.md"
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Write the catalogue, or print it when asked for standard output."""
+    analyseur = argparse.ArgumentParser(description="Génère le catalogue des tests.")
+    analyseur.add_argument(
+        "--sortie",
+        default=str(DESTINATION_PAR_DEFAUT),
+        help="fichier de destination, ou « - » pour la sortie standard",
+    )
+    arguments = analyseur.parse_args(argv)
+    contenu = rendre_markdown()
+
+    if arguments.sortie == "-":
+        # Force UTF-8: the default encoding of a Windows console cannot represent the
+        # arrows and accents this document contains.
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stdout.write(contenu)
+        return 0
+
+    destination = Path(arguments.sortie)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(contenu, encoding="utf-8", newline="\n")
+
+    # The freshness check writes to a temporary file outside the repository, so the path
+    # is only shortened when it actually sits inside it.
+    try:
+        affiche = destination.relative_to(RACINE)
+    except ValueError:
+        affiche = destination
+    print(f"Catalogue écrit : {affiche}")
+    return 0
+
+
 if __name__ == "__main__":
-    sys.stdout.write(rendre_markdown())
+    raise SystemExit(main())

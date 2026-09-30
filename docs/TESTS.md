@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**187 cas de test** issus de 73 fonctions, répartis sur 10 fichiers.
+**224 cas de test** issus de 86 fonctions, répartis sur 11 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -29,14 +29,15 @@ soutenance.
 |---|---|---|---|---|
 | [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 27 |
 | [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 7 |
-| [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 23 |
+| [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 25 |
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 4 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 6 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 99 |
-| [Non-régression du cadrage](#non-régression-du-cadrage) | `test_non_regression_cadrage.py` | Transverse | C1, C4, C5 | 9 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 105 |
+| [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 16 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 22 |
 
 ---
 
@@ -105,6 +106,8 @@ soutenance.
 | 19 | `test_l_empreinte_de_fichier_depend_du_contenu` | Identical bytes give the same fingerprint, a single changed byte gives another. | — |
 | 20 | `test_l_empreinte_de_fichier_lit_par_blocs` | Block reading must give the same result as reading the file whole. | The block size bounds memory use on a large snapshot; a wrong implementation would only show up on files too big to notice during development. |
 | 21 | `test_le_manifeste_se_relit_a_l_identique` | Writing then reading a manifest must return the same content. | The manifest is the contract between a data version and a model. A round-trip that loses a field would make the contract unverifiable without saying so. |
+| 22 | `test_le_manifeste_enregistre_des_chemins_relatifs` | Paths are stored relative to the repository root, never absolute. | An absolute path ties the manifest to the machine that wrote it. Regenerated on a workstation and committed, it can no longer be verified anywhere else - CI included, where every source would be reported as missing. The check would then fail for a reason unrelated to the data it is meant to protect. |
+| 23 | `test_le_manifeste_relatif_se_verifie_depuis_une_autre_racine` | A relative manifest verifies wherever the repository is cloned. | — |
 
 ### Construction et contrôle des variables
 
@@ -181,26 +184,46 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×47)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×47)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×49)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×49)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×3)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
+| 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
+| 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
 
-### Non-régression du cadrage
+### Récapitulatif de la suite
 
-**Fichier :** `tests/test_non_regression_cadrage.py` — **Activité :** Transverse — **Compétences :** C1, C4, C5
+**Fichier :** `tests/test_recapitulatif.py` — **Activité :** Transverse — **Compétences :** —
 
-**Ce que ce fichier protège :** Les chiffres cités dans trois livrables et dans la soutenance
+**Ce que ce fichier protège :** Les taux affichés en fin de run : un taux faux donnerait confiance sans raison
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_volumetrie_de_reference` | The source file and its duplicate count must be the ones the framing used. | Every figure downstream is computed on these 5,000 accounts: a changed source would invalidate the framing notebook, the explanatory document and the oral pitch at once. |
-| 2 | `test_la_jointure_catalogue_apparie_tous_les_comptes` | A silent join failure would corrupt every downstream figure. | — |
-| 3 | `test_taux_de_churn_de_reference` | The churn rate must stay at 28%. | It underpins the 'moderate imbalance' argument of section 8 and the 72% accuracy a trivial model would reach - both quoted verbatim in the deliverables. |
-| 4 | `test_concentration_de_la_valeur` | 10% of accounts carry ~68% of revenue; 10% of churners carry ~72% of the loss. | This is the observation that turned exhaustive detection into prioritisation. |
-| 5 | `test_mrr_total_de_reference` | Portfolio revenue must stay around 17.2 million euros. | This is the reference base against which exposed, covered and preserved revenue are expressed in section 12. |
-| 6 | `test_l_ecart_de_seuil_entre_deciles_reste_superieur_a_cent` | The 'factor > 100' argument justifies rejecting a single global threshold. | — |
-| 7 | `test_le_seuil_du_dernier_decile_reste_tres_bas` | Acting on a top-decile account must stay rational below 1% risk. | The 0.3% figure is the striking end of the argument presented to the jury. |
-| 8 | `test_les_hypotheses_de_cadrage_sont_inchangees` | These three values are quoted verbatim in the documents and the oral pitch. | — |
-| 9 | `test_precision_statistique_du_rappel_reste_autour_de_cinq_points` | The '+/- 5 points' caveat stated in section 9 must remain true. | — |
+| 1 | `test_un_test_ignore_fait_chuter_le_taux_d_execution` | A skipped test lowers the execution rate without touching the success rate. | This is the whole point of separating the two: a suite reported as "100% green" while half of it never ran proves nothing, and the success rate alone would say nothing about it. |
+| 2 | `test_un_echec_fait_chuter_le_taux_de_reussite_pas_celui_d_execution` | _(sans description)_ | — |
+| 3 | `test_une_erreur_de_fixture_compte_comme_un_echec` | A test that never started is not a neutral event: the guarantee is missing. | — |
+| 4 | `test_un_echec_attendu_compte_comme_une_reussite` | An expected failure documents an observed behaviour: it is a verified guarantee. | — |
+| 5 | `test_les_taux_restent_definis_sur_une_suite_vide` | No division by zero on an empty selection: `pytest -k` may match nothing. | — |
+| 6 | `test_un_fichier_prend_la_couleur_de_son_issue_la_plus_grave` _(×5)_ | One failure among twenty passes must colour the file red, not green. | — |
+| 7 | `test_chaque_issue_porte_un_symbole_distinct` | The symbol carries the meaning when colour is unavailable: CI logs, redirection. | — |
+| 8 | `test_un_taux_arrondi_ne_pretend_jamais_atteindre_cent` _(×5)_ | 99.5% must never be displayed as "100%". | Announcing a flawless run while a test failed is the single most misleading thing a summary can do - and rounding does it silently. |
+
+### Non-régression des phases terminées
+
+**Fichier :** `tests/test_non_regression.py` — **Activité :** Transverse — **Compétences :** C1, C2, C3, C4, C5
+
+**Ce que ce fichier protège :** Les chiffres publiés dans les carnets, les documents et la soutenance — un fichier par projet, une section par phase close
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_les_chiffres_publies_sont_inchanges` _(×13)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
+| 2 | `test_l_ecart_de_seuil_entre_deciles_reste_superieur_a_cent` | The "factor over 100" argument justifies rejecting a single global threshold. | It is the central argument of the decision rule, quoted in the framing notebook, in the explanatory document and in the oral pitch. If the spread narrowed, a global threshold would become defensible and the whole design would need rethinking. |
+| 3 | `test_le_seuil_du_dernier_decile_reste_tres_bas` | Acting on a top-decile account stays rational below 1% risk. | The 0.3% figure is the striking end of the argument presented to the jury. |
+| 4 | `test_les_hypotheses_de_cadrage_sont_inchangees` | These values are quoted verbatim in the documents and in the oral pitch. | — |
+| 5 | `test_la_precision_statistique_du_rappel_reste_autour_de_cinq_points` | The "±5 points" caveat stated in section 9 must remain true. | Saying it before the jury does is worth more than being told; but only while it holds. |
+| 6 | `test_la_jointure_catalogue_apparie_tous_les_comptes` | A silent join failure would corrupt every downstream figure. | — |
+| 7 | `test_la_normalisation_de_la_cle_reste_indispensable` | Without normalisation the join matches nothing, and raises nothing. | This measurement is the one quoted to justify the normalisation step. Should the sources become consistent on their own, the argument would need rewording - the code would still be right, the document would be misleading. |
+| 8 | `test_chaque_colonne_source_porte_toujours_un_role` | A new column arriving undocumented is a column nobody decided what to do with. | — |
+| 9 | `test_six_colonnes_restent_hors_du_modele` | Six columns cannot be explanatory variables, for six distinct reasons. | The count is quoted in the phase 2 notebook and in the explanatory document. The motives are not interchangeable: the grid separates the ethical exclusion from the technical one. |
+| 10 | `test_les_sources_correspondent_toujours_au_manifeste` | The recorded fingerprints still match the files on disk. | This is the strongest non-regression guarantee of the project: it states that the data themselves have not moved. Every other figure here is computed from them, so a failure on this test explains all the others at once. |

@@ -175,7 +175,11 @@ technique, et une justification unique ne satisferait ni l'une ni l'autre.
 
 **Le dernier est de loin le plus dangereux, et c'est contre-intuitif.** Les trois premiers provoquent une
 erreur franche : on cherche, on corrige. Le quatrième ne provoque rien du tout. Nous l'avons mesuré : sans
-harmonisation préalable, **aucune ligne n'est rapprochée**. Avec harmonisation, toutes le sont.
+harmonisation préalable, **2 302 lignes sur 5 035 ne sont pas rapprochées** — près d'une sur deux. Avec
+harmonisation, toutes le sont.
+
+Un échec total se remarquerait. Un échec à 46 % ne se remarque pas : les données restent plausibles et
+l'analyse porte sur la moitié du portefeuille sans que rien ne le signale.
 
 ### Une hypothèse testée plutôt que tranchée
 

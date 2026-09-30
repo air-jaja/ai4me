@@ -42,21 +42,41 @@ def empreinte_donnees(df: pd.DataFrame) -> str:
     return hashlib.sha256(octets).hexdigest()
 
 
+def racine_projet(depart: Path | str | None = None) -> Path:
+    """Walk up until the repository root, recognised by its `pyproject.toml`."""
+    candidat = Path(depart or __file__).resolve()
+    for parent in [candidat, *candidat.parents]:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    return Path.cwd()
+
+
 def construire_manifeste(
     sources: dict[str, Path | str],
     version_donnees: str,
     commentaire: str = "",
+    racine: Path | str | None = None,
 ) -> dict[str, Any]:
     """Build the manifest tying a data version to the exact content of its sources.
 
     This is the object that makes "code + data + model" versioning real rather than
     declarative (notebook section 10).
+
+    Paths are stored **relative to the repository root**. An absolute path would tie the
+    manifest to the machine that wrote it: regenerated on a workstation and committed, it
+    could no longer be verified anywhere else - including in CI, where the check would
+    report every source as missing.
     """
+    racine = Path(racine) if racine else racine_projet()
     fichiers = {}
     for nom, chemin in sources.items():
-        chemin = Path(chemin)
+        chemin = Path(chemin).resolve()
+        try:
+            relatif = chemin.relative_to(racine)
+        except ValueError:
+            relatif = chemin
         fichiers[nom] = {
-            "chemin": str(chemin.as_posix()),
+            "chemin": relatif.as_posix(),
             "octets": chemin.stat().st_size,
             "sha256": empreinte_fichier(chemin),
         }
@@ -76,15 +96,21 @@ def ecrire_manifeste(manifeste: dict[str, Any], destination: Path | str) -> Path
     return destination
 
 
-def verifier_manifeste(manifeste: dict[str, Any]) -> pd.DataFrame:
+def verifier_manifeste(manifeste: dict[str, Any], racine: Path | str | None = None) -> pd.DataFrame:
     """Recompute every fingerprint and report drift between the manifest and the files.
 
     Run before any training: if a source has changed since the manifest was written, the
     run is not reproducing what it claims to reproduce.
+
+    Relative paths are resolved from the repository root, so the check works wherever the
+    repository is cloned.
     """
+    racine = Path(racine) if racine else racine_projet()
     lignes = []
     for nom, details in manifeste["fichiers"].items():
         chemin = Path(details["chemin"])
+        if not chemin.is_absolute():
+            chemin = racine / chemin
         present = chemin.exists()
         actuelle = empreinte_fichier(chemin) if present else None
         lignes.append(
@@ -122,6 +148,8 @@ def manifeste_stable(
     if chemin.exists():
         existant = charger_manifeste(chemin)
         controle = verifier_manifeste(existant)
+        # A manifest written elsewhere may hold absolute paths: rewrite it rather than
+        # reporting a failure the reader cannot act upon.
         if bool(controle["conforme"].all()) and existant.get("version_donnees") == version_donnees:
             return existant, False
 

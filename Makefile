@@ -73,13 +73,16 @@ test-ci:
 
 # The catalogue is generated, never hand-written: a stale inventory claims coverage
 # that no longer exists.
+# The script writes the file itself, in UTF-8. Redirecting would tie the result to the
+# terminal encoding: a Windows console opens in cp1252 and cannot write the arrows the
+# document contains.
 test-doc:
-	uv run python tools/catalogue_tests.py > docs/TESTS.md
+	uv run python tools/catalogue_tests.py
 
 # Same check the CI performs. Running it locally turns a pipeline failure discovered
 # after pushing into a one-line message discovered before.
 test-doc-check:
-	@uv run python tools/catalogue_tests.py > $(CATALOGUE_TEMPORAIRE)
+	@uv run python tools/catalogue_tests.py --sortie $(CATALOGUE_TEMPORAIRE)
 	@diff -q $(CATALOGUE_TEMPORAIRE) docs/TESTS.md > /dev/null \
 		|| (echo "docs/TESTS.md est obsolète — lancer 'make test-doc'"; \
 		    diff docs/TESTS.md $(CATALOGUE_TEMPORAIRE) | head -20; \

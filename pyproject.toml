@@ -43,6 +43,10 @@ dev = [
     "pytest>=8.0",          # tests du pipeline de nettoyage (étape 1 de la CI, § 10)
     "ruff>=0.5",            # linter et formateur
     "pre-commit>=3.7",      # exécution des contrôles avant commit
+    # Les tests valident le format des carnets. La dépendance appartient donc au groupe
+    # où les tests s'exécutent : l'hériter du groupe `notebook` la rendait absente en CI,
+    # qui n'installe que `dev`.
+    "nbformat>=5.10",
 ]
 
 # Nécessaire pour exécuter et exporter le notebook livré au jury.

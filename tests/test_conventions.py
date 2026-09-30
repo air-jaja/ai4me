@@ -135,3 +135,80 @@ def test_le_notebook_de_certification_reste_sans_sorties():
         f"Cellules avec sorties : {avec_sorties}. "
         "Le notebook de certification est exécuté au moment du gel, pas avant."
     )
+
+
+def test_les_dependances_des_tests_sont_declarees():
+    """Every third-party module the tests import is declared in base or dev dependencies.
+
+    A dependency inherited transitively from another group works locally, where the full
+    environment is installed, and fails in CI, which installs only `dev`. That is exactly
+    how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the
+    `notebook` group, absent from the pipeline.
+
+    Declaring it where the tests run turns a pipeline failure into a static check.
+    """
+    import sys
+    import tomllib
+    from importlib.metadata import packages_distributions
+
+    manifeste = tomllib.loads((RACINE / "pyproject.toml").read_text(encoding="utf-8"))
+    declarees = set(manifeste["project"]["dependencies"])
+    declarees |= set(manifeste["dependency-groups"]["dev"])
+    # Keep the distribution name, dropping the version specifier.
+    declarees = {re.split(r"[<>=!\[ ]", d, maxsplit=1)[0].lower() for d in declarees}
+
+    modules: set[str] = set()
+    for fichier in (RACINE / "tests").glob("*.py"):
+        arbre = ast.parse(fichier.read_text(encoding="utf-8"))
+        for noeud in ast.walk(arbre):
+            if isinstance(noeud, ast.Import):
+                modules |= {a.name.split(".")[0] for a in noeud.names}
+            elif isinstance(noeud, ast.ImportFrom) and noeud.level == 0 and noeud.module:
+                modules.add(noeud.module.split(".")[0])
+
+    # Modules defined inside tests/ are local, not distributions: `conftest` is imported
+    # by the tests that cover the reporting plugin.
+    locaux = {f.stem for f in (RACINE / "tests").glob("*.py")}
+
+    correspondance = packages_distributions()
+    manquantes = []
+    for module in sorted(modules):
+        if module in sys.stdlib_module_names or module == "churn_saas" or module in locaux:
+            continue
+        distributions = {d.lower() for d in correspondance.get(module, [])}
+        if not distributions & declarees:
+            manquantes.append(f"{module} (distribution : {', '.join(distributions) or '?'})")
+
+    assert not manquantes, (
+        "Modules importés par les tests mais non déclarés dans `dependencies` ou dans le "
+        "groupe `dev` :\n  " + "\n  ".join(manquantes) + "\n"
+        "Les ajouter avec `uv add --group dev <paquet>` : la CI n'installe que `dev`."
+    )
+
+
+def test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal(tmp_path):
+    """The catalogue writes itself in UTF-8 rather than relying on shell redirection.
+
+    Redirecting the output tied the result to the terminal encoding: a Windows console
+    opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains,
+    so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux.
+
+    A tool whose success depends on the operating system of whoever runs it is a tool the
+    CI cannot vouch for.
+    """
+    import subprocess
+    import sys
+
+    destination = tmp_path / "TESTS.md"
+    resultat = subprocess.run(
+        [sys.executable, "tools/catalogue_tests.py", "--sortie", str(destination)],
+        cwd=RACINE,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert resultat.returncode == 0, resultat.stderr
+
+    contenu = destination.read_text(encoding="utf-8")
+    assert "→" in contenu, "Le caractère qui déclenchait l'échec doit être présent"
+    assert contenu.startswith("# Catalogue des tests")

@@ -35,7 +35,7 @@ repos:
       # la CI, exécuté avant que le commit ne parte.
       - id: catalogue-tests
         name: catalogue des tests à jour
-        entry: bash -c 'uv run python tools/catalogue_tests.py > docs/TESTS.md'
+        entry: uv run python tools/catalogue_tests.py
         language: system
         pass_filenames: false
         files: ^(tests/.*\.py|tools/catalogue_tests\.py)$

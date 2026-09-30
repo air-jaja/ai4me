@@ -28,6 +28,9 @@ jobs:
       - name: Linter
         run: uv run ruff check .
 
+      # Les hooks tournent aussi ici : un développeur peut ne pas les avoir installés,
+      # ou les contourner avec --no-verify. Surtout, gitleaks ne s'exécute nulle part
+      # ailleurs — sans cette étape, le scanner de secrets serait décoratif.
       - name: Contrôles pre-commit
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
@@ -38,6 +41,6 @@ jobs:
       # repository documents a suite that no longer matches the one it ships.
       - name: Catalogue des tests à jour
         run: |
-          uv run python tools/catalogue_tests.py > /tmp/TESTS.md
+          uv run python tools/catalogue_tests.py --sortie /tmp/TESTS.md
           diff -q /tmp/TESTS.md docs/TESTS.md \
             || (echo '::error::docs/TESTS.md est obsolète — lancer make test-doc' && exit 1)

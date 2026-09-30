@@ -18,6 +18,7 @@ from .empreinte import (
     empreinte_donnees,
     empreinte_fichier,
     manifeste_stable,
+    racine_projet,
     verifier_manifeste,
 )
 from .gold import MOTIFS_EXCLUSION, construire_gold, separer_cible, table_exclusions
@@ -67,5 +68,6 @@ __all__ = [
     "ecrire_manifeste",
     "charger_manifeste",
     "manifeste_stable",
+    "racine_projet",
     "verifier_manifeste",
 ]

@@ -600,6 +600,7 @@ api = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 dev = [
+    { name = "nbformat" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "ruff" },
@@ -665,6 +666,7 @@ api = [
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
 dev = [
+    { name = "nbformat", specifier = ">=5.10" },
     { name = "pre-commit", specifier = ">=3.7" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "ruff", specifier = ">=0.5" },

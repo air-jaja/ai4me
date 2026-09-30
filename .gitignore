@@ -32,3 +32,4 @@ reports/figures/*
 *.bundle
 *.patch
 .catalogue-tests-tmp.md
+.venv-ci/
