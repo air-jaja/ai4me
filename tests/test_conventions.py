@@ -100,3 +100,38 @@ def test_le_contenu_affiche_reste_en_francais():
             f"La table « {nom} » ne contient aucun caractère accentué : "
             "son contenu a-t-il été traduit par erreur ?"
         )
+
+
+@pytest.mark.parametrize(
+    "carnet",
+    sorted((RACINE / "notebooks").glob("*.ipynb")),
+    ids=lambda p: p.name,
+)
+def test_les_carnets_respectent_le_format_notebook(carnet: Path):
+    """Every notebook validates against the nbformat schema.
+
+    A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by
+    stricter readers - the linter caught one that had survived several executions. A
+    deliverable that some tools refuse to open is a risk not worth running the week of
+    submission.
+    """
+    import nbformat
+
+    nb = nbformat.read(carnet, as_version=4)
+    nbformat.validate(nb)
+
+
+def test_le_notebook_de_certification_reste_sans_sorties():
+    """The certification notebook ships without outputs until the freeze.
+
+    Committed outputs would make every run produce a diff, drowning the real changes. The
+    notebook is executed at the freeze milestone, deliberately and once.
+    """
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    avec_sorties = [i for i, c in enumerate(nb.cells) if c.cell_type == "code" and c.get("outputs")]
+    assert not avec_sorties, (
+        f"Cellules avec sorties : {avec_sorties}. "
+        "Le notebook de certification est exécuté au moment du gel, pas avant."
+    )

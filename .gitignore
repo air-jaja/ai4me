@@ -32,3 +32,4 @@ reports/figures/*
 # vivre dans l'historique qu'ils servent à transporter.
 *.bundle
 *.patch
+.catalogue-tests-tmp.md

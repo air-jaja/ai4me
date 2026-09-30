@@ -138,8 +138,20 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = ["--color=yes", "-ra", "--tb=short"]
 
-# Le notebook est un livrable narratif, pas du code de production : la longueur
-# de ligne et le tri des imports y sont tolérés. En revanche F401 (import inutile),
-# F821 (nom indéfini) et B905 restent actifs — ce sont des erreurs réelles.
+# Un carnet est un livrable narratif, pas du code de production. Les règles levées
+# ci-dessous relèvent du style ou d'une convention de production, pas d'un défaut :
+#
+#   E501  longueur de ligne — une cellule contient souvent une phrase entière
+#   I001  tri des imports — l'ordre suit l'explication, pas l'alphabet
+#   E402  import après du code — on importe au moment où l'on en parle
+#   E702  deux instructions sur une ligne — `plt.tight_layout(); plt.show()` est lisible
+#   B905  zip() sans strict= — pertinent en bibliothèque, verbeux dans une démonstration
+#   F541  f-string sans variable — vestige d'une mise en forme, sans conséquence
+#   B007  variable de boucle inutilisée — fréquent dans un parcours d'affichage
+#   F401  import inutilisé — signale ici le code volontairement commenté, à activer
+#
+# Ce qui reste actif est ce qui casse : F821 (nom indéfini) a déjà détecté un
+# `RandomForestRegressor` utilisé sans import dans la section 12, qui aurait
+# interrompu l'exécution du livrable.
 [tool.ruff.lint.per-file-ignores]
-"notebooks/*.ipynb" = ["E501", "I001", "E402"]
+"notebooks/*.ipynb" = ["E501", "I001", "E402", "E702", "B905", "F541", "B007", "F401"]
