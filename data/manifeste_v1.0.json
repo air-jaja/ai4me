@@ -1,20 +1,20 @@
 {
   "version_donnees": "v1.0",
-  "date_construction": "2026-09-30T11:46:11+00:00",
+  "date_construction": "2026-09-30T15:49:50+00:00",
   "commentaire": "Jeu initial fourni avec l'énoncé, aucune transformation appliquée.",
   "fichiers": {
     "jeu complet": {
-      "chemin": "/home/claude/ai4me/data/raw/churn_saas_complet.csv",
+      "chemin": "e:/Projets/_workspace/ai4me/data/raw/churn_saas_complet.csv",
       "octets": 727622,
       "sha256": "2fc45e8c3c74d3ddcdbda162c5bb50184587201b46d877cc06742afd13063844"
     },
     "échantillon": {
-      "chemin": "/home/claude/ai4me/data/raw/churn_saas_echantillon.csv",
+      "chemin": "e:/Projets/_workspace/ai4me/data/raw/churn_saas_echantillon.csv",
       "octets": 7824,
       "sha256": "680f5371c406f47a3a67f1611cb016c17efd61e93a52d1b4b8dbd3a39dc2f296"
     },
     "catalogue des plans": {
-      "chemin": "/home/claude/ai4me/data/raw/catalogue_plans.csv",
+      "chemin": "e:/Projets/_workspace/ai4me/data/raw/catalogue_plans.csv",
       "octets": 203,
       "sha256": "c94f6f52652532c578cb7a44d752b8b197ef84f5e6c6e17a58579fa195e9ad08"
     }
