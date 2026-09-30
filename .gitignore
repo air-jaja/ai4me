@@ -3,6 +3,7 @@
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
+.pytest-tmp/
 
 # Données — versionnées hors dépôt (voir docs/README_choix_methodologiques.md § 3)
 #         - Choix technique : mis dans Git-LFS

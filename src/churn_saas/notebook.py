@@ -74,3 +74,55 @@ def afficher_module(module: Any) -> None:
         display(Markdown(f"**Module `{nom}`**\n\n{texte}"))
     except ImportError:
         print(f"--- {nom} ---\n{texte}")
+
+
+def afficher_tableau(
+    df: Any,
+    titre: str | None = None,
+    index: bool = False,
+    retourner_html: bool = False,
+) -> str | None:
+    """Render a DataFrame with full cell content, wrapped rather than truncated.
+
+    Pandas truncates long strings with an ellipsis, which hides exactly the columns that
+    carry the reasoning - rationales, decisions, rules. In a deliverable meant to be read
+    without oral explanation, a truncated table is a lost argument.
+
+    This renders an HTML table where text wraps instead of being cut. Falls back to a
+    plain print with truncation disabled when IPython is unavailable.
+
+    `retourner_html` returns the markup instead of displaying it, which makes the
+    no-truncation contract testable.
+    """
+    import pandas as pd
+
+    try:
+        from IPython.display import HTML, display
+    except ImportError:
+        with pd.option_context("display.max_colwidth", None, "display.width", None):
+            if titre:
+                print(titre)
+            print(df.to_string(index=index))
+        return None
+
+    style = """
+    <style>
+    .tbl-complet { border-collapse: collapse; width: 100%; font-size: 0.86em;
+                   margin: 0.4em 0 1em 0; }
+    .tbl-complet th { background: #f2f5f8; text-align: left; vertical-align: bottom;
+                      padding: 7px 10px; border-bottom: 2px solid #2a6f9e;
+                      white-space: normal; }
+    .tbl-complet td { text-align: left; vertical-align: top; padding: 7px 10px;
+                      border-bottom: 1px solid #e4e4e4; white-space: normal;
+                      word-break: normal; overflow-wrap: anywhere; line-height: 1.45; }
+    .tbl-complet tr:hover td { background: #fafcfe; }
+    .tbl-titre { font-weight: 600; font-size: 0.95em; margin-top: 0.6em; }
+    </style>
+    """
+    tableau = df.to_html(index=index, escape=True, border=0, classes="tbl-complet")
+    entete = f'<div class="tbl-titre">{titre}</div>' if titre else ""
+    markup = style + entete + tableau
+    if retourner_html:
+        return markup
+    display(HTML(markup))
+    return None
