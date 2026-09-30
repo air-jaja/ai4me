@@ -5,7 +5,12 @@
 # `make aide` liste les cibles.
 # =============================================================================
 
-.PHONY: aide install install-plateforme kernel test test-doc lint format check notebook executer-notebook \
+# Temporary file for the catalogue freshness check. Kept out of the tree: it is a
+# comparison artefact, not a deliverable.
+CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
+
+.PHONY: aide install install-plateforme kernel test test-doc test-doc-check lint format check \
+        notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
 aide:
@@ -15,9 +20,10 @@ aide:
 	@echo "  kernel              Enregistre le noyau Jupyter du projet (VS Code, Jupyter)"
 	@echo "  test                Suite de tests"
 	@echo "  test-doc            Régénère docs/TESTS.md depuis les fichiers de tests"
+	@echo "  test-doc-check      Vérifie que docs/TESTS.md correspond aux tests livrés"
 	@echo "  lint                Style du code"
 	@echo "  format              Reformate le code"
-	@echo "  check               test + lint + format --check"
+	@echo "  check               Tous les contrôles, dans l'ordre où la CI les exécute"
 	@echo "--- Notebook ---"
 	@echo "  notebook            Lance JupyterLab"
 	@echo "  executer-notebook   Rejoue le notebook de bout en bout (contrôle avant remise)"
@@ -50,16 +56,27 @@ test:
 test-doc:
 	uv run python tools/catalogue_tests.py > docs/TESTS.md
 
+# Same check the CI performs. Running it locally turns a pipeline failure discovered
+# after pushing into a one-line message discovered before.
+test-doc-check:
+	@uv run python tools/catalogue_tests.py > $(CATALOGUE_TEMPORAIRE)
+	@diff -q $(CATALOGUE_TEMPORAIRE) docs/TESTS.md > /dev/null \
+		|| (echo "docs/TESTS.md est obsolète — lancer 'make test-doc'"; \
+		    diff docs/TESTS.md $(CATALOGUE_TEMPORAIRE) | head -20; \
+		    rm -f $(CATALOGUE_TEMPORAIRE); exit 1)
+	@rm -f $(CATALOGUE_TEMPORAIRE)
+	@echo "Catalogue des tests à jour."
+
 lint:
 	uv run ruff check .
 
 format:
 	uv run ruff format src tests
 
-check:
-	uv run pytest -q
-	uv run ruff check .
-	uv run ruff format --check src tests
+# Mirrors the CI, in the same order. Passing here means the pipeline will pass.
+check: test lint test-doc-check
+	uv run ruff format --check src tests tools
+	@echo "Tous les contrôles sont passés."
 
 # --- Notebook ----------------------------------------------------------------
 notebook:

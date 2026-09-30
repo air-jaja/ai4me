@@ -28,3 +28,4 @@ reports/figures/*
 .ruff_cache/
 .env
 *.bundle
+*.patch
