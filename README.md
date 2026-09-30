@@ -51,6 +51,8 @@ et sélectionner le même noyau en haut à droite du notebook.
 | `make` : commande introuvable | `make` n'existe pas nativement sous Windows | Utiliser les commandes `uv run` directement, ou Git Bash |
 | `uv sync` échoue à la construction du projet | Le paquet local ne se construit pas dans l'environnement | Ajouter `--no-install-project` : `preparer_import()` ajoute `src/` au chemin, le notebook fonctionne quand même |
 | `ModuleNotFoundError: churn_saas` dans le notebook | La cellule d'amorçage n'a pas été exécutée | Exécuter la première cellule, qui appelle `preparer_import()` |
+| `PermissionError [WinError 5]` sur `.pytest-tmp` | `--basetemp` pointe **dans** le dépôt, et pytest efface ce répertoire au démarrage : Windows refuse dès qu'un processus y tient une poignée (antivirus, indexation, Explorateur) | Retirer l'option. Si `%TEMP%` pose problème, pointer hors du dépôt : `--basetemp=C:\pytest-tmp` |
+| Le pre-commit est vert mais les tests échouent | Les hooks de commit ne lancent pas les tests — ils tournent au **push** | Normal. Lancer `make test` pour vérifier avant de committer |
 
 **Règle générale :** toute installation passe par `uv`. Un `pip install` direct sort du
 verrou et rend l'environnement non reproductible — ce qui contredit un critère

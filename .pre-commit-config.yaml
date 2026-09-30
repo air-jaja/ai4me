@@ -1,9 +1,17 @@
-# Contrôles exécutés avant chaque commit.
+# Contrôles automatiques, répartis sur deux moments.
 #
-# Déplacer la détection d'erreur au plus près du développeur réduit le coût de
-# correction. Encore faut-il que les hooks soient installés : ce fichier n'est
-# qu'une déclaration, Git exécute `.git/hooks/pre-commit`. L'installer avec
-# `make hooks`, ou `uv run pre-commit install`.
+#   avant chaque COMMIT : contrôles courts — style, catalogue, secrets, fichiers.
+#   avant chaque PUSH   : la suite de tests complète.
+#
+# Pourquoi cette séparation. Un commit doit rester rapide, sinon on cesse d'en
+# faire. Les 288 tests prennent une dizaine de secondes : c'est trop pour chaque
+# commit, et pas assez pour se permettre de pousser sans les avoir lancés.
+#
+# Le pre-commit ne lance donc PAS les tests. Un pre-commit vert ne dit rien de la
+# suite — c'est le hook de pre-push qui s'en charge.
+#
+# Ce fichier n'est qu'une déclaration : Git exécute `.git/hooks/pre-commit` et
+# `.git/hooks/pre-push`, que `make hooks` installe.
 #
 # Contourner les hooks (`--no-verify`) masque une dette, ce n'est pas une
 # correction.
@@ -59,3 +67,17 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=5000]
+
+  # --- Avant le push : la suite de tests -------------------------------------
+  - repo: local
+    hooks:
+      - id: tests
+        name: suite de tests (avant push)
+        entry: uv run pytest -q
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+        # Volontairement au pre-push et non au pre-commit : dix secondes à chaque
+        # commit finissent par décourager d'en faire, et un commit rare est un
+        # commit gros, donc difficile à relire.
