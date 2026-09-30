@@ -5,7 +5,7 @@
 # `make aide` liste les cibles.
 # =============================================================================
 
-.PHONY: aide install install-plateforme kernel test lint format check notebook executer-notebook \
+.PHONY: aide install install-plateforme kernel test test-doc lint format check notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
 aide:
@@ -14,6 +14,7 @@ aide:
 	@echo "  install-plateforme  Ajoute MLflow, Optuna, SHAP, SQLAlchemy, Prefect, Prometheus"
 	@echo "  kernel              Enregistre le noyau Jupyter du projet (VS Code, Jupyter)"
 	@echo "  test                Suite de tests"
+	@echo "  test-doc            Régénère docs/TESTS.md depuis les fichiers de tests"
 	@echo "  lint                Style du code"
 	@echo "  format              Reformate le code"
 	@echo "  check               test + lint + format --check"
@@ -43,6 +44,11 @@ kernel:
 
 test:
 	uv run pytest -q
+
+# The catalogue is generated, never hand-written: a stale inventory claims coverage
+# that no longer exists.
+test-doc:
+	uv run python tools/catalogue_tests.py > docs/TESTS.md
 
 lint:
 	uv run ruff check .

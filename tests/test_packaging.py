@@ -7,6 +7,10 @@ from churn_saas.packaging.model_card import generer_model_card
 
 
 def test_le_modele_et_sa_fiche_sont_enregistres_ensemble(tmp_path):
+    """A model must never be written without its card.
+
+    A model shipped alone is an orphan artefact: nobody knows what data it learned from,
+    nor what it cannot do."""
     modele = DummyClassifier(strategy="prior").fit([[0], [1]], [0, 1])
     fiche = FicheModele(nom="churn_model", version="1.0", empreinte_donnees="churn_train_20260928")
     chemin = sauvegarder_modele(modele, fiche, dossier=tmp_path)
@@ -19,6 +23,9 @@ def test_le_modele_et_sa_fiche_sont_enregistres_ensemble(tmp_path):
 
 
 def test_la_fiche_modele_est_remplie_depuis_le_contexte():
+    """The card must be generated from training metadata, not hand-written.
+
+    Generation is what prevents the card and the artefact from drifting apart."""
     carte = generer_model_card(
         {
             "model_id": "churn-saas-cisia",
@@ -32,5 +39,8 @@ def test_la_fiche_modele_est_remplie_depuis_le_contexte():
 
 
 def test_les_champs_absents_prennent_leur_valeur_par_defaut():
+    """A missing field must fall back to the template default, never to an empty slot.
+
+    An unsubstituted placeholder shipped to a jury reads as an unfinished deliverable."""
     carte = generer_model_card({"model_id": "x"})
     assert "[More Information Needed]" in carte
