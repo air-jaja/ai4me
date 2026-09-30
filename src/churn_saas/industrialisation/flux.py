@@ -37,10 +37,10 @@ except ImportError:  # pragma: no cover
 
 
 from ..config import CAPACITE_MENSUELLE
-from ..donnees.ingestion import charger_bronze
-from ..features.controle import controler_schema
-from ..industrialisation.scoring import scorer_lot_mensuel
-from ..packaging.artefacts import charger_modele
+from ..donnees import charger_bronze
+from ..features import controler_schema
+from ..packaging import charger_modele
+from .scoring import scorer_lot_mensuel
 
 
 @task(name="ingestion", retries=2, retry_delay_seconds=30)
@@ -81,7 +81,7 @@ def etape_ecriture(table: pd.DataFrame, version_modele: str, url_base: str | Non
     """Persist to the warehouse. Skipped when no URL is provided (local run)."""
     if not url_base:
         return 0
-    from ..stockage.entrepot import construire_moteur, creer_schema, ecrire_scores
+    from .entrepot import construire_moteur, creer_schema, ecrire_scores
 
     moteur = construire_moteur(url_base)
     creer_schema(moteur)
@@ -91,7 +91,7 @@ def etape_ecriture(table: pd.DataFrame, version_modele: str, url_base: str | Non
 @task(name="publication_metriques")
 def etape_publication(table: pd.DataFrame) -> None:
     """Publish indicators to Prometheus, when the exporter is available."""
-    from ..monitoring.exporteur import publier_lot
+    from ..monitoring import publier_lot
 
     publier_lot(table)
 

@@ -8,6 +8,10 @@ from churn_saas.evaluation.metriques import intervalle_confiance_rappel
 
 
 def test_seuil_decroit_avec_la_valeur_du_compte():
+    """The rational action threshold must fall as account value rises.
+
+    This monotonicity is the whole justification for abandoning a single global threshold:
+    if it broke, the decision rule would lose its rationale."""
     seuils = seuil_par_compte(pd.Series([800, 11_200, 177_300]))
     assert seuils.is_monotonic_decreasing
     assert seuils.iloc[0] > 0.30  # small account: high risk needed before acting
@@ -24,6 +28,10 @@ def test_classement_insensible_a_l_efficacite_de_retention():
 
 
 def test_sensibilite_confirme_la_stabilite_de_la_liste():
+    """The handled shortlist must stay identical across retention-effectiveness values.
+
+    Produces the evidence behind the sensitivity analysis promised in section 9 - an
+    analysis announced in the deliverable but never run would be worse than none."""
     proba = pd.Series([0.1 * (i % 9 + 1) for i in range(500)])
     clv = pd.Series(range(1, 501))
     rapport = sensibilite_classement(proba, clv, capacite=140)
@@ -31,11 +39,19 @@ def test_sensibilite_confirme_la_stabilite_de_la_liste():
 
 
 def test_la_capacite_borne_le_nombre_de_comptes_traites():
+    """The shortlist must never exceed team capacity.
+
+    A model flagging more accounts than the team can handle produces no additional action:
+    the constraint is operational, not statistical."""
     table = prioriser(pd.Series([0.4] * 500), pd.Series(range(1, 501)), capacite=140)
     assert table["a_traiter"].sum() == 140
 
 
 def test_les_trois_niveaux_d_impact_sont_decroissants():
+    """Exposed, covered and preserved revenue must decrease in that order.
+
+    An inversion would mean claiming to save more than what is at risk - the kind of figure
+    that discredits an entire presentation."""
     mrr = pd.Series([1000, 2000, 3000, 4000])
     churn = pd.Series([1, 1, 0, 1])
     traite = pd.Series([True, False, True, True])
@@ -45,5 +61,9 @@ def test_les_trois_niveaux_d_impact_sont_decroissants():
 
 
 def test_intervalle_de_confiance_sur_le_rappel():
+    """The stated uncertainty on recall must remain around five points.
+
+    Section 9 tells the jury that two operating points at 70% and 74% are statistically
+    indistinguishable. That statement must stay true."""
     # ~280 positives, recall 0.70 -> about +/- 5.4 points (notebook section 9)
     assert intervalle_confiance_rappel(0.70, 280) == __import__("pytest").approx(0.054, abs=0.002)

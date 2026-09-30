@@ -12,9 +12,10 @@ dvc.yaml   		text eol=lf
 # MLFlow
 *.db 			filter=lfs diff=lfs merge=lfs -text
 # DATAS
-*.zip 			filter=lfs diff=lfs merge=lfs -text
-*.csv 			filter=lfs diff=lfs merge=lfs -text
-/data/**/*.csv  	filter=lfs diff=lfs merge=lfs -text
+*.zip
+*.parquet 		filter=lfs diff=lfs merge=lfs -text
+#*.csv 			filter=lfs diff=lfs merge=lfs -text
+#/data/**/*.csv  	filter=lfs diff=lfs merge=lfs -text
 /data/**/*.parquet  	filter=lfs diff=lfs merge=lfs -text
 
-data/raw/*.csv !text !filter !merge !diff
+# data/raw/*.csv 	!text !filter !merge !diff

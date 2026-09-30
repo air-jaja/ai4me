@@ -12,10 +12,9 @@ from typing import Any
 import pandas as pd
 
 from ..config import CAPACITE_MENSUELLE, EFFICACITE_RETENTION
-from ..donnees.gold import construire_gold
-from ..donnees.silver import construire_silver
-from ..evaluation.decision import prioriser
-from ..features.construction import ajouter_ratios_usage
+from ..donnees import construire_gold, construire_silver
+from ..evaluation import prioriser
+from ..features import ajouter_ratios_usage
 
 
 def preparer(

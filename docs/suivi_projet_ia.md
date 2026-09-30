@@ -52,7 +52,7 @@ argumentée. C'est pourquoi ce document insiste autant sur les *pourquoi*.
 | **Client / commanditaire** | Direction Customer Success de l'éditeur *(cas d'usage pédagogique)* |
 | **Date de début** | 08/08/2026 |
 | **Échéance cible** | **30/09/2026** (gel des livrables) — remise 01/10/2026 |
-| **Statut global** | 🟡 En cours — phases 1 à 6 engagées, 7 à 9 à exécuter |
+| **Statut global** | 🟡 En cours — phases 1 et 2 terminées, 3 à 6 engagées, 7 à 9 à exécuter |
 | **Nature** | Exercice de certification. **Aucun déploiement réel** : les phases 10 et 11 sont conçues et documentées, pas mises en service. |
 
 **Légende statut** : `[ ]` à faire · `[~]` en cours · `[x]` terminé · `[—]` sans objet ici
@@ -72,7 +72,7 @@ Trois découpages coexistent. Ils décrivent la même chose sous trois angles.
 | Phase de suivi | Sections du notebook | Compétences |
 |---|---|---|
 | 1 · Cadrage | 2, 4 | C1, C2 |
-| 2 · Données — ingestion & gouvernance | 3, 5 | C1, C3 |
+| 2 · Données — ingestion & gouvernance | 3, 5 | C1, C2, C3 |
 | 3 · Exploration & profiling | 5, 6 | C3 |
 | 4 · Préparation & nettoyage | 7 | C3 |
 | 5 · Feature engineering | 7 | C3, C5 |
@@ -131,7 +131,7 @@ c'est-à-dire une fiche décrivant l'origine, le contenu et les limites d'un jeu
 
 ---
 
-## 2 · Données — ingestion & gouvernance *(🟡 en cours)*
+## 2 · Données — ingestion & gouvernance *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Rassembler les données, comprendre d'où elles viennent, qui en est propriétaire,
 > combien de temps on a le droit de les garder. « Gouvernance » désigne l'ensemble de ces règles.
@@ -141,10 +141,13 @@ c'est-à-dire une fiche décrivant l'origine, le contenu et les limites d'un jeu
 - [x] Lire et ingérer les sources, décrire le schéma des données
 - [x] Documenter le cycle de vie des données (collecte → conservation → suppression)
 - [x] Justifier le choix du mode de stockage
-- [~] Mettre en place le versioning du code et des données
+- [x] Mettre en place le versioning du code et des données
 - [x] Identifier les données sensibles et le traitement associé
 
-**Les trois fichiers sources**
+**Livrables produits :** `notebooks/02_donnees.ipynb` (exécuté, 3 figures, 13 tableaux) et
+`docs/02.DONNEES_explications.md` (lecture sans prérequis technique, glossaire de 20 termes).
+
+### Les trois fichiers sources
 
 | Fichier | Contenu | Usage |
 |---|---|---|
@@ -152,19 +155,114 @@ c'est-à-dire une fiche décrivant l'origine, le contenu et les limites d'un jeu
 | `churn_saas_echantillon.csv` | 50 lignes | Test du programme de bout en bout |
 | `catalogue_plans.csv` | Caractéristiques des formules d'abonnement | Enrichissement par rapprochement |
 
-**Un piège identifié.** Le rapprochement entre les deux premiers fichiers se fait sur le nom de la formule
-d'abonnement. Or celle-ci est écrite tantôt `STARTER`, tantôt `Starter`. Un rapprochement sans
-uniformisation préalable échouerait **sans produire d'erreur visible** : les lignes non appariées
-disparaîtraient silencieusement. C'est un défaut classique et redoutable, car rien ne signale le problème.
+### Le schéma : ce que chaque colonne a le droit de devenir
 
-**Données sensibles.** La colonne `commentaire_csm` contient des notes rédigées librement par les
-conseillers, pouvant mentionner des personnes ou porter des jugements. Elle est exclue du modèle pour des
-motifs de protection des données, et non parce qu'elle serait inutile.
+Le type d'une colonne dit comment elle est écrite ; son **rôle** dit ce qu'on a le droit d'en faire. Sur
+29 colonnes, **six ne peuvent pas servir au programme**, et pour six raisons différentes — un identifiant,
+deux cibles, une variable postérieure à la décision, un champ de texte libre, un artefact de process.
 
-🔧 **Outils** : Git *(historique du code)* · pandas *(manipulation de tableaux de données en Python)* ·
-fichiers CSV · DVC *(versioning de données — documenté comme cible, non installé)*
-📦 **Artefacts** : sections 3 et 5 du notebook · dictionnaire de données · tableau du cycle de vie
-**Statut** : **en cours** — documentation faite, mise en œuvre du versioning à confirmer
+Ces motifs ne sont pas interchangeables : la certification distingue l'exclusion éthique de l'exclusion
+technique, et une justification unique ne satisferait ni l'une ni l'autre.
+
+### Quatre défauts mesurés, et ce qu'ils coûtent
+
+| Défaut constaté | Ce qui se passerait si on ne le corrigeait pas |
+|---|---|
+| 35 lignes en double sur 5 035 | Le programme apprend deux fois les mêmes exemples et sa note est flattée |
+| Un caractère invisible en tête de fichier | La première colonne devient introuvable par son nom |
+| Des nombres écrits comme du texte | Chaque valeur devient une catégorie : « 33,3 » et « 33,4 » n'ont plus aucun rapport |
+| Des majuscules incohérentes sur une clé | Le rapprochement échoue **sans message d'erreur** |
+
+**Le dernier est de loin le plus dangereux, et c'est contre-intuitif.** Les trois premiers provoquent une
+erreur franche : on cherche, on corrige. Le quatrième ne provoque rien du tout. Nous l'avons mesuré : sans
+harmonisation préalable, **2 302 lignes sur 5 035 ne sont pas rapprochées** — près d'une sur deux. Avec
+harmonisation, toutes le sont.
+
+Un échec total se remarquerait. Un échec à 46 % ne se remarque pas : les données restent plausibles et
+l'analyse porte sur la moitié du portefeuille sans que rien ne le signale.
+
+### Une hypothèse testée plutôt que tranchée
+
+Entre 3 et 10 % des valeurs manquent. La réaction habituelle consiste à les remplacer par une estimation.
+Mais une autre hypothèse était possible : et si **l'absence d'une donnée était elle-même un signal** ? Un
+client désengagé pourrait cesser d'être suivi, et le vide dans ses données annoncerait son départ.
+
+Nous avons vérifié, colonne par colonne. **L'écart maximal est de 4,5 points**, pour un taux de départ moyen
+de 28 % — trop faible pour conclure. L'hypothèse est écartée sur la base d'une mesure, et c'est elle qui
+légitime la méthode de remplacement retenue à l'étape suivante.
+
+### Le cycle de vie : huit étapes, huit responsables
+
+De la collecte à la purge, chaque étape porte sa fréquence, sa durée et **son responsable nommé**. Une étape
+sans responsable est une étape que personne n'exécute — la purge en est l'exemple type : tout le monde
+approuve le principe, personne ne la fait.
+
+**Un point reste volontairement ouvert** : la durée de conservation des scores. Le suivi du programme demande
+un historique long, la réglementation demande de ne pas garder plus que nécessaire. Cet arbitrage appartient
+au délégué à la protection des données, pas à l'équipe technique.
+
+### Le stockage : six options comparées, et un revirement
+
+| Type de donnée | Support retenu | Motif |
+|---|---|---|
+| CSV sources (2 Mo) | **Git simple** | Sous 50 Mo, Git suffit et n'exige rien de particulier |
+| Instantanés d'entraînement | **Parquet, suivi Git-LFS** | Fichiers volumineux et immuables : le cas où LFS est pertinent |
+| Scores produits | **PostgreSQL** | On les interroge, on ne les versionne pas |
+| Fiches de version | **Git simple** | Minuscules, textuelles, et ce sont elles le contrat |
+
+**Le revirement mérite d'être raconté.** Le dépôt utilisait Git-LFS pour les CSV. Un clone réalisé depuis un
+environnement dépourvu de l'extension a rapporté **trois fichiers de 128 octets au lieu de 700 000** — des
+tickets, pas des données. Aucun message d'erreur.
+
+C'est le même piège que la clé de rapprochement mal harmonisée : une défaillance qui ne dit pas son nom. Un
+correcteur sans l'extension se retrouverait avec des fichiers illisibles et un programme qui échoue plus
+loin, sur une cause sans rapport. La migration a été faite, puis **vérifiée par empreinte** : les fichiers
+sont bit à bit identiques avant et après.
+
+### Le versionnement des données
+
+Versionner le programme est facile ; versionner les données est l'endroit où la reproductibilité se perd.
+Rien dans Git ne signale qu'un fichier source a changé entre deux entraînements.
+
+Une **empreinte** est une signature calculée à partir du contenu : si celui-ci change d'un seul caractère,
+elle change entièrement. Une **fiche de version** enregistre l'empreinte de chaque fichier source, et se
+vérifie avant tout entraînement. Elle est régénérée uniquement lorsque les empreintes ne tiennent plus — la
+réécrire à chaque exécution produirait un diff à chaque commit, et une fiche que personne ne lit ne certifie
+rien.
+
+### Les données sensibles
+
+« Sensible » ne veut pas dire uniquement « données personnelles ». Trois niveaux coexistent : donnée
+personnelle (les notes libres), pseudonyme (le numéro de client, qui remonte à une entreprise identifiable),
+et confidentiel commercial (le revenu d'un client).
+
+Le champ de notes libres a été **analysé automatiquement** plutôt que présumé risqué, et les exemples
+affichés sont masqués par le programme avant impression : la démonstration ne doit pas commettre l'infraction
+qu'elle décrit.
+
+**Les variables indirectes sont conservées, et c'est délibéré.** Pays, secteur et taille d'entreprise
+pourraient approcher une caractéristique protégée. Les supprimer donnerait une illusion d'équité : le
+programme reconstituerait l'information par d'autres colonnes, sans qu'aucun indicateur ne le détecte. Les
+garder et les surveiller est plus honnête et plus efficace.
+
+### Le code produit
+
+| Module | Rôle |
+|---|---|
+| `donnees/ingestion.py` | Lecture brute, inventaire avant transformation |
+| `donnees/silver.py` | Nettoyage, typage, normalisation, jointure catalogue |
+| `donnees/gold.py` | Exclusions motivées, séparation de la cible |
+| `donnees/schema.py` | Rôle déclaré de chaque colonne, audit de qualité, contrôle de jointure |
+| `donnees/gouvernance.py` | Cycle de vie, sensibilité, scan de données personnelles, comparaison de stockage |
+| `donnees/empreinte.py` | Empreintes, fiches de version, contrôle d'intégrité |
+
+25 fonctions exposées, toutes couvertes par des tests.
+
+🔧 **Outils** : Git *(historique du code et des CSV)* · pandas · SHA-256 *(empreintes)* ·
+Parquet et Git-LFS *(instantanés d'entraînement)* · PostgreSQL *(scores produits)*
+📦 **Artefacts** : `notebooks/02_donnees.ipynb` · `docs/02.DONNEES_explications.md` ·
+`data/manifeste_v1.0.json` · sections 3, 4 et 5 du notebook de certification
+**Statut** : **terminé** — décisions arrêtées, code couvert, carnet exécuté
 
 ---
 
@@ -478,7 +576,7 @@ test de Kolmogorov-Smirnov · tableau de bord de suivi
 | Phase | Outils retenus | Écartés, et pourquoi |
 |---|---|---|
 | Cadrage | RGPD, AI Act, dictionnaire de données | — |
-| Données | Git, pandas, CSV | DVC *(décrit comme cible, non installé)* |
+| Données | Git *(CSV et fiches de version)*, pandas, SHA-256, Parquet + Git-LFS, PostgreSQL | DVC *(pertinent au-delà de quelques instantanés ; inutile à ce volume)* · Git-LFS sur les CSV *(dépendance côté client, échec silencieux sans l'extension)* |
 | Exploration | pandas, matplotlib | — |
 | Préparation | pandas, imputation médiane | Z-score, IQR *(les valeurs extrêmes sont réelles, pas des erreurs)* |
 | Feature engineering | ratios d'usage, `train_test_split`, mise à l'échelle | SMOTE/ADASYN *(fabriquent de faux clients)*, PCA *(détruit l'explicabilité)*, TimeSeriesSplit *(pas de série chronologique)* |
@@ -517,6 +615,13 @@ argument défendable devant un jury.
 | **Surapprentissage** | Le modèle mémorise les exemples au lieu d'en tirer des règles générales |
 | **Valeur espérée** | Risque de départ multiplié par la valeur du client |
 | **Valeur vie client (CLV)** | Revenu total qu'un client devrait générer sur toute sa durée de vie |
+| **Empreinte (hash)** | Signature calculée à partir du contenu d'un fichier ; change entièrement si le contenu change |
+| **Git-LFS** | Extension de Git pour les gros fichiers ; nécessite une installation côté utilisateur |
+| **Gouvernance** | Règles définissant qui fait quoi avec les données, et pendant combien de temps |
+| **Instantané (snapshot)** | Photographie datée d'un jeu de données, figée pour référence |
+| **Manifeste** | Fiche recensant les fichiers d'une version et leurs empreintes |
+| **Pseudonyme** | Identifiant permettant de remonter à une personne ou entreprise via une autre source |
+| **Variable indirecte (proxy)** | Colonne qui approche une caractéristique protégée sans la nommer |
 | **Validation croisée** | Répétition de l'évaluation sur plusieurs découpages des données |
 
 ---
@@ -526,7 +631,7 @@ argument défendable devant un jury.
 | Phase | Statut | Échéance |
 |---|---|---|
 | 1 · Cadrage | 🟢 Terminé | — |
-| 2 · Données | 🟡 En cours | 23/09 |
+| 2 · Données | 🟢 Terminé | — |
 | 3 · Exploration | 🟡 En cours | 23/09 |
 | 4 · Préparation | 🟡 En cours | 23/09 |
 | 5 · Feature engineering | 🟡 En cours | 24/09 |

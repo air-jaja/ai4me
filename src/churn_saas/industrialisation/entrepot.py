@@ -1,5 +1,9 @@
 """Score warehouse schema and access (SQLAlchemy Core).
 
+Part of activity 6 rather than activity 1: this table holds what the monthly batch
+*produces*, not the data it consumes. Filing it under data management would suggest
+the scores are a source, which they are not.
+
 Core rather than the ORM: the objects handled are result rows, not business entities with
 a lifecycle. The ORM would add a layer for no benefit.
 """

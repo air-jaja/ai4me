@@ -27,8 +27,10 @@ make lint               # style du code
 make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise
 ```
 
-Les fichiers CSV sources doivent être placés dans `data/raw/`. Ils ne sont pas versionnés dans Git
-(voir `docs/README_choix_methodologiques.md` § 3).
+Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
+soient « intégrés ou clairement référencés et accessibles », et leur volume le permet ici (moins de
+2 Mo). Les instantanés d'entraînement et les fichiers dérivés, eux, restent hors dépôt — voir le
+cycle de vie des données dans `docs/00.README_choix_methodologiques.md` § 3.
 
 ---
 
@@ -70,6 +72,7 @@ churn-saas-cisia/
 ├── models/                 Modèles sérialisés et fiches — non versionnés
 ├── reports/figures/        Figures produites
 ├── docs/                   Documents méthodologiques et de suivi
+│                           (commencer par 00.REGLES_DE_TRAVAIL.md)
 ├── tests/                  Un fichier par activité
 │
 └── src/churn_saas/         Source de vérité unique du code
@@ -202,7 +205,8 @@ est du code, le modèle est une donnée versionnée séparément.
 
 ## Reproductibilité
 
-`uv.lock` fige la version exacte de chacune des 164 dépendances, avec son empreinte cryptographique.
+`uv.lock` fige la version exacte de chacune des 265 dépendances résolues, avec son empreinte
+cryptographique.
 `uv sync --frozen` installe cet état sans le modifier, et échoue si le verrou ne correspond plus au
 `pyproject.toml` — c'est ce contrôle qui empêche un dépôt de dériver silencieusement.
 

@@ -9,6 +9,7 @@ is useless. The two modules are inseparable.
 
 from .alertes import REGLES_ALERTE, evaluer_alertes, table_regles
 from .derive import ks_deux_echantillons, psi, rapport_derive
+from .exporteur import publier_lot
 
 __all__ = [
     "psi",
@@ -17,4 +18,5 @@ __all__ = [
     "REGLES_ALERTE",
     "table_regles",
     "evaluer_alertes",
+    "publier_lot",
 ]
