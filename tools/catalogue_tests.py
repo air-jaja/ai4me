@@ -76,6 +76,12 @@ CONTEXTE: dict[str, dict[str, str]] = {
         "competences": "C3, C6",
         "protege": "L'unicité du code affiché et l'absence de troncature des tableaux",
     },
+    "test_conventions.py": {
+        "titre": "Conventions de travail",
+        "activite": "Transverse",
+        "competences": "—",
+        "protege": ("Les règles de langue : commentaires en anglais, contenu affiché en français"),
+    },
     "test_non_regression_cadrage.py": {
         "titre": "Non-régression du cadrage",
         "activite": "Transverse",
@@ -93,6 +99,7 @@ ORDRE = [
     "test_packaging.py",
     "test_monitoring.py",
     "test_notebook.py",
+    "test_conventions.py",
     "test_non_regression_cadrage.py",
 ]
 

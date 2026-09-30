@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**75 cas de test** issus de 61 fonctions, répartis sur 9 fichiers.
+**170 cas de test** issus de 64 fonctions, répartis sur 10 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -35,6 +35,7 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 2 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 95 |
 | [Non-régression du cadrage](#non-régression-du-cadrage) | `test_non_regression_cadrage.py` | Transverse | C1, C4, C5 | 9 |
 
 ---
@@ -164,6 +165,18 @@ soutenance.
 |---|---|---|---|
 | 1 | `test_la_source_affichee_est_celle_du_module` | `afficher_source` reads the code from the module, so it cannot drift. | This is the invariant that allows a self-contained notebook with no duplicated code. |
 | 2 | `test_le_tableau_affiche_ne_tronque_aucune_cellule` | A truncated table is a lost argument: the renderer must never elide content. | — |
+
+### Conventions de travail
+
+**Fichier :** `tests/test_conventions.py` — **Activité :** Transverse — **Compétences :** —
+
+**Ce que ce fichier protège :** Les règles de langue : commentaires en anglais, contenu affiché en français
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_les_commentaires_sont_en_anglais` _(×47)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×47)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 
 ### Non-régression du cadrage
 

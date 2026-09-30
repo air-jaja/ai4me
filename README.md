@@ -72,6 +72,7 @@ churn-saas-cisia/
 ├── models/                 Modèles sérialisés et fiches — non versionnés
 ├── reports/figures/        Figures produites
 ├── docs/                   Documents méthodologiques et de suivi
+│                           (commencer par 00.REGLES_DE_TRAVAIL.md)
 ├── tests/                  Un fichier par activité
 │
 └── src/churn_saas/         Source de vérité unique du code
