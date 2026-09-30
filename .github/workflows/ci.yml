@@ -28,6 +28,9 @@ jobs:
       - name: Linter
         run: uv run ruff check .
 
+      - name: Contrôles pre-commit
+        run: uv run pre-commit run --all-files --show-diff-on-failure
+
       - name: Tests
         run: uv run pytest
 
