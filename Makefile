@@ -9,7 +9,7 @@
 # comparison artefact, not a deliverable.
 CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
 
-.PHONY: aide install install-plateforme kernel test test-ci test-doc test-doc-check lint format check \
+.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check lint format check \
         notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
@@ -18,6 +18,7 @@ aide:
 	@echo "  install             Environnement minimal (base + dev + notebook)"
 	@echo "  install-plateforme  Ajoute MLflow, Optuna, SHAP, SQLAlchemy, Prefect, Prometheus"
 	@echo "  kernel              Enregistre le noyau Jupyter du projet (VS Code, Jupyter)"
+	@echo "  hooks               Installe les contrôles pre-commit dans .git/hooks"
 	@echo "  test                Suite de tests"
 	@echo "  test-ci             Suite de tests dans un environnement identique à la CI"
 	@echo "  test-doc            Régénère docs/TESTS.md depuis les fichiers de tests"
@@ -39,6 +40,14 @@ aide:
 # --- Développement -----------------------------------------------------------
 install:
 	uv sync --frozen --group dev --group notebook
+	$(MAKE) hooks
+
+# `.pre-commit-config.yaml` is only a declaration: Git runs `.git/hooks/pre-commit`,
+# which this creates. That directory is never versioned, so a fresh clone has no hook
+# until this target runs - which is why `install` calls it.
+hooks:
+	uv run pre-commit install
+	@echo "Hooks installés. Les contourner avec --no-verify masque une dette."
 
 install-plateforme:
 	uv sync --frozen --group dev --group notebook --group plateforme
