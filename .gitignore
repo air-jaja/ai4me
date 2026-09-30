@@ -27,7 +27,6 @@ reports/figures/*
 .pytest_cache/
 .ruff_cache/
 .env
-*.bundle
 # Artefacts d'échange Git : bundles et patchs se régénèrent, ils n'ont pas à
 # vivre dans l'historique qu'ils servent à transporter.
 *.bundle

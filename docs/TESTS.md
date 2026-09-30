@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**175 cas de test** issus de 67 fonctions, répartis sur 10 fichiers.
+**187 cas de test** issus de 73 fonctions, répartis sur 10 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -27,9 +27,9 @@ soutenance.
 
 | Domaine | Fichier | Activité du cycle de vie | Compétences | Cas |
 |---|---|---|---|---|
-| [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 20 |
+| [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 27 |
 | [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 7 |
-| [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 18 |
+| [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 23 |
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 4 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 6 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
@@ -58,6 +58,7 @@ soutenance.
 | 6 | `test_seuls_les_modules_transverses_restent_a_la_racine` | Every module belongs to an activity, except those serving all of them. | — |
 | 7 | `test_les_dependances_respectent_l_ordre_du_cycle_de_vie` | An activity may only rely on those the declaration allows. | Without this check the split survives on the filename alone: a backward dependency - data management calling the model, say - would make the two activities inseparable while the folders still suggest otherwise. |
 | 8 | `test_les_activites_communiquent_par_leur_interface_publique` | Cross-activity imports target the package, never one of its submodules. | Reaching into `..donnees.gold` rather than `..donnees` ties the caller to an internal layout it does not own: any reorganisation inside the activity then breaks code elsewhere. `__all__` exists precisely to prevent that. |
+| 9 | `test_tout_nom_utilise_hors_de_son_module_est_exporte` _(×7)_ | A function used outside its own module belongs to the activity's public surface. | Otherwise callers reach into a submodule they do not own, and `__all__` stops describing what the activity actually offers. The rule already applies between activities; this extends it to the notebooks and the test suite, which are the other consumers of that surface. |
 
 ### Nettoyage et niveaux de raffinage
 
@@ -99,6 +100,11 @@ soutenance.
 | 14 | `test_les_tables_de_gouvernance_ne_sont_jamais_vides` _(×3)_ | An empty governance table would silently remove a section from the notebook. | — |
 | 15 | `test_le_manifeste_n_est_pas_reecrit_sans_raison` | Two runs on unchanged sources must leave the manifest byte-identical. | Regenerating it each time would change `date_construction` and produce a diff on every commit for fingerprints that did not move. Noise of that kind trains readers to skip the file, and a manifest nobody reads certifies nothing. |
 | 16 | `test_le_manifeste_est_reecrit_si_une_source_change` | A changed source must force a rewrite: silence there would certify a lie. | — |
+| 17 | `test_l_inventaire_decrit_chaque_colonne` | The "before" snapshot must cover every column, including the empty ones. | Section 5 of the notebook compares this inventory to reference values. A column missing from it would silently escape the completeness check. |
+| 18 | `test_la_table_des_exclusions_expose_chaque_motif` | Every excluded column appears with its own rationale. | The motives are not interchangeable: the grid separates ethics from technical preparation, so a single blanket justification would satisfy neither. |
+| 19 | `test_l_empreinte_de_fichier_depend_du_contenu` | Identical bytes give the same fingerprint, a single changed byte gives another. | — |
+| 20 | `test_l_empreinte_de_fichier_lit_par_blocs` | Block reading must give the same result as reading the file whole. | The block size bounds memory use on a large snapshot; a wrong implementation would only show up on files too big to notice during development. |
+| 21 | `test_le_manifeste_se_relit_a_l_identique` | Writing then reading a manifest must return the same content. | The manifest is the contract between a data version and a model. A round-trip that loses a field would make the contract unverifiable without saying so. |
 
 ### Construction et contrôle des variables
 

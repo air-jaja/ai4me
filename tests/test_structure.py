@@ -175,3 +175,71 @@ def test_les_activites_communiquent_par_leur_interface_publique():
         + "\n  ".join(profonds)
         + "\nUtiliser `from ..<activite> import <nom>` et exporter le nom dans __all__."
     )
+
+
+# Framework entry points are called by FastAPI and Prefect, never imported by our code.
+# Exporting them would advertise an API nobody may call directly.
+MODULES_POINTS_D_ENTREE = {"api.py", "flux.py"}
+
+
+def _noms_publics(fichier: Path) -> list[str]:
+    arbre = ast.parse(fichier.read_text(encoding="utf-8"))
+    return [
+        n.name for n in arbre.body if isinstance(n, ast.FunctionDef) and not n.name.startswith("_")
+    ]
+
+
+def _exportes(paquet: str) -> set[str]:
+    arbre = ast.parse((RACINE_PAQUET / paquet / "__init__.py").read_text(encoding="utf-8"))
+    for noeud in ast.walk(arbre):
+        if isinstance(noeud, ast.Assign) and any(
+            getattr(c, "id", "") == "__all__" for c in noeud.targets
+        ):
+            return {e.value for e in noeud.value.elts}
+    return set()
+
+
+@pytest.mark.parametrize("paquet", sorted(ACTIVITES))
+def test_tout_nom_utilise_hors_de_son_module_est_exporte(paquet: str):
+    """A function used outside its own module belongs to the activity's public surface.
+
+    Otherwise callers reach into a submodule they do not own, and `__all__` stops
+    describing what the activity actually offers. The rule already applies between
+    activities; this extends it to the notebooks and the test suite, which are the other
+    consumers of that surface.
+    """
+    import json
+    import re
+
+    racine = RACINE_PAQUET.parents[1]
+    contextes: dict[str, str] = {}
+    for fichier in list(RACINE_PAQUET.rglob("*.py")) + list((racine / "tests").glob("*.py")):
+        contextes[str(fichier)] = fichier.read_text(encoding="utf-8")
+    for carnet in (racine / "notebooks").glob("*.ipynb"):
+        contenu = json.loads(carnet.read_text(encoding="utf-8"))
+        contextes[str(carnet)] = "\n".join(
+            "".join(c["source"]) if isinstance(c["source"], list) else c["source"]
+            for c in contenu["cells"]
+            if c["cell_type"] == "code"
+        )
+
+    exportes = _exportes(paquet)
+    manquants = []
+    for fichier in (RACINE_PAQUET / paquet).glob("*.py"):
+        if fichier.name == "__init__.py" or fichier.name in MODULES_POINTS_D_ENTREE:
+            continue
+        for nom in _noms_publics(fichier):
+            if nom in exportes:
+                continue
+            motif = re.compile(rf"\b{re.escape(nom)}\b")
+            if any(
+                motif.search(contenu)
+                for chemin, contenu in contextes.items()
+                if Path(chemin) != fichier
+            ):
+                manquants.append(f"{nom} ({fichier.name})")
+
+    assert not manquants, (
+        f"Noms utilisés hors de leur module mais absents de `{paquet}.__all__` :\n  "
+        + "\n  ".join(sorted(manquants))
+    )

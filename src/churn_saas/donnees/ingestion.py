@@ -28,11 +28,18 @@ def inventaire(df: pd.DataFrame) -> pd.DataFrame:
     Produces the "before" snapshot without which the effect of cleaning cannot be
     demonstrated objectively to the jury (notebook section 5).
     """
+    # Built explicitly rather than through `apply`: pandas converts a returned None into
+    # NaN there, so an empty column would report a missing example as a float. Explicit is
+    # better here - the inventory is read by a human looking for anomalies.
+    exemples = [
+        df[colonne].dropna().iloc[0] if df[colonne].notna().any() else None
+        for colonne in df.columns
+    ]
     return pd.DataFrame(
         {
             "type": df.dtypes.astype(str),
             "manquants_pct": (df.isna().mean() * 100).round(2),
             "valeurs_distinctes": df.nunique(dropna=True),
-            "exemple": df.apply(lambda s: s.dropna().iloc[0] if s.notna().any() else None),
+            "exemple": pd.Series(exemples, index=df.columns, dtype=object),
         }
     )

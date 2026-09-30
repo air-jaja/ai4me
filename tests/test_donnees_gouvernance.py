@@ -190,3 +190,77 @@ def test_le_manifeste_est_reecrit_si_une_source_change(tmp_path):
     source.write_text("a,b\n1,3\n", encoding="utf-8")
     _, reecrit = manifeste_stable({"source": source}, chemin, version_donnees="v1")
     assert reecrit
+
+
+# --- Public functions that had no coverage until the activity 1 review ---------------
+def test_l_inventaire_decrit_chaque_colonne(tmp_path):
+    """The "before" snapshot must cover every column, including the empty ones.
+
+    Section 5 of the notebook compares this inventory to reference values. A column
+    missing from it would silently escape the completeness check.
+    """
+    from churn_saas.donnees import inventaire
+
+    df = pd.DataFrame({"a": ["1", None, "3"], "vide": [None, None, None]})
+    resume = inventaire(df)
+    assert list(resume.index) == ["a", "vide"]
+    assert resume.loc["vide", "manquants_pct"] == 100.0
+    assert resume.loc["vide", "exemple"] is None  # no example, and no exception either
+
+
+def test_la_table_des_exclusions_expose_chaque_motif():
+    """Every excluded column appears with its own rationale.
+
+    The motives are not interchangeable: the grid separates ethics from technical
+    preparation, so a single blanket justification would satisfy neither.
+    """
+    from churn_saas.donnees import MOTIFS_EXCLUSION, table_exclusions
+
+    table = table_exclusions()
+    assert len(table) == len(MOTIFS_EXCLUSION)
+    assert set(table["colonne"]) == set(MOTIFS_EXCLUSION)
+    assert table["motif d'exclusion"].str.len().min() > 15
+
+
+def test_l_empreinte_de_fichier_depend_du_contenu(tmp_path):
+    """Identical bytes give the same fingerprint, a single changed byte gives another."""
+    from churn_saas.donnees import empreinte_fichier
+
+    a, b, c = tmp_path / "a.csv", tmp_path / "b.csv", tmp_path / "c.csv"
+    a.write_text("x,y\n1,2\n", encoding="utf-8")
+    b.write_text("x,y\n1,2\n", encoding="utf-8")
+    c.write_text("x,y\n1,3\n", encoding="utf-8")
+    assert empreinte_fichier(a) == empreinte_fichier(b)
+    assert empreinte_fichier(a) != empreinte_fichier(c)
+
+
+def test_l_empreinte_de_fichier_lit_par_blocs(tmp_path):
+    """Block reading must give the same result as reading the file whole.
+
+    The block size bounds memory use on a large snapshot; a wrong implementation would
+    only show up on files too big to notice during development.
+    """
+    import hashlib
+
+    from churn_saas.donnees import empreinte_fichier
+
+    fichier = tmp_path / "gros.csv"
+    fichier.write_bytes(b"ligne\n" * 50_000)
+    attendu = hashlib.sha256(fichier.read_bytes()).hexdigest()
+    assert empreinte_fichier(fichier, taille_bloc=512) == attendu
+
+
+def test_le_manifeste_se_relit_a_l_identique(tmp_path):
+    """Writing then reading a manifest must return the same content.
+
+    The manifest is the contract between a data version and a model. A round-trip that
+    loses a field would make the contract unverifiable without saying so.
+    """
+    from churn_saas.donnees import charger_manifeste, construire_manifeste, ecrire_manifeste
+
+    source = tmp_path / "donnees.csv"
+    source.write_text("a\n1\n", encoding="utf-8")
+    manifeste = construire_manifeste({"source": source}, version_donnees="v1", commentaire="essai")
+
+    chemin = ecrire_manifeste(manifeste, tmp_path / "manifeste.json")
+    assert charger_manifeste(chemin) == manifeste
