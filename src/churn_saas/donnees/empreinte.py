@@ -97,3 +97,34 @@ def verifier_manifeste(manifeste: dict[str, Any]) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(lignes)
+
+
+def charger_manifeste(chemin: Path | str) -> dict[str, Any]:
+    """Read a manifest back from disk."""
+    return json.loads(Path(chemin).read_text(encoding="utf-8"))
+
+
+def manifeste_stable(
+    sources: dict[str, Path | str],
+    chemin: Path | str,
+    version_donnees: str,
+    commentaire: str = "",
+) -> tuple[dict[str, Any], bool]:
+    """Return the manifest for these sources, rewriting it only when it no longer holds.
+
+    Rebuilding on every run would change `date_construction` each time and produce a diff
+    on every commit, for fingerprints that did not move. Noise of that kind trains readers
+    to skip the file - and a manifest nobody reads certifies nothing.
+
+    Returns the manifest and whether it had to be rewritten.
+    """
+    chemin = Path(chemin)
+    if chemin.exists():
+        existant = charger_manifeste(chemin)
+        controle = verifier_manifeste(existant)
+        if bool(controle["conforme"].all()) and existant.get("version_donnees") == version_donnees:
+            return existant, False
+
+    manifeste = construire_manifeste(sources, version_donnees, commentaire)
+    ecrire_manifeste(manifeste, chemin)
+    return manifeste, True

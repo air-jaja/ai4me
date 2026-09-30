@@ -204,7 +204,7 @@ OPTIONS_STOCKAGE: tuple[dict[str, str], ...] = (
         "Volume adapté": "< 50 Mo par fichier",
         "Atout": "Aucune dépendance, historique complet, diff lisible",
         "Limite": "Le dépôt grossit à chaque version ; illisible au-delà de quelques Mo",
-        "Retenu": "Oui — pour les 3 CSV sources (≈ 2 Mo au total)",
+        "Retenu": "Oui, appliqué — pour les 3 CSV sources (≈ 2 Mo au total)",
     },
     {
         "Option": "Git-LFS",
@@ -215,7 +215,10 @@ OPTIONS_STOCKAGE: tuple[dict[str, str], ...] = (
             "Dépendance côté client : sans git-lfs installé, le clone ne récupère "
             "que des pointeurs de 128 octets, sans erreur"
         ),
-        "Retenu": "Possible, mais surdimensionné à 2 Mo — et risqué pour un correcteur",
+        "Retenu": (
+            "Conservé pour les Parquet et les modèles sérialisés ; retiré des CSV, "
+            "où il était surdimensionné et risqué pour un correcteur"
+        ),
     },
     {
         "Option": "DVC",

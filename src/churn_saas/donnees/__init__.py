@@ -11,7 +11,12 @@ The silver -> gold boundary carries the heaviest decision of the project: leakin
 columns are dropped there (notebook section 7).
 """
 
-from .empreinte import construire_manifeste, empreinte_donnees, verifier_manifeste
+from .empreinte import (
+    construire_manifeste,
+    empreinte_donnees,
+    manifeste_stable,
+    verifier_manifeste,
+)
 from .gold import construire_gold, separer_cible
 from .gouvernance import comparer_stockage, table_cycle_de_vie, table_sensibilite
 from .ingestion import charger_bronze, inventaire
@@ -36,5 +41,6 @@ __all__ = [
     # Data versioning
     "empreinte_donnees",
     "construire_manifeste",
+    "manifeste_stable",
     "verifier_manifeste",
 ]

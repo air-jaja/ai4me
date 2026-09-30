@@ -154,3 +154,39 @@ def test_le_manifeste_signale_une_source_disparue(tmp_path):
 def test_les_tables_de_gouvernance_ne_sont_jamais_vides(fonction):
     """An empty governance table would silently remove a section from the notebook."""
     assert not fonction().empty
+
+
+def test_le_manifeste_n_est_pas_reecrit_sans_raison(tmp_path):
+    """Two runs on unchanged sources must leave the manifest byte-identical.
+
+    Regenerating it each time would change `date_construction` and produce a diff on every
+    commit for fingerprints that did not move. Noise of that kind trains readers to skip
+    the file, and a manifest nobody reads certifies nothing.
+    """
+    from churn_saas.donnees.empreinte import manifeste_stable
+
+    source = tmp_path / "donnees.csv"
+    source.write_text("a,b\n1,2\n", encoding="utf-8")
+    chemin = tmp_path / "manifeste.json"
+
+    _, reecrit = manifeste_stable({"source": source}, chemin, version_donnees="v1")
+    assert reecrit, "Le premier appel doit écrire le manifeste"
+    contenu = chemin.read_bytes()
+
+    _, reecrit = manifeste_stable({"source": source}, chemin, version_donnees="v1")
+    assert not reecrit
+    assert chemin.read_bytes() == contenu
+
+
+def test_le_manifeste_est_reecrit_si_une_source_change(tmp_path):
+    """A changed source must force a rewrite: silence there would certify a lie."""
+    from churn_saas.donnees.empreinte import manifeste_stable
+
+    source = tmp_path / "donnees.csv"
+    source.write_text("a,b\n1,2\n", encoding="utf-8")
+    chemin = tmp_path / "manifeste.json"
+    manifeste_stable({"source": source}, chemin, version_donnees="v1")
+
+    source.write_text("a,b\n1,3\n", encoding="utf-8")
+    _, reecrit = manifeste_stable({"source": source}, chemin, version_donnees="v1")
+    assert reecrit

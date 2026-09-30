@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**56 cas de test** issus de 54 fonctions, répartis sur 9 fichiers.
+**58 cas de test** issus de 56 fonctions, répartis sur 9 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le total des cas correspond à ce que rapporte `pytest --collect-only`._
 
@@ -29,7 +29,7 @@ soutenance.
 |---|---|---|---|---|
 | [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 3 |
 | [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 7 |
-| [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 16 |
+| [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 18 |
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 4 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 6 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
@@ -91,6 +91,8 @@ soutenance.
 | 12 | `test_le_manifeste_detecte_une_source_modifiee` | Run before any training: a changed source means the run reproduces nothing. | — |
 | 13 | `test_le_manifeste_signale_une_source_disparue` | A missing source must be reported, not silently ignored. | — |
 | 14 | `test_les_tables_de_gouvernance_ne_sont_jamais_vides` _(×3)_ | An empty governance table would silently remove a section from the notebook. | — |
+| 15 | `test_le_manifeste_n_est_pas_reecrit_sans_raison` | Two runs on unchanged sources must leave the manifest byte-identical. | Regenerating it each time would change `date_construction` and produce a diff on every commit for fingerprints that did not move. Noise of that kind trains readers to skip the file, and a manifest nobody reads certifies nothing. |
+| 16 | `test_le_manifeste_est_reecrit_si_une_source_change` | A changed source must force a rewrite: silence there would certify a lie. | — |
 
 ### Construction et contrôle des variables
 
