@@ -171,7 +171,7 @@ technique, et une justification unique ne satisferait ni l'une ni l'autre.
 | 35 lignes en double sur 5 035 | Le programme apprend deux fois les mêmes exemples et sa note est flattée |
 | Un caractère invisible en tête de fichier | La première colonne devient introuvable par son nom |
 | Des nombres écrits comme du texte | Chaque valeur devient une catégorie : « 33,3 » et « 33,4 » n'ont plus aucun rapport |
-| Des majuscules incohérentes sur une clé | Le rapprochement échoue **sans message d'erreur** |
+| Des majuscules incohérentes | Deux effets : le rapprochement échoue **sans message d'erreur**, et 26 catégories fantômes apparaissent |
 
 **Le dernier est de loin le plus dangereux, et c'est contre-intuitif.** Les trois premiers provoquent une
 erreur franche : on cherche, on corrige. Le quatrième ne provoque rien du tout. Nous l'avons mesuré : sans
@@ -190,6 +190,10 @@ client désengagé pourrait cesser d'être suivi, et le vide dans ses données a
 Nous avons vérifié, colonne par colonne. **L'écart maximal est de 4,5 points**, pour un taux de départ moyen
 de 28 % — trop faible pour conclure. L'hypothèse est écartée sur la base d'une mesure, et c'est elle qui
 légitime la méthode de remplacement retenue à l'étape suivante.
+
+**Limite de cette conclusion, établie en phase 3.** Elle vaut pour les colonnes reçues, non pour celles que
+le programme calcule. Une division par zéro y produit des trous qui encodent un compte abandonné, avec un
+écart de 62 points. Généraliser aurait détruit le meilleur signal du jeu.
 
 ### Le cycle de vie : huit étapes, huit responsables
 
