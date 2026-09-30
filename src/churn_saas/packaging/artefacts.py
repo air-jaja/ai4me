@@ -1,8 +1,8 @@
-"""Sérialisation du modèle et métadonnées de version.
+"""Model serialisation and version metadata.
 
-Trois objets sont versionnés conjointement — code, données d'entraînement, modèle. Un
-modèle reproductible à partir du seul code est une illusion si le jeu d'entraînement a
-changé entre-temps (notebook § 10).
+Three objects are versioned together - code, training data, model. A model reproducible
+from code alone is an illusion if the training set changed in the meantime
+(notebook section 10).
 """
 
 from __future__ import annotations
@@ -21,12 +21,12 @@ from ..config import MODELES
 
 @dataclass
 class FicheModele:
-    """Métadonnées accompagnant obligatoirement chaque modèle mis en service."""
+    """Metadata that must accompany every model put into service."""
 
     nom: str
     version: str
     date_entrainement: str = field(default_factory=lambda: date.today().isoformat())
-    empreinte_donnees: str = ""  # instantané utilisé, ex. churn_train_20260928
+    empreinte_donnees: str = ""  # training snapshot used, e.g. churn_train_20260928
     hyperparametres: dict[str, Any] = field(default_factory=dict)
     metriques_validation: dict[str, float] = field(default_factory=dict)
     variables: list[str] = field(default_factory=list)
@@ -35,14 +35,15 @@ class FicheModele:
     version_python: str = field(default_factory=platform.python_version)
 
     def nom_fichier(self) -> str:
+        """Base filename shared by the artefact and its card."""
         return f"{self.nom}_v{self.version}_{self.date_entrainement.replace('-', '')}"
 
 
 def sauvegarder_modele(modele: Any, fiche: FicheModele, dossier: Path | str = MODELES) -> Path:
-    """Enregistre le modèle et sa fiche côte à côte, sous le même nom de base.
+    """Write the model and its card side by side, under the same base name.
 
-    Séparer les deux fichiers serait une erreur : la fiche doit rester lisible sans
-    désérialiser le modèle, ce qui suppose d'avoir les mêmes versions de bibliothèques.
+    Keeping them in separate files is deliberate: the card must stay readable without
+    deserialising the model, which would require matching library versions.
     """
     dossier = Path(dossier)
     dossier.mkdir(parents=True, exist_ok=True)
@@ -56,7 +57,7 @@ def sauvegarder_modele(modele: Any, fiche: FicheModele, dossier: Path | str = MO
 
 
 def charger_modele(chemin: Path | str) -> tuple[Any, dict[str, Any]]:
-    """Recharge un modèle et sa fiche. Utilisé au scoring et au test d'intégration."""
+    """Reload a model and its card. Used at scoring time and in the integration test."""
     chemin = Path(chemin)
     modele = joblib.load(chemin)
     chemin_fiche = chemin.with_suffix(".json")

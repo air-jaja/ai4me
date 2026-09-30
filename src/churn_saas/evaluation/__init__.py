@@ -1,13 +1,13 @@
-"""Activité 4 — Évaluation de la performance.
+"""Activity 4 - Performance evaluation.
 
-Trois niveaux de lecture, à ne jamais confondre :
+Three reading levels, never to be conflated:
 
-    metriques.py  performance statistique — ce que vaut le modèle
-    decision.py   règle de décision       — ce qu'on en fait
-    impact.py     traduction métier       — ce que ça rapporte
+    metriques.py  statistical performance - what the model is worth
+    decision.py   decision rule           - what we do with it
+    impact.py     business translation    - what it earns
 
-Un modèle excellent dont les alertes ne changent rien au taux de rétention ne crée
-aucune valeur. L'ordre de lecture va donc des métriques vers l'impact, jamais l'inverse.
+An excellent model whose alerts change nothing to retention creates no value. Reading
+therefore goes from metrics towards impact, never the other way round.
 """
 
 from .decision import prioriser, sensibilite_classement, seuil_par_compte

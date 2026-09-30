@@ -1,4 +1,4 @@
-"""Activité 4 — métriques, règle de décision et impact métier."""
+"""Activity 4 - metrics, decision rule and business impact."""
 
 import pandas as pd
 
@@ -10,12 +10,12 @@ from churn_saas.evaluation.metriques import intervalle_confiance_rappel
 def test_seuil_decroit_avec_la_valeur_du_compte():
     seuils = seuil_par_compte(pd.Series([800, 11_200, 177_300]))
     assert seuils.is_monotonic_decreasing
-    assert seuils.iloc[0] > 0.30  # petit compte : il faut un risque élevé pour agir
-    assert seuils.iloc[-1] < 0.01  # gros compte : agir dès un risque très faible
+    assert seuils.iloc[0] > 0.30  # small account: high risk needed before acting
+    assert seuils.iloc[-1] < 0.01  # large account: act on even a tiny risk
 
 
 def test_classement_insensible_a_l_efficacite_de_retention():
-    """Argument central du § 9 : u est un facteur commun, il ne change pas l'ordre."""
+    """Core argument of section 9: u is a common factor, it does not change the order."""
     proba = pd.Series([0.10, 0.50, 0.30])
     clv = pd.Series([100_000, 2_000, 20_000])
     assert list(prioriser(proba, clv, efficacite_retention=0.25).index) == list(
@@ -45,5 +45,5 @@ def test_les_trois_niveaux_d_impact_sont_decroissants():
 
 
 def test_intervalle_de_confiance_sur_le_rappel():
-    # ~280 positifs, rappel 0,70 -> environ +/- 5,4 points (notebook § 9)
+    # ~280 positives, recall 0.70 -> about +/- 5.4 points (notebook section 9)
     assert intervalle_confiance_rappel(0.70, 280) == __import__("pytest").approx(0.054, abs=0.002)

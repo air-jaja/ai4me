@@ -1,4 +1,4 @@
-"""Activité 1 — nettoyage et construction des niveaux silver/gold."""
+"""Activity 1 - cleaning and building the silver/gold levels."""
 
 import pandas as pd
 import pytest
@@ -18,14 +18,14 @@ def test_nombres_stockes_en_texte():
     assert resultat.iloc[0] == pytest.approx(33.3)
     assert resultat.iloc[1] == pytest.approx(1234.50)
     assert resultat.iloc[2] == pytest.approx(12.5)
-    assert pd.isna(resultat.iloc[4])  # texte non convertible -> NaN, pas d'exception
+    assert pd.isna(resultat.iloc[4])  # unconvertible text -> NaN, never an exception
 
 
 def test_dates_multiformats():
     serie = pd.Series(["31/01/2024", "2024-02-06", "03/04/2024"])
     resultat = parser_dates_multiformat(serie)
     assert resultat.notna().all()
-    # dayfirst : 03/04/2024 est le 3 avril, pas le 4 mars
+    # dayfirst: 03/04/2024 is 3 April, not 4 March
     assert resultat.iloc[2].month == 4
 
 
@@ -38,7 +38,7 @@ def test_jointure_catalogue_sans_perte_malgre_la_casse():
     catalogue = pd.DataFrame({"plan": ["starter", "pro"], "prix": [10, 20]})
     silver = construire_silver(brut, catalogue=catalogue)
     assert len(silver) == 2
-    assert silver["prix"].notna().all()  # sans normalisation, tout serait NaN
+    assert silver["prix"].notna().all()  # without normalisation everything would be NaN
 
 
 def test_doublons_supprimes():

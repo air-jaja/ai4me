@@ -1,10 +1,10 @@
-"""Activité 7 — Services de monitoring.
+"""Activity 7 - Monitoring services.
 
-    derive.py   détecte l'écart entre les données courantes et celles d'entraînement
-    alertes.py  transforme un écart en action, avec un responsable nommé
+    derive.py   detects the gap between current data and training data
+    alertes.py  turns a gap into an action, with a named owner
 
-Un indicateur sans seuil ne se surveille pas ; un seuil sans action associée ne sert à
-rien. Les deux modules sont donc indissociables.
+An indicator without a threshold is not monitored; a threshold without an attached action
+is useless. The two modules are inseparable.
 """
 
 from .alertes import REGLES_ALERTE, evaluer_alertes, table_regles

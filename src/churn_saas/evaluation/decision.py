@@ -1,12 +1,13 @@
-"""Règle de décision métier : priorisation par valeur espérée.
+"""Business decision rule: expected-value prioritisation.
 
-Fondement (notebook § 9) : pour un compte de probabilité p, agir est rationnel dès que
+Rationale (notebook section 9): for an account with estimated probability p, acting is
+rational as soon as
 
-    p > C_FP / (C_FP + C_FN),   soit   p* = 1 / (1 + r)   avec   r = C_FN / C_FP.
+    p > C_FP / (C_FP + C_FN),   i.e.   p* = 1 / (1 + r)   with   r = C_FN / C_FP.
 
-C_FN étant proportionnel à la valeur du compte, le seuil optimal varie d'un facteur 130
-entre déciles extrêmes. Un seuil global unique suppose implicitement que tous les comptes
-se valent : sur ce portefeuille, l'hypothèse est fausse de trois ordres de grandeur.
+Since C_FN is proportional to account value, the optimal threshold varies by a factor of
+130 between extreme deciles. A single global threshold implicitly assumes all accounts are
+worth the same: on this portfolio that assumption is wrong by three orders of magnitude.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ def seuil_par_compte(
     efficacite_retention: float = EFFICACITE_RETENTION,
     cout_faux_positif: float = COUT_CONTACT_CSM_EUR,
 ) -> pd.Series:
-    """Seuil de probabilité au-delà duquel agir devient rentable, compte par compte."""
+    """Probability threshold above which acting becomes profitable, account by account."""
     cout_faux_negatif = pd.to_numeric(valeur_vie_client, errors="coerce") * efficacite_retention
     return cout_faux_positif / (cout_faux_positif + cout_faux_negatif)
 
@@ -32,11 +33,11 @@ def prioriser(
     capacite: int = CAPACITE_MENSUELLE,
     efficacite_retention: float = EFFICACITE_RETENTION,
 ) -> pd.DataFrame:
-    """Classe les comptes par valeur espérée et marque ceux que l'équipe peut traiter.
+    """Rank accounts by expected value and flag those the team can actually handle.
 
-    Le classement est insensible à `efficacite_retention` : facteur commun à tous les
-    comptes, elle ne modifie pas l'ordre, seulement l'estimation du gain absolu. C'est ce
-    qui rend le dispositif robuste à l'hypothèse la plus fragile du projet.
+    The ranking is insensitive to `efficacite_retention`: being a factor common to every
+    account, it shifts the absolute gain estimate but not the order. That is what makes
+    the design robust to the project's most fragile assumption.
     """
     table = pd.DataFrame(
         {
@@ -60,10 +61,10 @@ def sensibilite_classement(
     valeurs_efficacite: tuple[float, ...] = (0.15, 0.25, 0.40),
     capacite: int = CAPACITE_MENSUELLE,
 ) -> pd.DataFrame:
-    """Vérifie empiriquement la stabilité du classement selon l'efficacité de rétention.
+    """Empirically check ranking stability across retention-effectiveness values.
 
-    Produit la preuve chiffrée de l'analyse de sensibilité annoncée au notebook § 9 :
-    la composition de la liste des comptes traités ne doit pas varier.
+    Produces the evidence behind the sensitivity analysis promised in notebook section 9:
+    the composition of the handled shortlist must not change.
     """
     reference = None
     lignes = []

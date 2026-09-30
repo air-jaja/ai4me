@@ -1,7 +1,7 @@
-"""Schéma et accès à l'entrepôt de scores (SQLAlchemy Core).
+"""Score warehouse schema and access (SQLAlchemy Core).
 
-SQLAlchemy Core plutôt que l'ORM : les objets manipulés sont des lignes de résultats,
-pas des entités métier avec un cycle de vie. L'ORM ajouterait une couche sans bénéfice.
+Core rather than the ORM: the objects handled are result rows, not business entities with
+a lifecycle. The ORM would add a layer for no benefit.
 """
 
 from __future__ import annotations
@@ -37,8 +37,8 @@ scores_churn = Table(
     Column("valeur_esperee_eur", Float),
     Column("rang", Integer),
     Column("a_traiter", Boolean, nullable=False, default=False),
-    # Rattache le score au modèle qui l'a produit : indispensable pour diagnostiquer
-    # une dégradation après réentraînement (notebook § 13).
+    # Ties the score to the model that produced it: essential to diagnose a degradation
+    # after retraining (notebook section 13).
     Column("version_modele", String(64), nullable=False),
 )
 
@@ -56,24 +56,26 @@ executions = Table(
 
 
 def construire_moteur(url: str | None = None) -> Engine:
-    """Moteur SQLAlchemy. L'URL vient de l'environnement, jamais du code.
+    """SQLAlchemy engine. The URL comes from the environment, never from the code.
 
-    `postgresql+psycopg://` : sans le suffixe `+psycopg`, SQLAlchemy chercherait
-    psycopg2, absent du verrou.
+    `postgresql+psycopg://`: without the `+psycopg` suffix SQLAlchemy would look for
+    psycopg2, which is absent from the lockfile.
     """
     url = url or os.environ.get(
         "CHURN_DB_URL", "postgresql+psycopg://churn:churn@localhost:5432/churn"
     )
+    # pool_pre_ping: a connection idle since the previous monthly batch may have been
+    # closed server-side. Without it the first write of the month would fail.
     return create_engine(url, pool_pre_ping=True, future=True)
 
 
 def creer_schema(moteur: Engine) -> None:
-    """Crée les tables si elles n'existent pas. Idempotent."""
+    """Create the tables if absent. Idempotent."""
     METADONNEES.create_all(moteur)
 
 
 def ecrire_scores(moteur: Engine, table_priorisee: pd.DataFrame, version_modele: str) -> int:
-    """Écrit un lot de scores. Renvoie le nombre de lignes insérées."""
+    """Write a batch of scores. Returns the number of inserted rows."""
     horodatage = datetime.now(UTC)
     lignes = [
         {
@@ -96,7 +98,7 @@ def ecrire_scores(moteur: Engine, table_priorisee: pd.DataFrame, version_modele:
 
 
 def lire_derniers_scores(moteur: Engine, limite: int = 500) -> pd.DataFrame:
-    """Relit les scores les plus récents, pour contrôle ou restitution CRM."""
+    """Read back the most recent scores, for control or CRM delivery."""
     requete = (
         select(scores_churn)
         .order_by(scores_churn.c.date_scoring.desc(), scores_churn.c.rang.asc())

@@ -1,11 +1,10 @@
-"""Stockage relationnel des scores et des exécutions.
+"""Relational storage of scores and batch runs.
 
-Met en œuvre le modèle de stockage retenu au notebook § 3 : relationnel pour
-l'exploitation courante, stockage objet pour les instantanés d'entraînement.
+Implements the storage model chosen in notebook section 3: relational for day-to-day
+operations, object storage for training snapshots.
 
-La table des scores porte la **version du modèle** qui les a produits. Sans cette
-colonne, une dégradation observée après un réentraînement serait impossible à
-rattacher à sa cause.
+The score table carries the **model version** that produced each row. Without that column,
+a degradation observed after a retraining could not be traced back to its cause.
 """
 
 from .entrepot import METADONNEES, creer_schema, ecrire_scores, lire_derniers_scores

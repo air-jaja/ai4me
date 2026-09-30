@@ -1,4 +1,4 @@
-"""Activité 7 — dérive et règles d'alerte."""
+"""Activity 7 - drift detection and alert rules."""
 
 import numpy as np
 import pandas as pd

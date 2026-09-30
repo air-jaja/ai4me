@@ -1,9 +1,8 @@
-"""Niveau SILVER — nettoyage et normalisation.
+"""SILVER level - cleaning and normalisation.
 
-Ces fonctions sont **réutilisées à l'identique** au moment du scoring
-(voir `industrialisation.scoring`). C'est la garantie contre le *training-serving skew* :
-des données préparées différemment à l'entraînement et en production produisent des
-erreurs qu'aucune alerte ne signale.
+These functions are reused **unchanged** at scoring time (see `industrialisation.scoring`).
+That is the safeguard against training-serving skew: data prepared differently during
+training and in production produces errors that no alert will ever raise.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ SYMBOLES_A_RETIRER = ("\u20ac", "%", "\u202f", "\xa0", " ")
 
 
 def nettoyer_decimal_texte(serie: pd.Series) -> pd.Series:
-    """Convertit en nombre une colonne stockée en texte ("1 234,50 EUR", "33,3 %")."""
+    """Convert a numeric column stored as text ("1 234,50 EUR", "33,3 %") into numbers."""
     texte = serie.astype(str)
     for symbole in SYMBOLES_A_RETIRER:
         texte = texte.str.replace(symbole, "", regex=False)
@@ -22,20 +21,20 @@ def nettoyer_decimal_texte(serie: pd.Series) -> pd.Series:
 
 
 def parser_dates_multiformat(serie: pd.Series) -> pd.Series:
-    """Parse des dates de formats mêlés (JJ/MM/AAAA, AAAA-MM-JJ, "12 mars 2024").
+    """Parse mixed date formats (DD/MM/YYYY, YYYY-MM-DD, "12 mars 2024").
 
-    `dayfirst=True` tranche l'ambiguïté 03/04/2024 en faveur de la convention française,
-    cohérente avec l'origine des données. Sans ce choix explicite, pandas arbitrerait seul
-    et le résultat dépendrait de l'ordre des lignes.
+    `dayfirst=True` resolves the 03/04/2024 ambiguity in favour of the French convention,
+    consistent with where the data comes from. Without that explicit choice pandas would
+    arbitrate on its own and the result would depend on row order.
     """
     return pd.to_datetime(serie, errors="coerce", dayfirst=True, format="mixed")
 
 
 def normaliser_cle(serie: pd.Series) -> pd.Series:
-    """Uniformise une clé de jointure : espaces retirés, casse abaissée.
+    """Normalise a join key: strip whitespace, lowercase.
 
-    `plan` vaut tantôt "STARTER", tantôt "Starter". Une jointure sans normalisation
-    échouerait **sans lever d'erreur** : les lignes non appariées disparaîtraient.
+    `plan` appears as "STARTER" in one file and "Starter" in the other. Joining without
+    normalisation would fail **without raising**: unmatched rows would simply vanish.
     """
     return serie.astype(str).str.strip().str.lower()
 
@@ -47,7 +46,7 @@ def construire_silver(
     colonnes_dates: list[str] | None = None,
     colonnes_entieres: list[str] | None = None,
 ) -> pd.DataFrame:
-    """Applique la chaîne complète : doublons, types, normalisation, jointure catalogue."""
+    """Apply the full chain: duplicates, typing, normalisation, catalogue join."""
     df = brut.drop_duplicates().copy()
 
     for col in colonnes_decimales or []:
@@ -60,6 +59,8 @@ def construire_silver(
         if col in df.columns:
             df[col] = parser_dates_multiformat(df[col])
 
+    # Target text columns explicitly: select_dtypes(include="object") is ambiguous once
+    # pandas string dtypes are in play.
     for col in [c for c in df.columns if df[c].dtype == object or str(df[c].dtype) == "str"]:
         df[col] = df[col].astype(str).str.strip().replace({"nan": None, "None": None})
 
@@ -70,6 +71,8 @@ def construire_silver(
         cat["_cle_plan"] = normaliser_cle(cat["plan"])
         avant = len(df)
         df = df.merge(cat.drop(columns=["plan"]), on="_cle_plan", how="left")
+        # A row count change means the catalogue holds duplicate plans: fail loudly
+        # rather than silently inflating the dataset.
         if len(df) != avant:
             raise ValueError(
                 f"La jointure catalogue a changé le nombre de lignes ({avant} -> {len(df)}) : "

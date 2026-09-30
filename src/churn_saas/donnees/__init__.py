@@ -1,14 +1,14 @@
-"""Activité 1 — Gestion des données.
+"""Activity 1 - Data management.
 
-Trois niveaux de raffinage, convention usuelle en ingénierie de données :
+Three refinement levels, the usual data engineering convention:
 
-    BRONZE  données brutes, telles que reçues, jamais modifiées
-    SILVER  données nettoyées et normalisées, fidèles au métier, lisibles par un humain
-    GOLD    données prêtes pour l'apprentissage : variables construites, colonnes
-            interdites retirées, cible séparée
+    BRONZE  raw data exactly as received, never modified
+    SILVER  cleaned and normalised, faithful to the business, human readable
+    GOLD    ready for learning: derived features added, forbidden columns removed,
+            target separated
 
-La frontière silver → gold porte la décision la plus lourde du projet : c'est en passant
-au gold que les variables en fuite sont écartées (notebook § 7).
+The silver -> gold boundary carries the heaviest decision of the project: leaking
+columns are dropped there (notebook section 7).
 """
 
 from .gold import construire_gold, separer_cible

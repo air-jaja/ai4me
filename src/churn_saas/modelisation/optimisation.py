@@ -1,15 +1,14 @@
-"""Optimisation d'hyperparamètres par échantillonnage bayésien, avec élagage.
+"""Bayesian hyperparameter optimisation with pruning.
 
-**Pourquoi Optuna plutôt qu'une grille exhaustive.** L'argument d'éco-conception du
-notebook § 8 portait sur l'étendue de la recherche, pas sur l'outil. Une grille
-exhaustive évalue toutes les combinaisons, y compris celles dont les premiers plis
-montrent qu'elles n'aboutiront pas. Optuna échantillonne (TPE) et **interrompt** les
-essais sans avenir : à budget de calcul égal il couvre davantage d'espace, à couverture
-égale il consomme moins. Le budget reste borné par `n_essais`, qui demeure un arbitrage
-documenté.
+**Why Optuna rather than an exhaustive grid.** The eco-design argument in notebook
+section 8 was about search *breadth*, not about the tool. An exhaustive grid evaluates
+every combination, including those whose early folds already show they will not pay off.
+Optuna samples (TPE) and **prunes** hopeless trials: at equal compute budget it covers
+more space, at equal coverage it consumes less. The budget stays bounded by `n_essais`,
+which remains the documented trade-off.
 
-L'empreinte du calcul est mesurable avec CodeCarbon (`mesurer_empreinte`) : l'argument
-d'éco-conception cesse d'être déclaratif.
+Compute footprint is measurable with CodeCarbon (`mesurer_empreinte`), turning the
+eco-design argument from a claim into a measurement.
 """
 
 from __future__ import annotations
@@ -26,15 +25,16 @@ from ..config import GRAINE
 
 
 def espace_baseline(essai: Any) -> dict[str, Any]:
-    """Espace de recherche de la régression logistique."""
+    """Search space for logistic regression."""
     return {
+        # log scale: regularisation strength matters by order of magnitude, not linearly.
         "modele__C": essai.suggest_float("C", 1e-3, 1e2, log=True),
         "modele__class_weight": essai.suggest_categorical("class_weight", [None, "balanced"]),
     }
 
 
 def espace_candidat(essai: Any) -> dict[str, Any]:
-    """Espace de recherche de la forêt aléatoire."""
+    """Search space for the random forest."""
     return {
         "modele__n_estimators": essai.suggest_int("n_estimators", 100, 400, step=100),
         "modele__max_depth": essai.suggest_categorical("max_depth", [None, 10, 20, 30]),
@@ -51,10 +51,10 @@ def optimiser(
     n_essais: int = 30,
     n_plis: int = 5,
 ) -> Any:
-    """Recherche le jeu d'hyperparamètres maximisant le PR-AUC en validation croisée.
+    """Search the hyperparameters maximising cross-validated PR-AUC.
 
-    `n_essais` est délibérément modeste : le gain marginal d'une recherche étendue n'est
-    pas démontré sur ce volume de données, et il se paierait en calcul.
+    `n_essais` is deliberately modest: the marginal gain of a wider search is not
+    demonstrated at this data volume, and it would be paid in compute.
     """
     import optuna
 
@@ -68,6 +68,7 @@ def optimiser(
 
     etude = optuna.create_study(
         direction="maximize",
+        # Fixed seed: two runs of the same commit must yield the same study.
         sampler=optuna.samplers.TPESampler(seed=GRAINE),
         pruner=optuna.pruners.MedianPruner(),
     )
@@ -76,7 +77,7 @@ def optimiser(
 
 
 def resume_etude(etude: Any) -> pd.DataFrame:
-    """Tableau des essais, à reporter dans le notebook (hyperparamètres décrits, C5)."""
+    """Trial table, reported in the notebook (hyperparameters described, C5)."""
     return (
         etude.trials_dataframe(attrs=("number", "value", "params", "state"))
         .sort_values("value", ascending=False)
@@ -86,9 +87,9 @@ def resume_etude(etude: Any) -> pd.DataFrame:
 
 @contextmanager
 def mesurer_empreinte(nom: str = "optimisation", dossier: str = "reports"):
-    """Mesure l'empreinte carbone du bloc englobé, si CodeCarbon est installé.
+    """Measure the carbon footprint of the enclosed block, if CodeCarbon is installed.
 
-    Silencieux en son absence : le notebook reste exécutable sans la stack complète.
+    Silent when absent: the notebook stays runnable without the full stack.
     """
     try:
         from codecarbon import EmissionsTracker

@@ -1,12 +1,12 @@
-"""Explicabilité locale par valeurs de Shapley.
+"""Local explainability through Shapley values.
 
-L'importance globale des variables répond à « qu'est-ce qui compte en général ? ».
-Le CSM a besoin d'une autre réponse : « pourquoi CE compte-ci est-il signalé ? ».
-Les deux lectures sont complémentaires et ne se remplacent pas.
+Global feature importance answers "what matters in general?". A CSM needs a different
+answer: "why is THIS account flagged?". The two readings complement each other; neither
+replaces the other.
 
-Usage responsable : une valeur de Shapley est une **attribution**, pas une cause. Elle
-indique la contribution d'une variable à l'écart entre cette prédiction et la prédiction
-moyenne, pas ce qui ferait rester le client.
+Responsible use: a Shapley value is an **attribution**, not a cause. It reports a
+variable's contribution to the gap between this prediction and the average prediction, not
+what would make the customer stay.
 """
 
 from __future__ import annotations
@@ -23,11 +23,10 @@ def expliquer_compte(
     n_facteurs: int = 5,
     taille_fond: int = 100,
 ) -> pd.DataFrame:
-    """Principaux facteurs du score d'un compte, du plus contributif au moins.
+    """Main drivers of one account's score, most to least contributive.
 
-    `taille_fond` borne l'échantillon de référence : le coût de calcul des valeurs de
-    Shapley croît avec lui, sans gain d'interprétation au-delà de quelques dizaines
-    d'observations.
+    `taille_fond` bounds the background sample: Shapley computation cost grows with it,
+    with no interpretive gain beyond a few dozen observations.
     """
     import shap
 
@@ -35,7 +34,7 @@ def expliquer_compte(
     explicateur = shap.Explainer(modele.predict_proba, fond)
     valeurs = explicateur(X.iloc[[index_compte]])
 
-    # Classe positive (churn) pour un modèle binaire.
+    # Positive class (churn) for a binary model.
     contributions = valeurs.values[0]
     if contributions.ndim > 1:
         contributions = contributions[:, 1]
@@ -50,6 +49,8 @@ def expliquer_compte(
     table["sens"] = table["contribution"].apply(
         lambda c: "augmente le risque" if c > 0 else "diminue le risque"
     )
+    # Rank by absolute contribution: a strong negative driver matters as much as a
+    # strong positive one when explaining a score.
     return (
         table.reindex(table["contribution"].abs().sort_values(ascending=False).index)
         .head(n_facteurs)
@@ -58,7 +59,7 @@ def expliquer_compte(
 
 
 def motif_lisible(explication: pd.DataFrame, n: int = 3) -> str:
-    """Phrase destinée à la fiche CRM du compte, lisible par un conseiller."""
+    """Sentence meant for the account's CRM record, readable by an advisor."""
     principaux = explication.head(n)
     morceaux = [
         f"{ligne.variable} ({ligne.valeur}) {ligne.sens}" for ligne in principaux.itertuples()

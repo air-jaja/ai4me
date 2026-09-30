@@ -1,16 +1,15 @@
-"""Orchestration du lot mensuel avec Prefect.
+"""Monthly batch orchestration with Prefect.
 
-Le flux matérialise la chaîne décrite au notebook § 10 :
+The flow materialises the chain described in notebook section 10:
 
-    ingestion -> préparation -> scoring -> priorisation -> écriture -> publication
+    ingestion -> preparation -> scoring -> prioritisation -> persistence -> publication
 
-Chaque étape est une tâche distincte : en cas d'échec, le journal indique **laquelle** a
-cédé, et la reprise ne rejoue pas ce qui avait abouti. Un script monolithique
-n'offrirait ni l'un ni l'autre.
+Each step is a separate task: on failure the log says **which** one gave way, and a rerun
+does not replay what already succeeded. A monolithic script offers neither.
 
-Le contrôle de qualité des données précède le scoring et **bloque** s'il échoue : scorer
-sur des données hors domaine produit des probabilités plausibles mais fausses — le pire
-des cas, car rien ne le signale.
+The data quality gate runs before scoring and **blocks** on failure: scoring
+out-of-domain data yields plausible but wrong probabilities - the worst case, since
+nothing signals it.
 """
 
 from __future__ import annotations
@@ -19,10 +18,11 @@ from typing import Any
 
 import pandas as pd
 
-try:  # pragma: no cover - dépend de l'installation du groupe orchestration
+try:  # pragma: no cover - depends on the `orchestration` group being installed
     from prefect import flow, task
 except ImportError:  # pragma: no cover
-
+    # No-op decorators so the module stays importable without Prefect: the notebook must
+    # run with base dependencies only.
     def task(*args: Any, **kwargs: Any):  # type: ignore[misc]
         def decorateur(fonction):
             return fonction
@@ -45,14 +45,17 @@ from ..packaging.artefacts import charger_modele
 
 @task(name="ingestion", retries=2, retry_delay_seconds=30)
 def etape_ingestion(chemin: str) -> pd.DataFrame:
-    """Lecture des données du mois. Réessaie : une source réseau peut être momentanément
-    indisponible sans que le lot soit à reprendre entièrement."""
+    """Read this month's data.
+
+    Retries because a networked source can be momentarily unavailable without the whole
+    batch needing a restart.
+    """
     return charger_bronze(chemin)
 
 
 @task(name="controle_qualite")
 def etape_controle(brut: pd.DataFrame, colonnes_attendues: list[str]) -> pd.DataFrame:
-    """Contrôle bloquant du schéma et de la complétude."""
+    """Blocking schema and completeness gate."""
     rapport = controler_schema(brut, colonnes_attendues)
     non_conformes = rapport.loc[~rapport["conforme"], "colonne"].tolist()
     if non_conformes:
@@ -67,7 +70,7 @@ def etape_controle(brut: pd.DataFrame, colonnes_attendues: list[str]) -> pd.Data
 def etape_scoring(
     chemin_modele: str, brut: pd.DataFrame, capacite: int
 ) -> tuple[pd.DataFrame, str]:
-    """Scoring et priorisation par valeur espérée."""
+    """Score and prioritise by expected value."""
     modele, fiche = charger_modele(chemin_modele)
     table = scorer_lot_mensuel(modele, brut, capacite=capacite)
     return table, fiche.get("version", "inconnue")
@@ -75,7 +78,7 @@ def etape_scoring(
 
 @task(name="ecriture")
 def etape_ecriture(table: pd.DataFrame, version_modele: str, url_base: str | None) -> int:
-    """Écriture en base. Sans URL fournie, l'étape est sautée (exécution locale)."""
+    """Persist to the warehouse. Skipped when no URL is provided (local run)."""
     if not url_base:
         return 0
     from ..stockage.entrepot import construire_moteur, creer_schema, ecrire_scores
@@ -87,7 +90,7 @@ def etape_ecriture(table: pd.DataFrame, version_modele: str, url_base: str | Non
 
 @task(name="publication_metriques")
 def etape_publication(table: pd.DataFrame) -> None:
-    """Publication des indicateurs vers Prometheus, si l'exporteur est disponible."""
+    """Publish indicators to Prometheus, when the exporter is available."""
     from ..monitoring.exporteur import publier_lot
 
     publier_lot(table)
@@ -101,7 +104,7 @@ def lot_mensuel(
     url_base: str | None = None,
     capacite: int = CAPACITE_MENSUELLE,
 ) -> pd.DataFrame:
-    """Flux complet du lot mensuel. Renvoie la liste priorisée."""
+    """Full monthly batch flow. Returns the prioritised shortlist."""
     brut = etape_ingestion(chemin_donnees)
     etape_controle(brut, colonnes_attendues)
     table, version = etape_scoring(chemin_modele, brut, capacite)

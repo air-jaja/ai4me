@@ -1,8 +1,7 @@
-"""Modèle candidat et protocole de comparaison.
+"""Candidate model and comparison protocol.
 
-La comparaison se fait sur le PR-AUC, pas sur l'exactitude : 72 % des comptes restent, un
-modèle prédisant toujours « pas de churn » obtiendrait 72 % d'exactitude sans aucune
-valeur.
+Comparison relies on PR-AUC, not accuracy: 72% of accounts stay, so a model always
+predicting "no churn" would score 72% accuracy while being worthless.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ from .baseline import construire_preprocesseur
 
 
 def construire_candidat(X: pd.DataFrame, equilibrer: bool = True) -> Pipeline:
-    """Pipeline du modèle candidat : forêt aléatoire."""
+    """Candidate model pipeline: random forest."""
     return Pipeline(
         [
             ("preparation", construire_preprocesseur(X)),
@@ -36,10 +35,10 @@ def construire_candidat(X: pd.DataFrame, equilibrer: bool = True) -> Pipeline:
 
 
 def grille_hyperparametres() -> dict[str, dict[str, list]]:
-    """Grille volontairement restreinte (éco-conception, notebook § 8).
+    """Deliberately narrow search grid (eco-design, notebook section 8).
 
-    Une recherche exhaustive multiplierait le coût de calcul pour un gain marginal non
-    démontré. L'étendue de la grille est elle-même un arbitrage documenté.
+    An exhaustive search would multiply compute cost for an undemonstrated marginal gain.
+    The grid width is itself a documented trade-off.
     """
     return {
         "baseline": {
@@ -61,11 +60,11 @@ def comparer(
     y: pd.Series,
     n_plis: int = 5,
 ) -> pd.DataFrame:
-    """Validation croisée stratifiée. Renvoie moyenne **et** écart-type.
+    """Stratified cross-validation. Returns mean **and** standard deviation.
 
-    L'écart-type n'est pas décoratif : un gain de PR-AUC inférieur à la variabilité entre
-    plis n'est pas un gain. C'est le critère qui tranche la boucle évaluation → features
-    (notebook § 9).
+    The standard deviation is not decorative: a PR-AUC gain smaller than fold-to-fold
+    variability is not a gain. It is the criterion settling the evaluation -> features
+    loop (notebook section 9).
     """
     plis = StratifiedKFold(n_splits=n_plis, shuffle=True, random_state=GRAINE)
     lignes = []

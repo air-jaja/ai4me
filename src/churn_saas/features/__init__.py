@@ -1,13 +1,13 @@
-"""Activité 2 — Construction et contrôle des features.
+"""Activity 2 - Feature construction and control.
 
-Deux responsabilités distinctes, volontairement séparées :
+Two deliberately separate responsibilities:
 
-    construction.py  fabrique les variables dérivées
-    controle.py      vérifie qu'elles sont légitimes et utilisables
+    construction.py  builds derived variables
+    controle.py      checks they are legitimate and usable
 
-Le contrôle n'est pas une formalité. Une variable construite peut réintroduire une fuite
-sans que personne ne s'en aperçoive : un ratio calculé à partir d'une colonne postérieure
-à la décision reste postérieur à la décision.
+Control is not a formality. A derived variable can reintroduce leakage unnoticed: a ratio
+computed from a column known only after the decision is itself known only after the
+decision.
 """
 
 from .construction import ajouter_ratios_usage

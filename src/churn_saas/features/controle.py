@@ -1,7 +1,7 @@
-"""Garde-fous appliqués aux variables avant modélisation.
+"""Guardrails applied to features before modelling.
 
-Ces contrôles sont exécutables et testés : ils constituent l'étape 2 de la chaîne CI
-décrite au notebook § 10 (validation des données d'entrée).
+These checks are executable and tested: they form step 2 of the CI chain described in
+notebook section 10 (input data validation).
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ def controler_schema(
     colonnes_attendues: list[str],
     taux_manquants_max: float = 0.30,
 ) -> pd.DataFrame:
-    """Vérifie présence et complétude des colonnes. Renvoie le constat, ne lève pas.
+    """Check column presence and completeness. Returns findings, never raises.
 
-    Renvoyer un tableau plutôt que lever une exception permet d'afficher le diagnostic
-    complet dans le notebook. C'est l'appelant qui décide de bloquer ou non.
+    Returning a table rather than raising lets the notebook display the full diagnosis.
+    The caller decides whether to block.
     """
     lignes = []
     for col in colonnes_attendues:
@@ -41,11 +41,11 @@ def detecter_fuite_suspecte(
     y: pd.Series,
     seuil_correlation: float = 0.80,
 ) -> pd.DataFrame:
-    """Signale les variables trop corrélées à la cible pour être honnêtes.
+    """Flag variables too strongly correlated with the target to be honest.
 
-    Une corrélation supérieure à 0,80 avec la cible sur un problème de churn n'est
-    pratiquement jamais un signal métier : c'est le symptôme d'une information connue
-    après coup. Le contrôle est générique, il ne cible aucune colonne nommée.
+    On a churn problem a correlation above 0.80 with the target is almost never a business
+    signal: it is the symptom of information known after the fact. The check is generic -
+    it targets no named column, so it would also catch a future, unanticipated leak.
     """
     cible = pd.to_numeric(y, errors="coerce")
     lignes = []
@@ -67,15 +67,17 @@ def verifier_leurres(
     leurres_attendus: tuple[str, ...] = ("couleur_theme_interface", "code_datacenter"),
     quantile_max: float = 0.25,
 ) -> pd.DataFrame:
-    """Vérifie que les variables leurres figurent bien en bas du classement d'importance.
+    """Check that decoy variables do sit at the bottom of the importance ranking.
 
-    Le leurre est **conservé** dans le modèle à dessein : l'écarter a priori priverait de
-    la démonstration. On vérifie donc a posteriori qu'il n'apporte rien, plutôt que de le
-    supposer (notebook § 7).
+    Decoys are deliberately **kept** in the model: dropping them upfront would forfeit the
+    demonstration. So we verify afterwards that they contribute nothing, rather than
+    assuming it (notebook section 7).
     """
     seuil = importances.quantile(quantile_max)
     lignes = []
     for nom in leurres_attendus:
+        # One-hot encoding turns a categorical decoy into several columns sharing its
+        # prefix: take the strongest of them, otherwise the check could be fooled.
         correspondances = [i for i in importances.index if str(i).startswith(nom)]
         if not correspondances:
             lignes.append({"leurre": nom, "importance_max": None, "confirme": None})

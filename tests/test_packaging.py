@@ -1,4 +1,4 @@
-"""Activité 5 — artefacts et fiche modèle."""
+"""Activity 5 - artefacts and model card."""
 
 from sklearn.dummy import DummyClassifier
 
@@ -28,7 +28,7 @@ def test_la_fiche_modele_est_remplie_depuis_le_contexte():
     )
     assert "churn-saas-cisia" in carte
     assert "Haja RAKOTOVOALAVO PETERA" in carte
-    assert "{{" not in carte  # aucune variable de gabarit non substituée
+    assert "{{" not in carte  # no unsubstituted template variable left
 
 
 def test_les_champs_absents_prennent_leur_valeur_par_defaut():

@@ -5,13 +5,14 @@
 # `make aide` liste les cibles.
 # =============================================================================
 
-.PHONY: aide install install-plateforme test lint format check notebook executer-notebook \
+.PHONY: aide install install-plateforme kernel test lint format check notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
 aide:
 	@echo "--- Développement ---"
 	@echo "  install             Environnement minimal (base + dev + notebook)"
 	@echo "  install-plateforme  Ajoute MLflow, Optuna, SHAP, SQLAlchemy, Prefect, Prometheus"
+	@echo "  kernel              Enregistre le noyau Jupyter du projet (VS Code, Jupyter)"
 	@echo "  test                Suite de tests"
 	@echo "  lint                Style du code"
 	@echo "  format              Reformate le code"
@@ -33,6 +34,12 @@ install:
 
 install-plateforme:
 	uv sync --frozen --group dev --group notebook --group plateforme
+
+# Registers the project venv as a selectable Jupyter kernel. Without it, editors
+# fall back to the shared interpreter, which has no ipykernel and no project deps.
+kernel:
+	uv run python -m ipykernel install --user --name churn-saas-cisia \
+		--display-name "Python (churn-saas-cisia)"
 
 test:
 	uv run pytest -q

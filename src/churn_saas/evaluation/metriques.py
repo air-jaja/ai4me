@@ -1,7 +1,7 @@
-"""Métriques techniques et leur incertitude.
+"""Technical metrics and their uncertainty.
 
-Annoncer un rappel au centième sur 280 positifs donne une fausse impression de précision.
-Chaque métrique de rappel est donc accompagnée de son intervalle de confiance.
+Reporting recall to two decimals on 280 positives conveys false precision. Every recall
+figure therefore ships with its confidence interval.
 """
 
 from __future__ import annotations
@@ -18,10 +18,10 @@ from sklearn.metrics import (
 
 
 def intervalle_confiance_rappel(rappel: float, n_positifs: int, z: float = 1.96) -> float:
-    """Demi-largeur de l'intervalle de confiance à 95 % sur un rappel.
+    """Half-width of the 95% confidence interval around a recall value.
 
-    Approximation normale, suffisante ici : avec ~280 positifs et un rappel autour de 0,7,
-    les conditions de validité sont largement remplies.
+    Normal approximation, adequate here: with ~280 positives and recall around 0.7 the
+    validity conditions are comfortably met.
     """
     if n_positifs <= 0:
         return float("nan")
@@ -29,9 +29,10 @@ def intervalle_confiance_rappel(rappel: float, n_positifs: int, z: float = 1.96)
 
 
 def evaluer(y_vrai: pd.Series, proba: pd.Series, seuil: float = 0.5) -> dict[str, float]:
-    """Jeu de métriques au seuil indiqué, avec l'incertitude sur le rappel."""
+    """Metric set at the given threshold, including recall uncertainty."""
     y_vrai = pd.Series(y_vrai).astype(int)
     y_pred = (pd.Series(proba) >= seuil).astype(int)
+    # labels=[0, 1] keeps the unpacking valid even if a class is absent from a fold.
     vn, fp, fn, vp = confusion_matrix(y_vrai, y_pred, labels=[0, 1]).ravel()
     rappel = float(recall_score(y_vrai, y_pred, zero_division=0))
     n_positifs = int(y_vrai.sum())

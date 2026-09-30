@@ -1,8 +1,8 @@
-"""Variables dérivées.
+"""Derived variables.
 
-Un ratio est plus parlant qu'un couple de valeurs brutes : « 2 fonctionnalités utilisées
-sur 10 disponibles » dit directement si le client exploite ce qu'il paie, là où les deux
-nombres pris séparément ne le disent pas.
+A ratio speaks louder than a pair of raw values: "2 features used out of 10 available"
+directly answers whether the customer exploits what they pay for, which neither number
+does on its own.
 """
 
 from __future__ import annotations
@@ -12,20 +12,23 @@ import pandas as pd
 
 
 def _ratio(numerateur: pd.Series, denominateur: pd.Series) -> pd.Series:
-    """Division protégée : un dénominateur nul donne NaN, jamais une erreur ni un infini."""
+    """Guarded division: a zero denominator yields NaN, never an error nor an infinity.
+
+    Infinities are worse than missing values here: they propagate silently through the
+    pipeline and only surface as absurd model coefficients.
+    """
     num = pd.to_numeric(numerateur, errors="coerce")
     den = pd.to_numeric(denominateur, errors="coerce")
     return (num / den.replace(0, np.nan)).astype(float)
 
 
 def ajouter_ratios_usage(df: pd.DataFrame) -> pd.DataFrame:
-    """Ajoute les ratios d'usage. Chaque variable ne repose que sur des données
-    antérieures à l'échéance contractuelle.
+    """Add usage ratios. Every variable relies only on data available before renewal.
 
-    - `taux_activation`      part des licences réellement utilisées
-    - `taux_couverture_fonc` part des fonctionnalités du plan effectivement employées
-    - `usage_par_actif`      intensité d'usage rapportée au nombre d'utilisateurs
-    - `tickets_par_actif`    pression sur le support, rapportée à la taille du compte
+    - `taux_activation`      share of purchased seats actually used
+    - `taux_couverture_fonc` share of plan features actually used
+    - `usage_par_actif`      usage intensity per active user
+    - `tickets_par_actif`    support pressure relative to account size
     """
     out = df.copy()
     if {"utilisateurs_actifs", "sieges_souscrits"} <= set(out.columns):

@@ -1,13 +1,13 @@
-"""Activité 6 — Services d'industrialisation.
+"""Activity 6 - Industrialisation services.
 
-    scoring.py  le LOT MENSUEL, qui décide. Il voit tout le portefeuille.
-    service.py  la réponse UNITAIRE, qui ne décide pas. Elle voit un compte à la fois.
-    api.py      le service HTTP exposant cette réponse.
-    flux.py     l'orchestration Prefect du lot mensuel.
+    scoring.py  the MONTHLY BATCH, which decides. It sees the whole portfolio.
+    service.py  the UNIT response, which does not decide. It sees one account.
+    api.py      the HTTP service exposing that response.
+    flux.py     the Prefect orchestration of the monthly batch.
 
-Le service ne peut pas trancher : la règle de priorisation dépend du rang d'un compte
-dans le classement de l'ensemble et de la capacité disponible. Renvoyer une décision
-binaire depuis un appel unitaire serait faux (notebook § 10).
+The service cannot decide: the prioritisation rule depends on an account's rank within
+the whole ranking and on available capacity. Returning a binary decision from a unit call
+would be wrong (notebook section 10).
 """
 
 from .scoring import preparer, scorer_lot_mensuel

@@ -1,7 +1,7 @@
-"""Règles d'alerte : indicateur, seuil, action déclenchée, responsable.
+"""Alert rules: indicator, threshold, triggered action, owner.
 
-Chaque ligne ferme la boucle de décision exigée par le référentiel (notebook § 12).
-Un tableau de bord sans destinataire d'action ne produit aucune décision.
+Each row closes the decision loop required by the certification grid (notebook section 12).
+A dashboard with no action owner produces no decision.
 """
 
 from __future__ import annotations
@@ -13,6 +13,8 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class RegleAlerte:
+    """One monitoring rule. Frozen: rules are configuration, not mutable state."""
+
     indicateur: str
     nature: str
     seuil: str
@@ -74,12 +76,12 @@ REGLES_ALERTE: tuple[RegleAlerte, ...] = (
 
 
 def table_regles() -> pd.DataFrame:
-    """Tableau des règles, à afficher tel quel dans le notebook."""
+    """Rule table, displayed as-is in the notebook."""
     return pd.DataFrame([vars(r) for r in REGLES_ALERTE])
 
 
 def evaluer_alertes(mesures: dict[str, bool]) -> pd.DataFrame:
-    """Confronte des mesures booléennes aux règles et liste les actions à déclencher."""
+    """Match boolean measurements against the rules and list the actions to trigger."""
     lignes = []
     for regle in REGLES_ALERTE:
         declenchee = bool(mesures.get(regle.indicateur, False))

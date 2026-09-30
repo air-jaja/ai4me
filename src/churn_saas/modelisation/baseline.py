@@ -1,9 +1,9 @@
-"""Baseline : régression logistique régularisée, dans un pipeline complet.
+"""Baseline: regularised logistic regression, wrapped in a full pipeline.
 
-Le préprocesseur est inclus **dans** le pipeline, non appliqué avant. Cela garantit que
-l'imputation et la mise à l'échelle sont apprises sur les seuls plis d'entraînement lors
-de la validation croisée. Les appliquer avant reviendrait à laisser fuiter de
-l'information du jeu de test vers l'entraînement — une fuite discrète et fréquente.
+The preprocessor lives **inside** the pipeline rather than being applied beforehand. This
+guarantees imputation and scaling are fitted on training folds only during
+cross-validation. Applying them upfront would leak information from the test fold into
+training - a subtle and very common form of leakage.
 """
 
 from __future__ import annotations
@@ -19,11 +19,11 @@ from ..config import GRAINE
 
 
 def construire_preprocesseur(X: pd.DataFrame) -> ColumnTransformer:
-    """Chaîne de préparation : imputation puis encodage, par type de colonne.
+    """Preparation chain: impute then encode, per column type.
 
-    `OneHotEncoder` et non `LabelEncoder` : `secteur`, `pays` et `plan` sont nominales.
-    Un encodage ordinal introduirait un ordre arbitraire qu'un modèle linéaire
-    interpréterait comme une relation de grandeur.
+    `OneHotEncoder` rather than `LabelEncoder`: `secteur`, `pays` and `plan` are nominal.
+    Ordinal encoding would introduce an arbitrary ordering that a linear model would read
+    as a magnitude relation.
     """
     numeriques = X.select_dtypes(include="number").columns.tolist()
     categorielles = [c for c in X.columns if c not in numeriques]
@@ -34,8 +34,9 @@ def construire_preprocesseur(X: pd.DataFrame) -> ColumnTransformer:
                 "num",
                 Pipeline(
                     [
-                        # Médiane et non moyenne : le MRR est très asymétrique
-                        # (médiane 682 EUR, moyenne 3 543 EUR).
+                        # Median rather than mean: MRR is heavily skewed
+                        # (median 682 EUR, mean 3,543 EUR). The mean would import that
+                        # skew into every imputed value.
                         ("imputation", SimpleImputer(strategy="median")),
                         ("echelle", StandardScaler()),
                     ]
@@ -49,6 +50,8 @@ def construire_preprocesseur(X: pd.DataFrame) -> ColumnTransformer:
                         ("imputation", SimpleImputer(strategy="most_frequent")),
                         (
                             "encodage",
+                            # min_frequency groups rare categories: without it a category
+                            # seen twice would get its own column and invite overfitting.
                             OneHotEncoder(handle_unknown="ignore", min_frequency=0.01),
                         ),
                     ]
@@ -61,7 +64,7 @@ def construire_preprocesseur(X: pd.DataFrame) -> ColumnTransformer:
 
 
 def construire_baseline(X: pd.DataFrame, equilibrer: bool = True) -> Pipeline:
-    """Pipeline complet de la baseline."""
+    """Full baseline pipeline."""
     return Pipeline(
         [
             ("preparation", construire_preprocesseur(X)),

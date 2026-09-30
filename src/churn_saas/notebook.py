@@ -1,18 +1,17 @@
-"""Outils d'affichage pour rendre le notebook auto-porteur.
+"""Display helpers that keep the notebook self-contained.
 
-**Le problème.** Le règlement exige un notebook compréhensible sans explication orale.
-Si le code vit uniquement dans `src/`, le jury ne le voit pas. S'il est recopié dans le
-notebook, il existe en double : deux versions qui divergeront, et des tests qui ne
-portent que sur l'une des deux.
+**The problem.** The rules require a notebook understandable without oral explanation. If
+the code lives only in `src/`, the jury never sees it. If it is copied into the notebook,
+it exists twice: two versions that will drift, and tests covering only one of them.
 
-**La solution retenue.** Une seule source de vérité — `src/churn_saas/` — testée par
-`pytest`. Le notebook l'importe, puis **affiche le code source** des fonctions clés au
-moment où il les explique. Le lecteur voit le code ; il n'existe qu'à un seul endroit.
+**The chosen answer.** A single source of truth - `src/churn_saas/`, covered by `pytest`.
+The notebook imports it, then **displays the source** of key functions where it explains
+them. The reader sees the code; the code exists in exactly one place.
 
     from churn_saas.notebook import afficher_source
     from churn_saas.donnees.silver import nettoyer_decimal_texte
 
-    afficher_source(nettoyer_decimal_texte)   # le jury lit le code ici même
+    afficher_source(nettoyer_decimal_texte)   # the jury reads the code right here
 """
 
 from __future__ import annotations
@@ -24,11 +23,11 @@ from typing import Any
 
 
 def preparer_import(racine: Path | str | None = None) -> Path:
-    """Rend `churn_saas` importable même sans installation du paquet.
+    """Make `churn_saas` importable even when the package is not installed.
 
-    Le notebook doit pouvoir être exécuté par un correcteur qui a simplement décompressé
-    l'archive, sans lancer `uv sync`. Cette fonction ajoute `src/` au chemin d'import si
-    le paquet n'est pas déjà installé.
+    A grader must be able to run the notebook straight from an unzipped archive, without
+    running `uv sync`. This walks up the tree to find `src/churn_saas` and prepends it to
+    the import path.
     """
     if racine is None:
         racine = Path.cwd()
@@ -44,11 +43,12 @@ def preparer_import(racine: Path | str | None = None) -> Path:
 
 
 def afficher_source(objet: Any, titre: str | None = None) -> str:
-    """Affiche le code source d'une fonction ou d'une classe dans le notebook.
+    """Render a function's or class's source code inside the notebook.
 
-    Utilise la coloration syntaxique si IPython est disponible, sinon un affichage texte.
-    Le code montré est **celui qui s'exécute** : il ne peut pas diverger de la version
-    testée, puisqu'il est lu dans le module au moment de l'affichage.
+    Uses syntax highlighting when IPython is available, plain text otherwise. The code
+    shown **is** the code that runs: it is read from the module at display time, so it
+    cannot drift from the tested version. Returns it as well, which makes that invariant
+    testable.
     """
     code = inspect.getsource(objet)
     module = getattr(objet, "__module__", "?")
@@ -65,7 +65,7 @@ def afficher_source(objet: Any, titre: str | None = None) -> str:
 
 
 def afficher_module(module: Any) -> None:
-    """Affiche la docstring d'un module : son rôle et les décisions qu'il porte."""
+    """Render a module's docstring: its purpose and the decisions it carries."""
     nom = getattr(module, "__name__", str(module))
     texte = inspect.getdoc(module) or "(pas de documentation)"
     try:

@@ -1,11 +1,10 @@
-"""Génération de la fiche modèle à partir du gabarit Hugging Face.
+"""Model card generation from the Hugging Face template.
 
-Le gabarit `modelcard_template.md` est rempli par substitution Jinja2. Les valeurs
-proviennent de la `FicheModele` produite à l'entraînement : la fiche et l'artefact ne
-peuvent donc pas diverger.
+The `modelcard_template.md` template is filled through Jinja2 substitution. Values come
+from the `FicheModele` produced at training time, so card and artefact cannot drift apart.
 
-Si Jinja2 n'est pas installé, une substitution minimale prend le relais — le notebook
-reste exécutable sans dépendance supplémentaire.
+If Jinja2 is unavailable a minimal substitution takes over, keeping the notebook runnable
+without an extra dependency.
 """
 
 from __future__ import annotations
@@ -18,12 +17,12 @@ GABARIT_PAR_DEFAUT = Path(__file__).parent / "modelcard_template.md"
 
 
 def _substitution_minimale(gabarit: str, contexte: dict[str, Any]) -> str:
-    """Remplace {{ cle | default(...) }} sans Jinja2. Suffisant pour ce gabarit."""
+    """Replace {{ key | default(...) }} without Jinja2. Sufficient for this template."""
 
     def remplacer(correspondance: re.Match) -> str:
         expression = correspondance.group(1).strip()
-        cle = expression.split("|")[0].strip()
-        valeur = contexte.get(cle)
+        key = expression.split("|")[0].strip()
+        valeur = contexte.get(key)
         if valeur not in (None, ""):
             return str(valeur)
         defaut = re.search(r'default\(\s*"([^"]*)"', expression)
@@ -37,7 +36,7 @@ def generer_model_card(
     gabarit: Path | str = GABARIT_PAR_DEFAUT,
     destination: Path | str | None = None,
 ) -> str:
-    """Produit la fiche modèle complétée, et l'écrit si une destination est fournie."""
+    """Render the completed model card, writing it out when a destination is given."""
     texte_gabarit = Path(gabarit).read_text(encoding="utf-8")
     try:
         from jinja2 import Template

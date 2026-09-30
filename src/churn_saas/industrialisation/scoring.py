@@ -1,9 +1,8 @@
-"""Lot mensuel de scoring — le seul endroit où la décision est prise.
+"""Monthly scoring batch - the only place where the decision is taken.
 
-Rejoue **exactement** la chaîne de préparation de l'entraînement en réutilisant les
-fonctions de `donnees.silver` et `features.construction`. Aucune transformation n'est
-réécrite ici : c'est la condition pour que le modèle reçoive en production des données
-préparées comme à l'apprentissage.
+Replays **exactly** the training preparation chain by reusing the functions from
+`donnees.silver` and `features.construction`. No transformation is rewritten here: that is
+the condition for the model to receive production data prepared the way it learned from.
 """
 
 from __future__ import annotations
@@ -24,7 +23,7 @@ def preparer(
     catalogue: pd.DataFrame | None = None,
     **options_silver: Any,
 ) -> pd.DataFrame:
-    """Chaîne de préparation unique, partagée entre entraînement et scoring."""
+    """Single preparation chain, shared between training and scoring."""
     silver = construire_silver(brut, catalogue=catalogue, **options_silver)
     silver = ajouter_ratios_usage(silver)
     return construire_gold(silver)
@@ -41,12 +40,13 @@ def scorer_lot_mensuel(
     identifiant: str = "client_id",
     **options_silver: Any,
 ) -> pd.DataFrame:
-    """Produit la liste priorisée destinée aux équipes Customer Success.
+    """Produce the prioritised shortlist for the Customer Success teams.
 
-    `valeur_vie_client` est fournie si elle est connue ; sinon elle est estimée par le
-    modèle secondaire. C'est l'usage prévu par l'énoncé : pondération de la décision,
-    jamais variable explicative du modèle de churn.
+    `valeur_vie_client` is supplied when known, otherwise estimated by the secondary
+    model. This is the use the brief intends: a decision weight, never an explanatory
+    variable of the churn model.
     """
+    # Identifiers are captured before preparation, since construire_gold drops them.
     identifiants = brut[identifiant] if identifiant in brut.columns else pd.Series(brut.index)
     X = preparer(brut, catalogue=catalogue, **options_silver)
     X = X.drop(columns=[c for c in ("churn",) if c in X.columns])

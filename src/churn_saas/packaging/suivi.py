@@ -1,12 +1,12 @@
-"""Traçabilité des expérimentations et registre de modèles (MLflow).
+"""Experiment tracking and model registry (MLflow).
 
-**Pourquoi MLflow malgré la sobriété affichée.** La convention de versioning décrite au
-notebook § 10 — nommer les fichiers et tenir une fiche — fonctionne pour un modèle et un
-opérateur. Elle ne survit ni à plusieurs réentraînements, ni à plusieurs personnes : rien
-n'empêche d'écraser un artefact ou de perdre le lien entre un score et le modèle qui l'a
-produit. MLflow outille cette convention sans la changer : mêmes objets, contrôle en plus.
+**Why MLflow despite the stated sobriety.** The naming convention described in notebook
+section 10 - name the files, keep a card - works for one model and one operator. It
+survives neither several retrainings nor several people: nothing prevents overwriting an
+artefact or losing the link between a score and the model that produced it. MLflow tools
+that convention without changing it: same objects, plus control.
 
-Le dispositif reste optionnel : le notebook s'exécute sans lui.
+The mechanism stays optional: the notebook runs without it.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from ..packaging.artefacts import FicheModele
 
 @contextmanager
 def experience(nom: str, uri_suivi: str | None = None) -> Iterator[Any]:
-    """Ouvre une exécution MLflow. Sans MLflow installé, ne fait rien et n'échoue pas."""
+    """Open an MLflow run. With MLflow absent it does nothing and does not fail."""
     try:
         import mlflow
     except ImportError:
@@ -40,9 +40,9 @@ def journaliser(
     metriques: dict[str, float],
     uri_suivi: str | None = None,
 ) -> str | None:
-    """Enregistre modèle, hyperparamètres et métriques dans une exécution MLflow.
+    """Log model, hyperparameters and metrics into an MLflow run.
 
-    Renvoie l'identifiant de l'exécution, ou None si MLflow n'est pas installé.
+    Returns the run id, or None when MLflow is not installed.
     """
     try:
         import mlflow
@@ -67,10 +67,10 @@ def journaliser(
 
 
 def promouvoir(nom_modele: str, version: str, etape: str = "Production") -> None:
-    """Promeut une version du registre vers une étape (Staging, Production).
+    """Promote a registry version to a stage (Staging, Production).
 
-    La promotion reste un **acte humain** : cette fonction est appelée après validation,
-    jamais automatiquement à la fin d'un entraînement (notebook § 13).
+    Promotion stays a **human act**: this function is called after validation, never
+    automatically at the end of a training run (notebook section 13).
     """
     import mlflow
 

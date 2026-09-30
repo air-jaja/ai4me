@@ -1,9 +1,8 @@
-"""Activité 5 — Packaging du modèle : artefacts et fiche modèle.
+"""Activity 5 - Model packaging: artefacts and model card.
 
-Un modèle livré sans sa fiche est un artefact orphelin : personne ne sait sur quelles
-données il a appris, ce qu'il sait faire, ni ce qu'il ne sait pas faire. La fiche modèle
-(*model card*) est donc produite **en même temps** que l'artefact, à partir des mêmes
-métadonnées — jamais rédigée après coup à la main.
+A model shipped without its card is an orphan artefact: nobody knows what data it learned
+from, what it can do, or what it cannot. The model card is therefore produced **alongside**
+the artefact, from the same metadata - never hand-written afterwards.
 """
 
 from .artefacts import FicheModele, charger_modele, sauvegarder_modele

@@ -1,7 +1,7 @@
-"""Paramètres du projet, centralisés pour rester traçables et modifiables en un seul endroit.
+"""Project parameters, centralised so they stay traceable and editable in one place.
 
-Les valeurs marquées HYPOTHÈSE ne sont pas observables dans les données : elles sont
-assumées comme telles devant le jury (voir notebook § 9).
+Values marked HYPOTHESIS are not observable in the data: they are owned as assumptions in
+front of the jury (notebook section 9).
 """
 
 from pathlib import Path
@@ -16,24 +16,29 @@ FICHIER_COMPLET = DONNEES_BRUTES / "churn_saas_complet.csv"
 FICHIER_ECHANTILLON = DONNEES_BRUTES / "churn_saas_echantillon.csv"
 FICHIER_CATALOGUE = DONNEES_BRUTES / "catalogue_plans.csv"
 
+# Fixed seed: reproducibility is an acceptance criterion, not a nicety.
 GRAINE = 42
 PART_TEST = 0.20
 
-# --- Variables exclues, avec le motif de l'exclusion (notebook § 4 et § 7) ---
-EXCLUES_FUITE = ["sante_compte_fin_periode"]  # postérieure à la décision
-EXCLUES_IDENTIFIANT = ["client_id"]  # identifiant, aucun pouvoir prédictif
-EXCLUES_RGPD = ["commentaire_csm"]  # texte libre, données personnelles
-EXCLUES_ARTEFACT = ["groupe_experimentation"]  # artefact de process interne
-EXCLUES_CIBLE_SECONDAIRE = ["valeur_vie_client_eur"]  # pondération de décision, jamais feature
+# --- Excluded columns, each with its own rationale (notebook sections 4 and 7) -------
+# The motives are distinct and not interchangeable: the grid separates ethics from
+# technical preparation, so one blanket justification would satisfy neither.
+EXCLUES_FUITE = ["sante_compte_fin_periode"]  # computed after the decision
+EXCLUES_IDENTIFIANT = ["client_id"]  # identifier, no predictive power
+EXCLUES_RGPD = ["commentaire_csm"]  # free text, personal data risk
+EXCLUES_ARTEFACT = ["groupe_experimentation"]  # internal process artefact
+EXCLUES_CIBLE_SECONDAIRE = ["valeur_vie_client_eur"]  # decision weight, never a feature
 
 CIBLE = "churn"
 CIBLE_SECONDAIRE = "valeur_vie_client_eur"
 
-# --- Hypothèses métier (notebook § 9) ---
-EFFICACITE_RETENTION = 0.25  # HYPOTHÈSE — sensibilité testée de 0.15 à 0.40
-COUT_CONTACT_CSM_EUR = 135.0  # HYPOTHÈSE — 1,5 h chargée + geste commercial pondéré
-CAPACITE_MENSUELLE = 140  # HYPOTHÈSE de cadrage — à confirmer avec le commanditaire
+# --- Business assumptions (notebook section 9) --------------------------------------
+# Common factor across every account: it shifts the absolute gain estimate but not the
+# ranking. That is what makes the decision rule robust to this uncertainty.
+EFFICACITE_RETENTION = 0.25  # HYPOTHESIS - sensitivity tested from 0.15 to 0.40
+COUT_CONTACT_CSM_EUR = 135.0  # HYPOTHESIS - 1.5 loaded hours + weighted commercial gesture
+CAPACITE_MENSUELLE = 140  # HYPOTHESIS - framing assumption, to confirm with the sponsor
 
-# --- Seuils de surveillance (notebook § 12 et § 13) ---
+# --- Monitoring thresholds (notebook sections 12 and 13) ----------------------------
 SEUIL_PSI_ALERTE = 0.25
-SEUIL_DEGRADATION_PR_AUC = 0.15  # baisse relative déclenchant un diagnostic
+SEUIL_DEGRADATION_PR_AUC = 0.15  # relative drop triggering a diagnosis

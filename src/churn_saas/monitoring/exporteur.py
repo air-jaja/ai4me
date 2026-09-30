@@ -1,17 +1,17 @@
-"""Exposition des indicateurs à Prometheus.
+"""Indicator exposure to Prometheus.
 
-Trois familles d'indicateurs, correspondant aux trois lectures du notebook § 12 :
-technique, dérive, métier. Prometheus les collecte périodiquement ; Grafana les affiche.
+Three families of indicators, matching the three readings of notebook section 12:
+technical, drift, business. Prometheus scrapes them; Grafana displays them.
 
-Les seuils d'alerte ne sont pas codés ici : ils vivent dans `monitoring.alertes`, avec
-leur action et leur responsable. Un exporteur expose, il ne décide pas.
+Alert thresholds are not coded here: they live in `monitoring.alertes`, together with
+their action and owner. An exporter exposes, it does not decide.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-try:  # pragma: no cover - dépend de l'installation du groupe observabilite
+try:  # pragma: no cover - depends on the `observabilite` group being installed
     from prometheus_client import Gauge, start_http_server
 
     _DISPONIBLE = True
@@ -32,7 +32,7 @@ if _DISPONIBLE:
 
 
 def demarrer_exporteur(port: int = 9109) -> None:
-    """Démarre le serveur HTTP de métriques sur /metrics."""
+    """Start the metrics HTTP server on /metrics."""
     if not _DISPONIBLE:
         raise RuntimeError(
             "prometheus-client absent : installer le groupe `observabilite` "
@@ -44,7 +44,9 @@ def demarrer_exporteur(port: int = 9109) -> None:
 def publier_lot(
     table_priorisee: Any, psi_max: float | None = None, pr_auc: float | None = None
 ) -> None:
-    """Met à jour les jauges après un lot mensuel."""
+    """Refresh the gauges after a monthly batch."""
+    # Silent no-op without the group installed: publishing metrics must never break a
+    # batch that is otherwise complete.
     if not _DISPONIBLE:
         return
     COMPTES_SCORES.set(len(table_priorisee))

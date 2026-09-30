@@ -1,8 +1,8 @@
-"""Niveau BRONZE — lecture des sources, sans aucune transformation.
+"""BRONZE level - read the sources, apply no transformation.
 
-Tout est lu en texte. Laisser pandas deviner les types masquerait précisément les défauts
-que la préparation doit traiter : un nombre écrit "33,3" serait silencieusement interprété
-comme du texte, et l'on ne saurait pas si c'est voulu.
+Everything is read as text. Letting pandas infer types would hide the very defects the
+preparation step must handle: a number stored as "33,3" would silently become a string
+and nobody could tell whether that was intended.
 """
 
 from __future__ import annotations
@@ -13,20 +13,20 @@ import pandas as pd
 
 
 def charger_bronze(chemin: Path | str) -> pd.DataFrame:
-    """Lit un CSV en conservant toutes les colonnes en texte.
+    """Read a CSV keeping every column as text.
 
-    `encoding="utf-8-sig"` retire le BOM présent en tête des fichiers fournis. Sans lui,
-    la première colonne s'appellerait "\ufeffclient_id" et toute sélection par nom
-    échouerait de façon déroutante.
+    `encoding="utf-8-sig"` strips the BOM found at the start of the supplied files.
+    Without it the first column would be named "\ufeffclient_id" and any selection by
+    name would fail in a confusing way.
     """
     return pd.read_csv(chemin, encoding="utf-8-sig", dtype=str)
 
 
 def inventaire(df: pd.DataFrame) -> pd.DataFrame:
-    """État des lieux avant toute transformation : types, manquants, valeurs distinctes.
+    """Baseline picture before any transformation: types, missing rates, cardinality.
 
-    Produit la photographie « avant » sans laquelle l'effet du nettoyage ne peut pas être
-    démontré objectivement au jury (notebook § 5).
+    Produces the "before" snapshot without which the effect of cleaning cannot be
+    demonstrated objectively to the jury (notebook section 5).
     """
     return pd.DataFrame(
         {

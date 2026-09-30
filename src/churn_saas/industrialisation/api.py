@@ -1,17 +1,17 @@
-"""Service HTTP de scoring.
+"""HTTP scoring service.
 
-**Le service ne décide pas.** Il renvoie une probabilité et une valeur espérée. La
-coupure relève du lot mensuel, qui seul dispose du classement de l'ensemble du
-portefeuille et de la capacité disponible (notebook § 9 et § 10).
+**The service does not decide.** It returns a probability and an expected value. The
+cut-off belongs to the monthly batch, which alone holds the portfolio-wide ranking and the
+available capacity (notebook sections 9 and 10).
 
-Trois routes, trois usages distincts :
-    /health   le processus répond
-    /ready    le modèle est chargé et le service peut réellement servir
-    /score    scoring d'un compte
+Three routes, three distinct purposes:
+    /health   the process answers
+    /ready    the model is loaded and the service can actually serve
+    /score    score one account
 
-La distinction /health et /ready n'est pas cosmétique : un conteneur peut répondre
-avant d'avoir chargé son modèle. Confondre les deux ferait basculer du trafic vers une
-instance incapable de servir.
+The /health versus /ready distinction is not cosmetic: a container can answer before it
+has loaded its model. Conflating the two would route traffic to an instance unable to
+serve.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ _fiche: dict[str, Any] = {}
 
 @app.on_event("startup")
 def charger_au_demarrage() -> None:
-    """Charge le modèle une fois, au démarrage, et non à chaque requête."""
+    """Load the model once, at startup, rather than on every request."""
     global _modele, _fiche
     chemin = Path(os.environ.get("CHURN_MODEL_PATH", "models/churn_model.joblib"))
     if chemin.exists():
@@ -52,13 +52,13 @@ def charger_au_demarrage() -> None:
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    """Le processus répond. N'implique pas que le service soit utilisable."""
+    """The process answers. Does not imply the service is usable."""
     return {"statut": "ok"}
 
 
 @app.get("/ready")
 def ready() -> dict[str, Any]:
-    """Le modèle est chargé : le service peut réellement servir."""
+    """The model is loaded: the service can actually serve."""
     if _modele is None:
         raise HTTPException(status_code=503, detail="Modèle non chargé.")
     return {"statut": "pret", "version_modele": _fiche.get("version", "inconnue")}
@@ -66,7 +66,7 @@ def ready() -> dict[str, Any]:
 
 @app.post("/score")
 def score(compte: dict[str, Any]) -> dict[str, Any]:
-    """Score un compte. `valeur_vie_client_eur` est requise pour la valeur espérée."""
+    """Score one account. `valeur_vie_client_eur` is required for the expected value."""
     if _modele is None:
         raise HTTPException(status_code=503, detail="Modèle non chargé.")
     if "valeur_vie_client_eur" not in compte:
@@ -89,7 +89,7 @@ def score(compte: dict[str, Any]) -> dict[str, Any]:
 
 
 def instrumenter() -> None:
-    """Expose /metrics pour Prometheus, si le groupe `observabilite` est installé."""
+    """Expose /metrics for Prometheus, if the `observabilite` group is installed."""
     try:
         from prometheus_fastapi_instrumentator import Instrumentator
     except ImportError:

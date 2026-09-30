@@ -1,14 +1,14 @@
-"""Traduction métier de la performance.
+"""Business translation of model performance.
 
-Trois niveaux, que le jury cherchera à distinguer :
+Three levels the jury will want distinguished:
 
-    EXPOSÉ    ce qui part si rien n'est fait
-    COUVERT   ce que la priorisation permet d'atteindre à capacité donnée
-              -> le seul niveau dont le modèle est responsable
-    PRÉSERVÉ  ce qui est réellement sauvé, qui dépend en outre de l'efficacité des actions
+    EXPOSED    revenue lost if nothing is done
+    COVERED    revenue the prioritisation actually reaches at a given capacity
+               -> the only level the model is responsible for
+    PRESERVED  revenue actually saved, which further depends on how good the actions are
 
-Attribuer le troisième niveau au modèle surestime son apport d'un facteur égal à
-l'inverse de l'efficacité de rétention.
+Attributing the third level to the model overstates its contribution by a factor equal to
+the inverse of retention effectiveness.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from ..config import EFFICACITE_RETENTION
 
 
 def mrr_a_risque(mrr: pd.Series, churn_reel: pd.Series) -> dict[str, float]:
-    """Assiette de référence : revenu total et revenu porté par les comptes qui résilient."""
+    """Reference base: total revenue and revenue carried by churning accounts."""
     mrr = pd.to_numeric(mrr, errors="coerce")
     churn = pd.Series(churn_reel).astype(int)
     total = float(mrr.sum())
@@ -37,7 +37,7 @@ def resume_impact(
     a_traiter: pd.Series,
     efficacite_retention: float = EFFICACITE_RETENTION,
 ) -> pd.DataFrame:
-    """Tableau des trois niveaux, avec la responsabilité associée à chacun."""
+    """Three-level table, each with the party accountable for it."""
     mrr = pd.to_numeric(mrr, errors="coerce")
     churn = pd.Series(churn_reel).astype(int)
     traite = pd.Series(a_traiter).astype(bool)

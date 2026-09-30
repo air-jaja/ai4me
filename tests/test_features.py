@@ -1,4 +1,4 @@
-"""Activité 2 — construction et contrôle des features."""
+"""Activity 2 - feature construction and control."""
 
 import pandas as pd
 
@@ -14,7 +14,7 @@ def test_ratio_protege_contre_la_division_par_zero():
     df = pd.DataFrame({"utilisateurs_actifs": [5, 0], "sieges_souscrits": [10, 0]})
     resultat = ajouter_ratios_usage(df)
     assert resultat["taux_activation"].iloc[0] == 0.5
-    assert pd.isna(resultat["taux_activation"].iloc[1])  # ni erreur, ni infini
+    assert pd.isna(resultat["taux_activation"].iloc[1])  # neither error nor infinity
 
 
 def test_controle_de_schema_signale_une_colonne_absente():
@@ -24,7 +24,7 @@ def test_controle_de_schema_signale_une_colonne_absente():
 
 
 def test_detection_generique_de_fuite():
-    """Le contrôle ne cible aucune colonne nommée : il repère la corrélation anormale."""
+    """The check targets no named column: it spots the abnormal correlation."""
     y = pd.Series([0, 1] * 50)
     X = pd.DataFrame({"fuite": y * 100, "bruit": range(100)})
     suspects = detecter_fuite_suspecte(X, y)
