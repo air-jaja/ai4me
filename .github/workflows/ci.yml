@@ -44,3 +44,11 @@ jobs:
           uv run python tools/catalogue_tests.py --sortie /tmp/TESTS.md
           diff -q /tmp/TESTS.md docs/TESTS.md \
             || (echo '::error::docs/TESTS.md est obsolète — lancer make test-doc' && exit 1)
+
+      # Rule 13: the register of what was left aside is generated from its source and from
+      # the exclusions the code declares. Out of date, it lists decisions no longer made.
+      - name: Registre des éléments écartés à jour
+        run: |
+          uv run python tools/registre_ecarts.py --sortie /tmp/REGISTRE.md
+          diff -q /tmp/REGISTRE.md docs/05.REGISTRE_elements_ecartes.md \
+            || (echo '::error::Registre obsolète — lancer make registre-doc' && exit 1)

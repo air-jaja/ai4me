@@ -12,12 +12,13 @@ would be wrong (notebook section 10).
 """
 
 from .entrepot import construire_moteur, creer_schema, ecrire_scores, lire_derniers_scores
-from .scoring import preparer, scorer_lot_mensuel
+from .scoring import controler_lot, preparer, scorer_lot_mensuel
 from .service import reponse_scoring_unitaire
 
 __all__ = [
     "preparer",
     "scorer_lot_mensuel",
+    "controler_lot",
     "reponse_scoring_unitaire",
     "construire_moteur",
     "creer_schema",

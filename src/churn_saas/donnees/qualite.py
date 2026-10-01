@@ -74,11 +74,20 @@ def _ligne(controle: str, attendu: str, observe: str, statut: str) -> dict[str, 
     return {"contrôle": controle, "attendu": attendu, "observé": observe, "statut": statut}
 
 
-def _colonnes_attendues(silver: pd.DataFrame) -> dict[str, str]:
-    absentes = sorted(set(ROLES_COLONNES) - set(silver.columns))
+# Columns a monthly batch cannot carry: the outcome is not known yet when it is scored.
+ROLES_ABSENTS_AU_SCORING = {"cible principale", "postérieur à la décision"}
+
+
+def colonnes_attendues_au_scoring() -> list[str]:
+    """Documented columns minus those only known after the decision."""
+    return [c for c, role in ROLES_COLONNES.items() if role not in ROLES_ABSENTS_AU_SCORING]
+
+
+def _colonnes_attendues(silver: pd.DataFrame, attendues: list[str]) -> dict[str, str]:
+    absentes = sorted(set(attendues) - set(silver.columns))
     return _ligne(
         "Colonnes attendues présentes",
-        f"{len(ROLES_COLONNES)} colonnes documentées",
+        f"{len(attendues)} colonnes documentées",
         f"absentes : {', '.join(absentes)}" if absentes else "toutes présentes",
         BLOQUANT if absentes else CONFORME,
     )
@@ -269,6 +278,7 @@ def verifier_contrat(
     modalites_reference: dict[str, list[str]] | None = None,
     cle_compte: str = "client_id",
     cible: str = "churn",
+    colonnes_attendues: list[str] | None = None,
     seuil_surveillance: float = SEUIL_MANQUANTS_SURVEILLANCE,
     seuil_critique: float = SEUIL_MANQUANTS_CRITIQUE,
 ) -> pd.DataFrame:
@@ -277,8 +287,12 @@ def verifier_contrat(
     `brut` enables the conversion check, which compares the source with its typed form.
     It must be the raw text, before `construire_silver`: once converted, a lost value
     looks exactly like a missing one.
+
+    `colonnes_attendues` defaults to every documented column; the monthly batch passes
+    `colonnes_attendues_au_scoring()`, since the outcome columns do not exist yet.
     """
-    lignes = [_colonnes_attendues(silver)]
+    attendues = list(ROLES_COLONNES) if colonnes_attendues is None else colonnes_attendues
+    lignes = [_colonnes_attendues(silver, attendues)]
     if brut is not None:
         lignes.append(_conversions(brut, colonnes_numeriques or [], colonnes_dates or []))
     lignes += [

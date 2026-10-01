@@ -48,11 +48,13 @@ from .qualite import (
     BLOQUANT,
     CONFORME,
     SURVEILLANCE,
+    colonnes_attendues_au_scoring,
     exiger_contrat,
     referentiel_modalites,
     statut_global,
     verifier_contrat,
 )
+from .reconstruction import REGLES_RECONSTRUCTION, reconstruire_valeurs_deterministes
 from .schema import auditer_qualite, controler_jointure, decrire_schema
 from .silver import (
     construire_silver,
@@ -81,9 +83,13 @@ __all__ = [
     "normaliser_modalites",
     "pertes_de_conversion",
     "typer_colonnes_catalogue",
+    # Deterministic reconstruction, row by row (phase 4)
+    "reconstruire_valeurs_deterministes",
+    "REGLES_RECONSTRUCTION",
     # Data contract, run identically at training and at scoring time
     "verifier_contrat",
     "exiger_contrat",
+    "colonnes_attendues_au_scoring",
     "statut_global",
     "referentiel_modalites",
     "CONFORME",

@@ -13,7 +13,7 @@ computed from a column known only after the decision is itself known only after 
 decision.
 """
 
-from .construction import ajouter_ratios_usage
+from .construction import ajouter_ratios_usage, combler_ratios_structurels
 from .controle import controler_schema, detecter_fuite_suspecte, verifier_leurres
 from .exploration import (
     correlations_cible,
@@ -31,10 +31,21 @@ from .materialisation import (
     verifier_jeux_derives,
     version_code,
 )
-from .pipeline import ResultatPipeline, executer_pipeline, table_transformations
+from .pipeline import (
+    COLONNES_DATES,
+    COLONNES_DECIMALES,
+    COLONNES_ENTIERES,
+    PreparationGold,
+    ResultatPipeline,
+    construire_silver_standard,
+    executer_pipeline,
+    preparer_gold,
+    table_transformations,
+)
 
 __all__ = [
     "ajouter_ratios_usage",
+    "combler_ratios_structurels",
     "desequilibre_cible",
     "desequilibre_categories",
     "taux_cible_par_segment",
@@ -43,6 +54,12 @@ __all__ = [
     "tendance_par_tranche",
     "monotonie",
     "executer_pipeline",
+    "construire_silver_standard",
+    "preparer_gold",
+    "PreparationGold",
+    "COLONNES_DECIMALES",
+    "COLONNES_ENTIERES",
+    "COLONNES_DATES",
     "ResultatPipeline",
     "table_transformations",
     "materialiser",

@@ -421,7 +421,7 @@ sections 5, 6 et 7 du notebook de certification
 - [x] Fonctions de nettoyage réutilisables (nombres en texte, dates multi-formats, uniformisation de la casse)
   — *rouvert puis corrigé le 01/10 : deux défauts silencieux, voir ci-dessous*
 - [x] Suppression des doublons — *en deux passes depuis le 01/10, avec blocage des comptes en conflit*
-- [~] Traitement des valeurs manquantes, colonne par colonne — *stratégie arrêtée, mise en œuvre à venir*
+- [x] Traitement des valeurs manquantes, colonne par colonne — *quatre familles, mises en œuvre le 01/10*
 - [x] Tests de qualité automatisés sur les données d'entrée — *contrat de données, 9 contrôles (10 au lot mensuel)*
 
 ### Ce que la phase 4 a trouvé en mesurant ce que la phase 2 avait coché
@@ -444,13 +444,26 @@ mensuel : colonnes attendues, aucune perte à la conversion, unicité des compte
 invariants métier, cohérence date / jour de semaine, orthographe unique des catégories, taux de manquants,
 cible binaire. **Il aurait bloqué les deux défauts silencieux** : c'est l'argument qui le justifie.
 
-### Stratégie d'imputation retenue (mise en œuvre à venir)
+### Traitement des valeurs manquantes : quatre raisons de manquer, quatre traitements
 
-Quatre familles, traitées dans cet ordre : les **trous structurels** (comptes sans utilisateur actif)
-reçoivent un indicateur puis zéro, jamais la médiane ; les valeurs **reconstructibles** (taux d'adoption,
-revenu mensuel) sont recalculées ligne à ligne ; les manques **au hasard** (écart de churn ≤ 4,2 points)
-sont imputés par la médiane, apprise sur les plis d'entraînement ; `secteur` et `pays` reçoivent une
-modalité « Non renseigné ».
+| Famille | Colonnes | Traitement | Où |
+|---|---|---|---|
+| Trou structurel | ratios par utilisateur des 297 comptes sans utilisateur actif | Zéro par convention, l'indicateur portant le sens | chemin du gold |
+| Reconstructible | revenu (150), taux d'adoption (250) | Recalcul ligne à ligne : sièges × prix ; actifs ÷ sièges | chemin du gold, **après** le contrat |
+| Manque au hasard | délai, satisfaction, heures, intégrations, retards (3 à 10 %) | Médiane, apprise sur les seuls plis d'entraînement | chaîne du modèle |
+| Catégorie manquante | secteur, pays | Modalité « Non renseigné » | chaîne du modèle |
+
+**La reconstruction est validée sur les valeurs connues** : appliquée aux 4 850 revenus observés, la règle
+sièges × prix se trompe de 9,0 % en valeur médiane, contre 91,4 % pour la médiane globale.
+
+**Le lot mensuel prépare désormais ses données exactement comme l'entraînement** : même chaîne de
+fonctions, même contrat. Il reconstruisait auparavant ses données sans convertir les nombres ni les dates —
+un *training-serving skew* que rien n'aurait signalé. Sur le jeu complet, les deux chaînes produisent un
+jeu gold identique à l'octet.
+
+**Ce qui a été laissé de côté** — méthodes d'imputation écartées, alternatives non retenues, actions
+différées, outils en attente d'arbitrage — est consigné dans le **registre des éléments écartés**
+(`docs/05.REGISTRE_elements_ecartes.md`, règle 13), qui consolide aussi les phases 1 à 3.
 
 **Un choix technique important.** Les fonctions de nettoyage sont écrites une fois et **réutilisées à
 l'identique** au moment d'appliquer le modèle à de nouveaux clients. Si l'on nettoyait différemment les
@@ -464,8 +477,8 @@ Outils du modèle générique non retenus ici : détection d'outliers par Z-scor
 observées, comme un chiffre d'affaires très élevé, sont réelles et non des erreurs ; les supprimer
 retirerait précisément les clients les plus importants.)*
 📦 **Artefacts** : section 7 du notebook · `donnees/silver.py` · `donnees/qualite.py` ·
-`docs/04.SOUTENANCE_phases_4_a_11.md`
-**Statut** : **en cours** — nettoyage, doublons et contrat terminés ; imputation à mettre en œuvre
+`donnees/reconstruction.py` · `docs/04.SOUTENANCE_phases_4_a_11.md` · `docs/05.REGISTRE_elements_ecartes.md`
+**Statut** : **code terminé** — reste la rédaction de la section 7 du notebook de certification
 
 ---
 
@@ -783,7 +796,7 @@ argument défendable devant un jury.
 | 1 · Cadrage | 🟢 Terminé | — |
 | 2 · Données | 🟢 Terminé | — |
 | 3 · Exploration | 🟢 Terminé | — |
-| 4 · Préparation | 🟡 En cours — reste l'imputation | 02/10 |
+| 4 · Préparation | 🟡 Code terminé — reste la section 7 | 02/10 |
 | 5 · Feature engineering | 🟡 En cours | 24/09 |
 | 6 · Baseline | 🟡 En cours | 25/09 |
 | 7 · Entraînement | 🔴 À faire | 25/09 |

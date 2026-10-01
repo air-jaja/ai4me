@@ -161,6 +161,39 @@ def _iso_inversees_par_l_ancienne_lecture(brut: pd.DataFrame) -> float:
     return float((ancienne != pd.to_datetime(iso, format="%Y-%m-%d")).sum())
 
 
+def _bilan_reconstruction(silver: pd.DataFrame) -> dict[str, int]:
+    """Values filled by each deterministic rule on the reference data."""
+    from churn_saas.features import preparer_gold
+
+    bilan = preparer_gold(silver).reconstructions
+    return dict(zip(bilan["colonne"], bilan["reconstruits"], strict=True))
+
+
+def _erreur_revenu(silver: pd.DataFrame, methode: str) -> float:
+    """Median relative error (%) on accounts whose revenue is known.
+
+    The rule is applied where the truth is known, and compared to it. `mediane` measures
+    what the model would receive without the rule: the global median revenue.
+    """
+    connu = pd.to_numeric(silver["revenu_mensuel_recurrent_eur"], errors="coerce").dropna()
+    if methode == "regle":
+        sieges = pd.to_numeric(silver["sieges_souscrits"], errors="coerce").astype(float)
+        prix = pd.to_numeric(silver["prix_mensuel_par_siege_eur"], errors="coerce")
+        estime = (sieges * prix).loc[connu.index]
+    else:
+        estime = pd.Series(connu.median(), index=connu.index)
+    return float(((estime - connu).abs() / connu).median() * 100)
+
+
+def _ecart_taux_adoption(silver: pd.DataFrame) -> float:
+    """Largest gap between the observed adoption rate and the rule, in points."""
+    taux = pd.to_numeric(silver["taux_adoption_pct"], errors="coerce")
+    actifs = pd.to_numeric(silver["utilisateurs_actifs"], errors="coerce").astype(float)
+    sieges = pd.to_numeric(silver["sieges_souscrits"], errors="coerce").astype(float)
+    recalcule = (actifs / sieges * 100).round(1)
+    return float((taux - recalcule).abs().max())
+
+
 # --- Published figures, declared once -------------------------------------------------
 @dataclass(frozen=True)
 class ChiffrePublie:
@@ -186,10 +219,9 @@ def _part_concentree(serie: pd.Series, part: float = 0.10) -> float:
 
 def _gold(silver: pd.DataFrame) -> pd.DataFrame:
     """Gold dataset rebuilt from the cleaned data, target included."""
-    from churn_saas.donnees import construire_gold
-    from churn_saas.features import ajouter_ratios_usage
+    from churn_saas.features import preparer_gold
 
-    return construire_gold(ajouter_ratios_usage(silver))
+    return preparer_gold(silver).gold
 
 
 def _amplitude_segment(silver: pd.DataFrame, colonne: str, effectif_minimal: int = 30) -> float:
@@ -429,9 +461,9 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
     ChiffrePublie(
         phase="3 · Exploration",
         libelle="Colonnes du jeu gold livré au modèle",
-        # 34 until phase 4, which excluded the raw date and the catalogue duplicate.
+        # 34 until phase 4, which excluded the raw date and two duplicates.
         cite_dans="03_exploration § 3.6 (34 avant la phase 4) · notebook § 7 · fiche modèle",
-        attendu=32,
+        attendu=31,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver).shape[1]),
     ),
@@ -439,7 +471,7 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
         phase="3 · Exploration",
         libelle="Variables explicatives après séparation de la cible",
         cite_dans="03_exploration § 3.6 (33 avant la phase 4) · notebook § 7 · suivi_projet_ia",
-        attendu=31,
+        attendu=30,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver).shape[1] - 1),
     ),
@@ -532,6 +564,56 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
         attendu=15.1,
         tolerance=0.5,
         calcul=lambda brut, silver: _accord_jour_semaine(brut, "ambigues", "%m/%d/%Y"),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Revenus mensuels reconstruits (sièges × prix)",
+        cite_dans="notebook § 7 · suivi § 4 · 04.SOUTENANCE · registre",
+        attendu=150,
+        tolerance=0,
+        calcul=lambda brut, silver: float(
+            _bilan_reconstruction(silver)["revenu_mensuel_recurrent_eur"]
+        ),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Taux d'adoption reconstruits (actifs ÷ sièges)",
+        cite_dans="notebook § 7 · suivi § 4 · 04.SOUTENANCE",
+        attendu=250,
+        tolerance=0,
+        calcul=lambda brut, silver: float(_bilan_reconstruction(silver)["taux_adoption_pct"]),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Erreur relative médiane du revenu reconstruit, valeurs connues (%)",
+        cite_dans="docstring de donnees/reconstruction.py · 04.SOUTENANCE · registre",
+        attendu=9.0,
+        tolerance=0.3,
+        calcul=lambda brut, silver: _erreur_revenu(silver, "regle"),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Erreur relative médiane si l'on imputait la médiane globale (%)",
+        cite_dans="docstring de donnees/reconstruction.py · 04.SOUTENANCE · registre",
+        attendu=91.4,
+        tolerance=0.5,
+        calcul=lambda brut, silver: _erreur_revenu(silver, "mediane"),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Écart maximal du taux d'adoption recalculé, valeurs connues (points)",
+        cite_dans="docstring de donnees/reconstruction.py",
+        attendu=0.0,
+        tolerance=0.0,
+        calcul=lambda brut, silver: _ecart_taux_adoption(silver),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Vrais manquants restants sur `usage_par_actif`",
+        cite_dans="notebook § 7 · suivi § 4",
+        attendu=284,
+        tolerance=0,
+        calcul=lambda brut, silver: float(_gold(silver)["usage_par_actif"].isna().sum()),
     ),
     ChiffrePublie(
         phase="3 · Exploration",
@@ -714,6 +796,19 @@ def test_les_nan_des_ratios_ont_une_cause_unique_et_connue(silver: pd.DataFrame)
     ).all()
 
 
+def test_les_trous_structurels_sont_combles_sur_le_chemin_du_gold(silver: pd.DataFrame):
+    """Phase 4: in gold, the per-user ratios are 0 on abandoned accounts, and the only NaN
+    left in `usage_par_actif` are hours genuinely unknown on accounts that have users -
+    the one kind of gap the median may fill."""
+    gold = _gold(silver)
+    actifs = pd.to_numeric(gold["utilisateurs_actifs"], errors="coerce")
+    sans_actif = actifs == 0
+    assert (gold.loc[sans_actif, ["usage_par_actif", "tickets_par_actif"]] == 0).all().all()
+    assert gold["tickets_par_actif"].notna().all()
+    attendu = gold["heures_usage_30j"].isna() & (actifs > 0)
+    assert (gold["usage_par_actif"].isna() == attendu).all()
+
+
 def test_aucun_segment_ne_concentre_le_risque(silver: pd.DataFrame):
     """No segment stands out enough for a business rule to replace the model.
 
@@ -873,8 +968,9 @@ def test_aucune_date_n_entre_dans_le_modele(chaine):
 def test_aucune_colonne_du_gold_n_est_le_doublon_d_une_autre(chaine):
     """Two identical columns give the model the same information twice, under two names.
 
-    `fonctionnalites_incluses` was an exact copy of `fonctionnalites_total` until phase 4.
-    Generic: compares every pair, names none.
+    `fonctionnalites_incluses` was an exact copy of `fonctionnalites_total`, and
+    `taux_activation` a rescaled copy of `taux_adoption_pct`, until phase 4. Generic:
+    compares every pair, names none.
     """
     X = chaine.X
     colonnes = list(X.columns)
@@ -885,6 +981,18 @@ def test_aucune_colonne_du_gold_n_est_le_doublon_d_une_autre(chaine):
         if X[a].astype("string").fillna("<NA>").equals(X[b].astype("string").fillna("<NA>"))
     ]
     assert not doublons, f"Colonnes identiques dans le gold : {doublons}"
+
+    # Strengthened in phase 4: a rescaled copy is a duplicate too. `taux_activation` was
+    # `taux_adoption_pct` / 100 and escaped the equality check above.
+    numeriques = X.select_dtypes(include="number").astype(float)
+    correlations = numeriques.corr().abs()
+    proportionnelles = [
+        (a, b)
+        for i, a in enumerate(correlations.columns)
+        for b in correlations.columns[i + 1 :]
+        if correlations.loc[a, b] > 0.999
+    ]
+    assert not proportionnelles, f"Colonnes proportionnelles dans le gold : {proportionnelles}"
 
 
 def test_les_manquants_du_delai_restent_au_hasard_apres_correction(chaine):
@@ -949,3 +1057,13 @@ def test_le_manifeste_decrit_les_jeux_produits_par_le_code(chaine):
             f"({jeux[nom]['colonnes']} colonnes enregistrées, {df.shape[1]} produites). "
             "Re-matérialiser puis committer le manifeste avec le code."
         )
+
+
+def test_le_contrat_mesure_les_manquants_de_la_source(chaine):
+    """The reconstruction runs after the contract, so the contract still sees real gaps.
+
+    Placed before, it would report 0 % missing revenue where the source has 3 %, and the
+    monthly monitoring of incoming data quality would go blind.
+    """
+    assert chaine.silver["revenu_mensuel_recurrent_eur"].isna().sum() == 150
+    assert chaine.gold["revenu_mensuel_recurrent_eur"].isna().sum() == 0

@@ -8,8 +8,9 @@
 # Temporary file for the catalogue freshness check. Kept out of the tree: it is a
 # comparison artefact, not a deliverable.
 CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
+REGISTRE_TEMPORAIRE := .registre-tmp.md
 
-.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check lint format check \
+.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check registre-doc registre-doc-check lint format check \
         notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
@@ -23,6 +24,8 @@ aide:
 	@echo "  test-ci             Suite de tests dans un environnement identique à la CI"
 	@echo "  test-doc            Régénère docs/TESTS.md depuis les fichiers de tests"
 	@echo "  test-doc-check      Vérifie que docs/TESTS.md correspond aux tests livrés"
+	@echo "  registre-doc        Régénère le registre des éléments écartés (règle 13)"
+	@echo "  registre-doc-check  Vérifie que le registre correspond à sa source"
 	@echo "  lint                Style du code"
 	@echo "  format              Reformate le code"
 	@echo "  check               Tous les contrôles, dans l'ordre où la CI les exécute"
@@ -95,6 +98,18 @@ test-doc-check:
 	@rm -f $(CATALOGUE_TEMPORAIRE)
 	@echo "Catalogue des tests à jour."
 
+# Rule 13: the register of what was left aside is generated, never hand-written.
+registre-doc:
+	uv run python tools/registre_ecarts.py
+
+registre-doc-check:
+	@uv run python tools/registre_ecarts.py --sortie $(REGISTRE_TEMPORAIRE)
+	@diff -q $(REGISTRE_TEMPORAIRE) docs/05.REGISTRE_elements_ecartes.md > /dev/null \
+		|| (echo "docs/05.REGISTRE_elements_ecartes.md est obsolète — lancer 'make registre-doc'"; \
+		    rm -f $(REGISTRE_TEMPORAIRE); exit 1)
+	@rm -f $(REGISTRE_TEMPORAIRE)
+	@echo "Registre des éléments écartés à jour."
+
 lint:
 	uv run ruff check .
 
@@ -104,7 +119,7 @@ format:
 # Mirrors the CI, in the same order and in the same environment. Running `test` here
 # instead of `test-ci` would use the local environment, where every group is
 # installed - which is how a missing dependency reached the pipeline once.
-check: test-ci lint test-doc-check
+check: test-ci lint test-doc-check registre-doc-check
 	uv run ruff format --check src tests tools
 	@echo "Tous les contrôles sont passés."
 

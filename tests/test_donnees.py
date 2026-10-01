@@ -377,3 +377,60 @@ def test_le_contrat_bloque_une_date_inversee():
         }
     )
     assert _statut(verifier_contrat(lot), "Date cohérente") == BLOQUANT
+
+
+# --- Phase 4 · Deterministic reconstruction ---------------------------------------------
+def _comptes() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "sieges_souscrits": [10, 4, 20, 5],
+            "prix_mensuel_par_siege_eur": [12, 25, None, 45],
+            "utilisateurs_actifs": [5, 1, 20, 0],
+            "revenu_mensuel_recurrent_eur": [130.0, None, None, None],
+            "taux_adoption_pct": [50.0, None, None, 0.0],
+        }
+    )
+
+
+def test_une_valeur_observee_n_est_jamais_remplacee():
+    """Reconstruction fills gaps only: an observed 130 EUR stays 130, not 10 x 12 = 120."""
+    from churn_saas.donnees import reconstruire_valeurs_deterministes
+
+    reconstruit, _ = reconstruire_valeurs_deterministes(_comptes())
+    assert reconstruit.loc[0, "revenu_mensuel_recurrent_eur"] == 130.0
+    assert reconstruit.loc[0, "taux_adoption_pct"] == 50.0
+
+
+def test_le_revenu_est_reconstruit_par_sieges_fois_prix():
+    from churn_saas.donnees import reconstruire_valeurs_deterministes
+
+    reconstruit, _ = reconstruire_valeurs_deterministes(_comptes())
+    assert reconstruit.loc[1, "revenu_mensuel_recurrent_eur"] == pytest.approx(100.0)
+    assert reconstruit.loc[3, "revenu_mensuel_recurrent_eur"] == pytest.approx(225.0)
+
+
+def test_le_taux_d_adoption_est_reconstruit_exactement():
+    """Active users over seats, times 100, one decimal - the form of the source column."""
+    from churn_saas.donnees import reconstruire_valeurs_deterministes
+
+    reconstruit, _ = reconstruire_valeurs_deterministes(_comptes())
+    assert reconstruit.loc[1, "taux_adoption_pct"] == pytest.approx(25.0)
+    assert reconstruit.loc[2, "taux_adoption_pct"] == pytest.approx(100.0)
+
+
+def test_un_ingredient_manquant_laisse_la_valeur_manquante():
+    """No price, no revenue: the gap stays, for the median imputation to handle."""
+    from churn_saas.donnees import reconstruire_valeurs_deterministes
+
+    reconstruit, bilan = reconstruire_valeurs_deterministes(_comptes())
+    assert pd.isna(reconstruit.loc[2, "revenu_mensuel_recurrent_eur"])
+    ligne = bilan.set_index("colonne").loc["revenu_mensuel_recurrent_eur"]
+    assert (ligne["manquants avant"], ligne["reconstruits"], ligne["manquants après"]) == (3, 2, 1)
+
+
+def test_une_regle_inapplicable_est_signalee_et_non_ignoree():
+    """A batch lacking an ingredient column says so in the report, it is not skipped quietly."""
+    from churn_saas.donnees import reconstruire_valeurs_deterministes
+
+    _, bilan = reconstruire_valeurs_deterministes(_comptes().drop(columns="sieges_souscrits"))
+    assert bilan["statut"].str.startswith("non applicable").all()

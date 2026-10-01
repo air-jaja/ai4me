@@ -35,10 +35,15 @@ def empreinte_donnees(df: pd.DataFrame) -> str:
     Content rather than file: two exports of the same rows produce the same fingerprint
     even if the CSV was written differently. Order independence avoids false alarms when
     the source system changes its sort.
+
+    The line terminator is fixed. Left to its default, `to_csv` uses `os.linesep`: the
+    same data fingerprinted "\r\n" on Windows and "\n" on Linux, so a manifest written on
+    a workstation could never match the CI. That went unnoticed from phase 2 to phase 4,
+    because no test compared the committed manifest with what the code produces.
     """
     ordonne = df.reindex(sorted(df.columns), axis=1)
     ordonne = ordonne.sort_values(by=list(ordonne.columns), kind="mergesort").reset_index(drop=True)
-    octets = ordonne.to_csv(index=False).encode("utf-8")
+    octets = ordonne.to_csv(index=False, lineterminator="\n").encode("utf-8")
     return hashlib.sha256(octets).hexdigest()
 
 

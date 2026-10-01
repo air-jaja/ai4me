@@ -22,6 +22,10 @@ def _ratio(numerateur: pd.Series, denominateur: pd.Series) -> pd.Series:
     return (num / den.replace(0, np.nan)).astype(float)
 
 
+# Ratios divided by the number of active users, hence undefined when it is zero.
+RATIOS_PAR_ACTIF = ("usage_par_actif", "tickets_par_actif")
+
+
 def ajouter_ratios_usage(df: pd.DataFrame) -> pd.DataFrame:
     """Add usage ratios, and the indicator their denominator hides.
 
@@ -41,6 +45,8 @@ def ajouter_ratios_usage(df: pd.DataFrame) -> pd.DataFrame:
     24.3% for the rest. Leaving the signal inside a NaN would mean losing it at the first
     imputation, since a median would replace it with the value of an ordinary account.
     `compte_sans_utilisateur_actif` therefore states it explicitly (notebook 03, § 3).
+    The NaN themselves stay here, where the exploration reads them; they are set to 0 on
+    the way to gold by `combler_ratios_structurels` (phase 4).
     """
     out = df.copy()
     if "utilisateurs_actifs" in out.columns:
@@ -58,4 +64,29 @@ def ajouter_ratios_usage(df: pd.DataFrame) -> pd.DataFrame:
         out["usage_par_actif"] = _ratio(out["heures_usage_30j"], out["utilisateurs_actifs"])
     if {"tickets_support_90j", "utilisateurs_actifs"} <= set(out.columns):
         out["tickets_par_actif"] = _ratio(out["tickets_support_90j"], out["utilisateurs_actifs"])
+
+    return out
+
+
+def combler_ratios_structurels(df: pd.DataFrame) -> pd.DataFrame:
+    """Set the per-user ratios to 0 where there is no active user (phase 4).
+
+    With no active user, a per-user ratio is undefined, not unknown. The value 0 is a
+    convention; the indicator `compte_sans_utilisateur_actif` carries the meaning. For
+    usage the convention matches the data (hours are always 0 or missing there); for
+    tickets it does not - 210 such accounts still open tickets - which is why the model
+    must read the indicator, not the ratio.
+
+    Filling them here separates the two causes of NaN. What remains is genuinely unknown
+    (hours missing on an account that has users) and goes to the median imputation of the
+    model pipeline. Applied on the way to gold only: silver keeps the NaN the exploration
+    reads, so the phase 3 demonstration stays reproducible.
+    """
+    out = df.copy()
+    if "compte_sans_utilisateur_actif" not in out.columns:
+        return out
+    sans_actif = pd.to_numeric(out["compte_sans_utilisateur_actif"], errors="coerce").eq(1)
+    for ratio in RATIOS_PAR_ACTIF:
+        if ratio in out.columns:
+            out.loc[sans_actif, ratio] = 0.0
     return out

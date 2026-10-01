@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**381 cas de test** issus de 188 fonctions, répartis sur 15 fichiers.
+**425 cas de test** issus de 216 fonctions, répartis sur 18 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -28,20 +28,23 @@ soutenance.
 | Domaine | Fichier | Activité du cycle de vie | Compétences | Cas |
 |---|---|---|---|---|
 | [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 27 |
-| [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 37 |
-| [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 25 |
-| [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 4 |
+| [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 42 |
+| [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 26 |
+| [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 8 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 14 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 6 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 127 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 137 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 56 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 64 |
+| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
+| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 4 |
+| [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 
 ---
 
@@ -104,6 +107,11 @@ soutenance.
 | 29 | `test_les_dates_textuelles_sont_lues` | _(sans description)_ | — |
 | 30 | `test_un_format_de_date_non_declare_n_est_pas_devine` | An undeclared format becomes NaT. | reported as a loss - rather than a guess. |
 | 31 | `test_le_contrat_bloque_une_date_inversee` | A date contradicting the stated weekday is reported, which is how the swap was found. | — |
+| 32 | `test_une_valeur_observee_n_est_jamais_remplacee` | Reconstruction fills gaps only: an observed 130 EUR stays 130, not 10 x 12 = 120. | — |
+| 33 | `test_le_revenu_est_reconstruit_par_sieges_fois_prix` | _(sans description)_ | — |
+| 34 | `test_le_taux_d_adoption_est_reconstruit_exactement` | Active users over seats, times 100, one decimal. | the form of the source column. |
+| 35 | `test_un_ingredient_manquant_laisse_la_valeur_manquante` | No price, no revenue: the gap stays, for the median imputation to handle. | — |
+| 36 | `test_une_regle_inapplicable_est_signalee_et_non_ignoree` | A batch lacking an ingredient column says so in the report, it is not skipped quietly. | — |
 
 ### Schéma, gouvernance et versionnement des données
 
@@ -123,19 +131,20 @@ soutenance.
 | 8 | `test_les_exemples_affiches_sont_masques` | The demonstration must not commit the offence it describes. | — |
 | 9 | `test_la_comparaison_de_stockage_tranche_chaque_option` | Every storage option must carry a decision, not just a description. | An option listed without a verdict is a comparison the jury will finish itself. |
 | 10 | `test_l_empreinte_ignore_l_ordre_des_lignes_et_des_colonnes` | Two exports of the same content must yield the same fingerprint. | — |
-| 11 | `test_l_empreinte_change_si_une_valeur_change` | A single changed value must change the fingerprint. | Without this property the manifest would certify datasets it never verified. |
-| 12 | `test_le_manifeste_detecte_une_source_modifiee` | Run before any training: a changed source means the run reproduces nothing. | — |
-| 13 | `test_le_manifeste_signale_une_source_disparue` | A missing source must be reported, not silently ignored. | — |
-| 14 | `test_les_tables_de_gouvernance_ne_sont_jamais_vides` _(×3)_ | An empty governance table would silently remove a section from the notebook. | — |
-| 15 | `test_le_manifeste_n_est_pas_reecrit_sans_raison` | Two runs on unchanged sources must leave the manifest byte-identical. | Regenerating it each time would change `date_construction` and produce a diff on every commit for fingerprints that did not move. Noise of that kind trains readers to skip the file, and a manifest nobody reads certifies nothing. |
-| 16 | `test_le_manifeste_est_reecrit_si_une_source_change` | A changed source must force a rewrite: silence there would certify a lie. | — |
-| 17 | `test_l_inventaire_decrit_chaque_colonne` | The "before" snapshot must cover every column, including the empty ones. | Section 5 of the notebook compares this inventory to reference values. A column missing from it would silently escape the completeness check. |
-| 18 | `test_la_table_des_exclusions_expose_chaque_motif` | Every excluded column appears with its own rationale. | The motives are not interchangeable: the grid separates ethics from technical preparation, so a single blanket justification would satisfy neither. |
-| 19 | `test_l_empreinte_de_fichier_depend_du_contenu` | Identical bytes give the same fingerprint, a single changed byte gives another. | — |
-| 20 | `test_l_empreinte_de_fichier_lit_par_blocs` | Block reading must give the same result as reading the file whole. | The block size bounds memory use on a large snapshot; a wrong implementation would only show up on files too big to notice during development. |
-| 21 | `test_le_manifeste_se_relit_a_l_identique` | Writing then reading a manifest must return the same content. | The manifest is the contract between a data version and a model. A round-trip that loses a field would make the contract unverifiable without saying so. |
-| 22 | `test_le_manifeste_enregistre_des_chemins_relatifs` | Paths are stored relative to the repository root, never absolute. | An absolute path ties the manifest to the machine that wrote it. Regenerated on a workstation and committed, it can no longer be verified anywhere else - CI included, where every source would be reported as missing. The check would then fail for a reason unrelated to the data it is meant to protect. |
-| 23 | `test_le_manifeste_relatif_se_verifie_depuis_une_autre_racine` | A relative manifest verifies wherever the repository is cloned. | — |
+| 11 | `test_l_empreinte_ne_depend_pas_du_systeme_d_exploitation` | The same data must fingerprint identically on Windows and on Linux. | `to_csv` ends lines with `os.linesep` by default. The phase 3 manifest, written on a Windows workstation, recorded a " " fingerprint the Linux CI could never reproduce; it surfaced only when phase 4 started comparing the manifest with the code. Simulating the Windows separator is enough: pandas reads it at call time. |
+| 12 | `test_l_empreinte_change_si_une_valeur_change` | A single changed value must change the fingerprint. | Without this property the manifest would certify datasets it never verified. |
+| 13 | `test_le_manifeste_detecte_une_source_modifiee` | Run before any training: a changed source means the run reproduces nothing. | — |
+| 14 | `test_le_manifeste_signale_une_source_disparue` | A missing source must be reported, not silently ignored. | — |
+| 15 | `test_les_tables_de_gouvernance_ne_sont_jamais_vides` _(×3)_ | An empty governance table would silently remove a section from the notebook. | — |
+| 16 | `test_le_manifeste_n_est_pas_reecrit_sans_raison` | Two runs on unchanged sources must leave the manifest byte-identical. | Regenerating it each time would change `date_construction` and produce a diff on every commit for fingerprints that did not move. Noise of that kind trains readers to skip the file, and a manifest nobody reads certifies nothing. |
+| 17 | `test_le_manifeste_est_reecrit_si_une_source_change` | A changed source must force a rewrite: silence there would certify a lie. | — |
+| 18 | `test_l_inventaire_decrit_chaque_colonne` | The "before" snapshot must cover every column, including the empty ones. | Section 5 of the notebook compares this inventory to reference values. A column missing from it would silently escape the completeness check. |
+| 19 | `test_la_table_des_exclusions_expose_chaque_motif` | Every excluded column appears with its own rationale. | The motives are not interchangeable: the grid separates ethics from technical preparation, so a single blanket justification would satisfy neither. |
+| 20 | `test_l_empreinte_de_fichier_depend_du_contenu` | Identical bytes give the same fingerprint, a single changed byte gives another. | — |
+| 21 | `test_l_empreinte_de_fichier_lit_par_blocs` | Block reading must give the same result as reading the file whole. | The block size bounds memory use on a large snapshot; a wrong implementation would only show up on files too big to notice during development. |
+| 22 | `test_le_manifeste_se_relit_a_l_identique` | Writing then reading a manifest must return the same content. | The manifest is the contract between a data version and a model. A round-trip that loses a field would make the contract unverifiable without saying so. |
+| 23 | `test_le_manifeste_enregistre_des_chemins_relatifs` | Paths are stored relative to the repository root, never absolute. | An absolute path ties the manifest to the machine that wrote it. Regenerated on a workstation and committed, it can no longer be verified anywhere else - CI included, where every source would be reported as missing. The check would then fail for a reason unrelated to the data it is meant to protect. |
+| 24 | `test_le_manifeste_relatif_se_verifie_depuis_une_autre_racine` | A relative manifest verifies wherever the repository is cloned. | — |
 
 ### Construction et contrôle des variables
 
@@ -149,6 +158,10 @@ soutenance.
 | 2 | `test_controle_de_schema_signale_une_colonne_absente` | A missing expected column must be reported as non-compliant. | This is step 2 of the CI chain: it blocks a batch rather than scoring out-of-domain data, which would produce plausible but wrong probabilities. |
 | 3 | `test_detection_generique_de_fuite` | The check targets no named column: it spots the abnormal correlation. | — |
 | 4 | `test_confirmation_empirique_des_leurres` | Decoy variables must be confirmed as useless by measurement, not by assumption. | Dropping them upfront would forfeit the interpretability demonstration the brief asks for; keeping them without checking would be an unverified claim. |
+| 5 | `test_les_ratios_structurels_valent_zero` | No active user: the per-user ratios are undefined, set to 0 by convention. | The indicator carries the meaning. Without the zero, these 297 accounts would be imputed with the median of ordinary accounts - mixed with genuinely unknown values. |
+| 6 | `test_un_vrai_manquant_de_ratio_reste_manquant` | Users present, hours unknown: that gap is genuine and must reach the median imputation. | — |
+| 7 | `test_la_chaine_partagee_produit_le_meme_gold_que_le_pipeline` | Training and monthly batch go through `preparer_gold`; it must match the pipeline. | The batch used to rebuild silver without the column lists and to skip what the pipeline did. This compares on a small frame; the non-regression suite compares on the full dataset. |
+| 8 | `test_le_silver_garde_les_nan_que_l_exploration_lit` | The zeros apply on the way to gold; silver keeps the phase 3 NaN as they were. | — |
 
 ### Profilage et exploration
 
@@ -265,8 +278,8 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×59)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×59)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×64)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×64)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×4)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
@@ -345,7 +358,7 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_chiffres_publies_sont_inchanges` _(×33)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
+| 1 | `test_les_chiffres_publies_sont_inchanges` _(×39)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
 | 2 | `test_l_ecart_de_seuil_entre_deciles_reste_superieur_a_cent` | The "factor over 100" argument justifies rejecting a single global threshold. | It is the central argument of the decision rule, quoted in the framing notebook, in the explanatory document and in the oral pitch. If the spread narrowed, a global threshold would become defensible and the whole design would need rethinking. |
 | 3 | `test_le_seuil_du_dernier_decile_reste_tres_bas` | Acting on a top-decile account stays rational below 1% risk. | The 0.3% figure is the striking end of the argument presented to the jury. |
 | 4 | `test_les_hypotheses_de_cadrage_sont_inchangees` | These values are quoted verbatim in the documents and in the oral pitch. | — |
@@ -357,15 +370,60 @@ soutenance.
 | 10 | `test_les_sources_correspondent_toujours_au_manifeste` | The recorded fingerprints still match the files on disk. | This is the strongest non-regression guarantee of the project: it states that the data themselves have not moved. Every other figure here is computed from them, so a failure on this test explains all the others at once. |
 | 11 | `test_les_modalites_ne_comportent_plus_de_variante_de_casse` | One label per business category, across every categorical column. | Normalising the join key alone left `TPE` and `tpe` as two categories in the dataset. One-hot encoding then produced a column per spelling: the model saw several rare categories where the business has one, split the signal between them, and every importance reading became misleading. |
 | 12 | `test_les_nan_des_ratios_ont_une_cause_unique_et_connue` | Every NaN in `tickets_par_actif` comes from a zero denominator, nothing else. | The claim made in section 3.4 - that these NaN encode an abandoned account - only holds while this is true. Another cause appearing would make the explanatory indicator partly wrong without any metric saying so. |
-| 13 | `test_aucun_segment_ne_concentre_le_risque` | No segment stands out enough for a business rule to replace the model. | This is the framing conclusion of section 1.2: it justifies building a model rather than writing "watch sector X". It was published on overstated spreads - 13 to 17 points instead of 7 to 8 - which made it look weaker than it is. The threshold is set at 15 points: beyond that, a simple segmentation would start to compete with the model and the framing would need revisiting. |
-| 14 | `test_la_chaine_produit_deux_fois_le_meme_jeu_gold` | Two runs on the same sources must give the same gold dataset, byte for byte. | This is the assumption the whole snapshot mechanism rests on. If it broke - a pandas upgrade, a change in join order - the fingerprint recorded in the manifest would no longer identify anything, and a model card would describe data the model never saw. The check is cheap: the chain runs in under a second on this volume. |
-| 15 | `test_les_instantanes_derives_ne_sont_pas_versionnes` | Parquet snapshots stay out of Git; the manifest that describes them stays in. | Versioning the snapshots would produce a binary diff at every change to the cleaning rules, for information already held by the sources plus the code. The manifest is small, textual, and it is the contract. |
-| 16 | `test_les_figures_produites_ne_sont_pas_versionnees` | Figures are outputs: regenerable, and a binary diff at every retouch otherwise. | The documents that reuse them get them by running the notebook, not from the history. |
-| 17 | `test_le_cache_des_figures_depend_du_code_de_trace` | The property the whole figure cache rests on, pinned here as well. | If the key stopped covering the drawing code, every notebook would keep displaying figures from a previous version - and the deliverable would show pictures that no longer match the numbers beside them. |
-| 18 | `test_le_contrat_de_donnees_est_respecte_sur_le_jeu_de_reference` | The reference data pass every check of the contract, without a single watch flag. | If a check turned to "to watch" here, either the data moved (the manifest test says so) or a cleaning rule regressed. |
-| 19 | `test_aucune_colonne_numerique_n_entre_dans_le_modele_comme_categorie` | Every non-numeric explanatory column is genuinely textual. | Generic on purpose: it names no column. The catalogue prices reached the model as categories until phase 4; the next column read as text by mistake will fail here too. |
-| 20 | `test_aucune_date_n_entre_dans_le_modele` | A raw date one-hot encoded is one category per day: noise, and unknown at scoring. | — |
-| 21 | `test_aucune_colonne_du_gold_n_est_le_doublon_d_une_autre` | Two identical columns give the model the same information twice, under two names. | `fonctionnalites_incluses` was an exact copy of `fonctionnalites_total` until phase 4. Generic: compares every pair, names none. |
-| 22 | `test_les_manquants_du_delai_restent_au_hasard_apres_correction` | The phase 3 conclusion still holds on the corrected column. | Phase 3 concluded that support delays are missing at random, on a column where more than half the gaps were conversion losses. Corrected, the column must still show no structural cause (no ticket) and no churn signal - otherwise the imputation strategy built on that conclusion would rest on nothing. |
-| 23 | `test_l_absence_d_une_valeur_source_n_est_toujours_pas_un_signal` | Phase 2 published a 4.5-point maximum churn gap on raw data; it holds after cleaning. | Measured on silver now, since the cleaning is what phase 4 changed. A gap growing past the published figure plus its tolerance would mean the cleaning creates a signal. |
-| 24 | `test_le_manifeste_decrit_les_jeux_produits_par_le_code` | The derived datasets recorded in the manifest are the ones the code produces today. | Changing a cleaning rule changes silver and gold. Without this test the manifest kept describing the phase 3 gold - 34 columns, misread dates - while the code produced another one, and a model card would have cited a fingerprint nobody can reproduce. When it fails after a deliberate change: re-run the materialisation (README of the phase 4 delivery), then commit the manifest with the code. |
+| 13 | `test_les_trous_structurels_sont_combles_sur_le_chemin_du_gold` | Phase 4: in gold, the per-user ratios are 0 on abandoned accounts, and the only NaN left in `usage_par_actif` are hours genuinely unknown on accounts that have users. | the one kind of gap the median may fill. |
+| 14 | `test_aucun_segment_ne_concentre_le_risque` | No segment stands out enough for a business rule to replace the model. | This is the framing conclusion of section 1.2: it justifies building a model rather than writing "watch sector X". It was published on overstated spreads - 13 to 17 points instead of 7 to 8 - which made it look weaker than it is. The threshold is set at 15 points: beyond that, a simple segmentation would start to compete with the model and the framing would need revisiting. |
+| 15 | `test_la_chaine_produit_deux_fois_le_meme_jeu_gold` | Two runs on the same sources must give the same gold dataset, byte for byte. | This is the assumption the whole snapshot mechanism rests on. If it broke - a pandas upgrade, a change in join order - the fingerprint recorded in the manifest would no longer identify anything, and a model card would describe data the model never saw. The check is cheap: the chain runs in under a second on this volume. |
+| 16 | `test_les_instantanes_derives_ne_sont_pas_versionnes` | Parquet snapshots stay out of Git; the manifest that describes them stays in. | Versioning the snapshots would produce a binary diff at every change to the cleaning rules, for information already held by the sources plus the code. The manifest is small, textual, and it is the contract. |
+| 17 | `test_les_figures_produites_ne_sont_pas_versionnees` | Figures are outputs: regenerable, and a binary diff at every retouch otherwise. | The documents that reuse them get them by running the notebook, not from the history. |
+| 18 | `test_le_cache_des_figures_depend_du_code_de_trace` | The property the whole figure cache rests on, pinned here as well. | If the key stopped covering the drawing code, every notebook would keep displaying figures from a previous version - and the deliverable would show pictures that no longer match the numbers beside them. |
+| 19 | `test_le_contrat_de_donnees_est_respecte_sur_le_jeu_de_reference` | The reference data pass every check of the contract, without a single watch flag. | If a check turned to "to watch" here, either the data moved (the manifest test says so) or a cleaning rule regressed. |
+| 20 | `test_aucune_colonne_numerique_n_entre_dans_le_modele_comme_categorie` | Every non-numeric explanatory column is genuinely textual. | Generic on purpose: it names no column. The catalogue prices reached the model as categories until phase 4; the next column read as text by mistake will fail here too. |
+| 21 | `test_aucune_date_n_entre_dans_le_modele` | A raw date one-hot encoded is one category per day: noise, and unknown at scoring. | — |
+| 22 | `test_aucune_colonne_du_gold_n_est_le_doublon_d_une_autre` | Two identical columns give the model the same information twice, under two names. | `fonctionnalites_incluses` was an exact copy of `fonctionnalites_total`, and `taux_activation` a rescaled copy of `taux_adoption_pct`, until phase 4. Generic: compares every pair, names none. |
+| 23 | `test_les_manquants_du_delai_restent_au_hasard_apres_correction` | The phase 3 conclusion still holds on the corrected column. | Phase 3 concluded that support delays are missing at random, on a column where more than half the gaps were conversion losses. Corrected, the column must still show no structural cause (no ticket) and no churn signal - otherwise the imputation strategy built on that conclusion would rest on nothing. |
+| 24 | `test_l_absence_d_une_valeur_source_n_est_toujours_pas_un_signal` | Phase 2 published a 4.5-point maximum churn gap on raw data; it holds after cleaning. | Measured on silver now, since the cleaning is what phase 4 changed. A gap growing past the published figure plus its tolerance would mean the cleaning creates a signal. |
+| 25 | `test_le_manifeste_decrit_les_jeux_produits_par_le_code` | The derived datasets recorded in the manifest are the ones the code produces today. | Changing a cleaning rule changes silver and gold. Without this test the manifest kept describing the phase 3 gold - 34 columns, misread dates - while the code produced another one, and a model card would have cited a fingerprint nobody can reproduce. When it fails after a deliberate change: re-run the materialisation (README of the phase 4 delivery), then commit the manifest with the code. |
+| 26 | `test_le_contrat_mesure_les_manquants_de_la_source` | The reconstruction runs after the contract, so the contract still sees real gaps. | Placed before, it would report 0 % missing revenue where the source has 3 %, and the monthly monitoring of incoming data quality would go blind. |
+
+### test_industrialisation.py
+
+**Fichier :** `tests/test_industrialisation.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_le_lot_mensuel_appelle_la_chaine_partagee` | `preparer` must go through the shared chain, never rebuild silver on its own. | Until phase 4 it called `construire_silver` without the column lists: the batch would have been scored on numbers left as text while training used converted ones. |
+| 2 | `test_le_lot_mensuel_passe_le_contrat_de_donnees` | _(sans description)_ | — |
+| 3 | `test_le_lot_mensuel_prepare_comme_l_entrainement` | On the full dataset, the batch preparation yields the training gold, byte for byte. | — |
+| 4 | `test_le_contrat_du_lot_n_exige_pas_les_colonnes_posterieures` | A monthly batch has no outcome yet: its contract must not demand `churn`. | — |
+
+### test_modelisation.py
+
+**Fichier :** `tests/test_modelisation.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_l_imputation_est_apprise_sur_le_pli_d_entrainement_seulement` | The median learnt is the training fold's, never the whole table's. | Training fold: 1, 2, 3 -> median 2. Whole table: median 3. Fitted on everything, the test rows (100, 200) would have pulled the value imputed into training rows. |
+| 2 | `test_aucune_valeur_manquante_ne_sort_du_preprocesseur` | _(sans description)_ | — |
+| 3 | `test_les_categories_manquantes_deviennent_non_renseigne` | An explicit category, not the most frequent one. | The mode would have turned the unknown sector into "Retail" here, inflating the dominant segment and biasing the per-segment fairness analysis. |
+| 4 | `test_le_candidat_partage_le_preprocesseur_de_la_baseline` | One imputation strategy for both models: otherwise the comparison measures two. | — |
+
+### test_registre.py
+
+**Fichier :** `tests/test_registre.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_chaque_entree_porte_les_champs_obligatoires` | An entry without a motive or a source is an assertion, not a trace. | — |
+| 2 | `test_les_identifiants_sont_uniques` | _(sans description)_ | — |
+| 3 | `test_chaque_element_differe_a_une_condition_de_reexamen` | A postponement without a criterion for coming back is an abandonment in disguise. | — |
+| 4 | `test_les_preuves_citees_existent` | A motive citing a renamed test, or a moved file, silently loses its evidence. | — |
+| 5 | `test_aucune_colonne_ne_disparait_sans_trace` | Every column of silver missing from the model carries a motive in the code. | Generic: it names no column. Dropping a variable is a decision; this makes sure the decision is written down where the register reads it. |
+| 6 | `test_le_registre_reprend_chaque_exclusion_du_code` | The readable register lists every excluded column, read from the code. | — |
+| 7 | `test_le_registre_genere_est_a_jour` | The document matches its source. | otherwise it describes decisions no longer made. |
+| 8 | `test_le_document_s_ouvre_par_l_avertissement_de_generation` | A reader must know not to edit it, or the next generation erases the edit. | — |

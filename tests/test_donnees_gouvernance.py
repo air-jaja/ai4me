@@ -121,6 +121,24 @@ def test_l_empreinte_ignore_l_ordre_des_lignes_et_des_colonnes():
     assert empreinte_donnees(a) == empreinte_donnees(b)
 
 
+def test_l_empreinte_ne_depend_pas_du_systeme_d_exploitation(monkeypatch):
+    """The same data must fingerprint identically on Windows and on Linux.
+
+    `to_csv` ends lines with `os.linesep` by default. The phase 3 manifest, written on a
+    Windows workstation, recorded a "\r\n" fingerprint the Linux CI could never reproduce;
+    it surfaced only when phase 4 started comparing the manifest with the code.
+    Simulating the Windows separator is enough: pandas reads it at call time.
+    """
+    import os
+
+    df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
+    monkeypatch.setattr(os, "linesep", "\n")
+    sous_linux = empreinte_donnees(df)
+    monkeypatch.setattr(os, "linesep", "\r\n")
+    sous_windows = empreinte_donnees(df)
+    assert sous_windows == sous_linux
+
+
 def test_l_empreinte_change_si_une_valeur_change():
     """A single changed value must change the fingerprint.
 

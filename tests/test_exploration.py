@@ -122,8 +122,17 @@ def resultat():
 def test_le_pipeline_journalise_chacune_de_ses_etapes(resultat):
     """A transformation nobody can quantify is a transformation nobody can defend."""
     journal = resultat.journal
-    # "contrat" since phase 4: the data contract runs between silver and the ratios.
-    assert list(journal["niveau"]) == ["bronze", "silver", "contrat", "silver+", "gold", "X / y"]
+    # Since phase 4: the data contract runs between silver and the ratios, and the
+    # deterministic reconstruction between the ratios and gold.
+    assert list(journal["niveau"]) == [
+        "bronze",
+        "silver",
+        "contrat",
+        "silver+",
+        "reconstruction",
+        "gold",
+        "X / y",
+    ]
     assert (journal["effet"].str.len() > 10).all()
 
 
