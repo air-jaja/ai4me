@@ -13,6 +13,9 @@ Code is organised by **lifecycle activity** rather than by object type:
 One activity, one package, one test file. Locating the code behind a project step
 requires no knowledge of the implementation.
 
+`figures.py` stores the figures produced by the notebooks under `reports/figures/`, so
+the documents can reuse them without a screenshot and without a hardcoded path.
+
 Language convention: comments and docstrings are written in English. Rendered content
 (markdown, figure titles, table labels, printed messages) stays in French, since the
 deliverable is read by a French-speaking jury.

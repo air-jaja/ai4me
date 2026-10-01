@@ -18,7 +18,7 @@ aide:
 	@echo "  install             Environnement minimal (base + dev + notebook)"
 	@echo "  install-plateforme  Ajoute MLflow, Optuna, SHAP, SQLAlchemy, Prefect, Prometheus"
 	@echo "  kernel              Enregistre le noyau Jupyter du projet (VS Code, Jupyter)"
-	@echo "  hooks               Installe les contrôles pre-commit dans .git/hooks"
+	@echo "  hooks               Installe les hooks : contrôles au commit, tests au push"
 	@echo "  test                Suite de tests"
 	@echo "  test-ci             Suite de tests dans un environnement identique à la CI"
 	@echo "  test-doc            Régénère docs/TESTS.md depuis les fichiers de tests"
@@ -47,7 +47,8 @@ install:
 # until this target runs - which is why `install` calls it.
 hooks:
 	uv run pre-commit install
-	@echo "Hooks installés. Les contourner avec --no-verify masque une dette."
+	uv run pre-commit install --hook-type pre-push
+	@echo "Hooks installés : contrôles courts au commit, suite de tests au push."
 
 install-plateforme:
 	uv sync --frozen --group dev --group notebook --group plateforme

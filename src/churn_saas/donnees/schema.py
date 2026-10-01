@@ -137,19 +137,32 @@ def auditer_qualite(brut: pd.DataFrame) -> pd.DataFrame:
             }
         )
 
+    # Two consequences, not one. The join failure was the only one reported until phase 3
+    # showed the second, which is the more damaging: category fragmentation at encoding
+    # time. Counting the extra modalities makes the scope measurable instead of asserted.
     casse = []
-    for colonne in ("secteur", "plan", "pays", "taille_entreprise"):
+    modalites_en_trop = 0
+    for colonne in ("secteur", "plan", "pays", "taille_entreprise", "code_datacenter"):
         if colonne in brut.columns:
-            valeurs = brut[colonne].dropna().astype(str)
-            if valeurs.nunique() != valeurs.str.lower().str.strip().nunique():
-                casse.append(colonne)
+            valeurs = brut[colonne].dropna().astype(str).str.strip()
+            reelles = valeurs.str.casefold().nunique()
+            if valeurs.nunique() != reelles:
+                casse.append(f"{colonne} ({valeurs.nunique()} au lieu de {reelles})")
+                modalites_en_trop += valeurs.nunique() - reelles
     constats.append(
         {
             "défaut": "Casse et espaces hétérogènes",
-            "portée": ", ".join(casse) if casse else "aucune colonne concernée",
+            "portée": (
+                f"{', '.join(casse)} — {modalites_en_trop} modalités en trop"
+                if casse
+                else "aucune colonne concernée"
+            ),
             "conséquence si non traité": (
-                "Jointure sur `plan` silencieusement incomplète : les lignes non "
-                "appariées disparaissent sans erreur"
+                "Deux effets. La jointure sur `plan` échoue silencieusement, les lignes "
+                "non appariées disparaissent sans erreur. Et chaque orthographe devient "
+                "une catégorie à l'encodage : le modèle voit plusieurs catégories rares "
+                "là où le métier en a une, répartit le signal entre elles, et toute "
+                "lecture d'importance devient trompeuse"
             ),
         }
     )

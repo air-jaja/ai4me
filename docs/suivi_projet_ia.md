@@ -52,7 +52,7 @@ argumentée. C'est pourquoi ce document insiste autant sur les *pourquoi*.
 | **Client / commanditaire** | Direction Customer Success de l'éditeur *(cas d'usage pédagogique)* |
 | **Date de début** | 08/08/2026 |
 | **Échéance cible** | **30/09/2026** (gel des livrables) — remise 01/10/2026 |
-| **Statut global** | 🟡 En cours — phases 1 et 2 terminées, 3 à 6 engagées, 7 à 9 à exécuter |
+| **Statut global** | 🟡 En cours — phases 1 à 3 terminées, 4 à 6 engagées, 7 à 9 à exécuter |
 | **Nature** | Exercice de certification. **Aucun déploiement réel** : les phases 10 et 11 sont conçues et documentées, pas mises en service. |
 
 **Légende statut** : `[ ]` à faire · `[~]` en cours · `[x]` terminé · `[—]` sans objet ici
@@ -73,7 +73,7 @@ Trois découpages coexistent. Ils décrivent la même chose sous trois angles.
 |---|---|---|
 | 1 · Cadrage | 2, 4 | C1, C2 |
 | 2 · Données — ingestion & gouvernance | 3, 5 | C1, C2, C3 |
-| 3 · Exploration & profiling | 5, 6 | C3 |
+| 3 · Exploration & profiling | 5, 6, 7 | C3, C4 |
 | 4 · Préparation & nettoyage | 7 | C3 |
 | 5 · Feature engineering | 7 | C3, C5 |
 | 6 · Baseline & protocole d'évaluation | 8 | C4 |
@@ -171,7 +171,7 @@ technique, et une justification unique ne satisferait ni l'une ni l'autre.
 | 35 lignes en double sur 5 035 | Le programme apprend deux fois les mêmes exemples et sa note est flattée |
 | Un caractère invisible en tête de fichier | La première colonne devient introuvable par son nom |
 | Des nombres écrits comme du texte | Chaque valeur devient une catégorie : « 33,3 » et « 33,4 » n'ont plus aucun rapport |
-| Des majuscules incohérentes sur une clé | Le rapprochement échoue **sans message d'erreur** |
+| Des majuscules incohérentes | Deux effets : le rapprochement échoue **sans message d'erreur**, et 26 catégories fantômes apparaissent |
 
 **Le dernier est de loin le plus dangereux, et c'est contre-intuitif.** Les trois premiers provoquent une
 erreur franche : on cherche, on corrige. Le quatrième ne provoque rien du tout. Nous l'avons mesuré : sans
@@ -190,6 +190,10 @@ client désengagé pourrait cesser d'être suivi, et le vide dans ses données a
 Nous avons vérifié, colonne par colonne. **L'écart maximal est de 4,5 points**, pour un taux de départ moyen
 de 28 % — trop faible pour conclure. L'hypothèse est écartée sur la base d'une mesure, et c'est elle qui
 légitime la méthode de remplacement retenue à l'étape suivante.
+
+**Limite de cette conclusion, établie en phase 3.** Elle vaut pour les colonnes reçues, non pour celles que
+le programme calcule. Une division par zéro y produit des trous qui encodent un compte abandonné, avec un
+écart de 62 points. Généraliser aurait détruit le meilleur signal du jeu.
 
 ### Le cycle de vie : huit étapes, huit responsables
 
@@ -266,37 +270,144 @@ Parquet et Git-LFS *(instantanés d'entraînement)* · PostgreSQL *(scores produ
 
 ---
 
-## 3 · Exploration & profiling *(🟡 en cours)*
+## 3 · Exploration & profiling *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Regarder les données avant de les utiliser : combien de valeurs manquent, y a-t-il
 > des doublons, comment les chiffres se répartissent, quelles colonnes semblent liées au départ des clients.
-> On y détecte aussi les **biais** — par exemple si un secteur d'activité est surreprésenté, le modèle
-> risque d'être plus juste pour lui que pour les autres.
+> On y construit aussi la **chaîne de transformation** qui mène des fichiers bruts aux données exploitables
+> par un programme.
 
 - [x] Profiling : valeurs manquantes, doublons, distributions
+- [x] Construire la chaîne bronze → silver → gold
 - [x] Détecter le déséquilibre entre les catégories
-- [~] Analyser les corrélations et les tendances
-- [ ] Rédiger l'interprétation des observations
-- [ ] Vérifier si l'absence d'une donnée est elle-même un signal
+- [x] Analyser les corrélations et les tendances
+- [x] Vérifier si l'absence d'une donnée est elle-même un signal
+- [x] Rédiger l'interprétation des observations
 
-**Constats établis**
+**Livrables produits :** `notebooks/03_exploration.ipynb` (exécuté, 6 figures, 18 tableaux) et
+`docs/03.EXPLORATION_explications.md` (lecture sans prérequis technique, glossaire de 15 termes).
+
+### La découverte qui a changé la préparation
+
+Le programme calcule des **ratios d'usage** — les heures d'utilisation rapportées au nombre d'utilisateurs
+actifs, par exemple. Quand ce nombre vaut zéro, la division est impossible et l'ordinateur inscrit « valeur
+manquante ».
+
+Le réflexe aurait été de combler ces trous comme les autres. **Ils ne sont pas des données manquantes :** ils
+décrivent un compte que l'entreprise facture et que plus personne n'utilise.
+
+| Constat | Valeur |
+|---|---|
+| Comptes sans aucun utilisateur actif | 297, soit 5,9 % du portefeuille |
+| Leur taux de résiliation | **86,5 %** |
+| Celui de tous les autres | 24,3 % |
+| Revenu mensuel qu'ils représentent | ≈ 1,06 M€ |
+
+Un écart de **62 points** — le signal le plus fort de tout le jeu de données. Le combler par une moyenne
+l'aurait remplacé par la valeur d'un compte ordinaire, sans qu'aucune mesure ne signale la perte. Une
+information explicite, « ce compte n'a aucun utilisateur actif », est donc déclarée avant le calcul des
+ratios : elle survit au comblement, et un conseiller peut la lire.
+
+### Le second défaut : vingt-six catégories fantômes
+
+Un graphique de taux de départ par segment affichait **huit tailles d'entreprise** là où l'entreprise en a
+quatre, et vingt-et-un secteurs pour sept. L'uniformisation des majuscules n'était appliquée qu'à la colonne
+servant au rapprochement entre fichiers, pas aux valeurs enregistrées.
+
+Le programme aurait vu plusieurs catégories rares là où le métier en a une seule, réparti le signal entre
+elles, et toute explication fournie au conseiller serait devenue trompeuse.
+
+**Ce défaut a invalidé trois chiffres publiés en phase 1**, corrigés depuis : les écarts entre segments
+étaient surestimés d'un facteur deux. La correction renforce la conclusion du cadrage plutôt qu'elle ne la
+fragilise — les segments se séparent encore moins qu'annoncé, ce qui justifie d'autant mieux un modèle
+plutôt qu'une règle métier.
+
+### Les trois niveaux de données
+
+| Niveau | Contenu | Pour qui |
+|---|---|---|
+| **Bronze** | Brutes, telles que reçues, sans modification | Personne — c'est la référence |
+| **Silver** | Nettoyées, corrigées, rapprochées, lisibles | Un humain, un outil de restitution |
+| **Gold** | Informations calculées ajoutées, colonnes interdites retirées | Le programme |
+
+Le programme tient un **journal** : à chaque étape, le nombre de lignes et de colonnes obtenues, et l'effet
+produit. Une transformation que personne ne peut chiffrer est une transformation que personne ne peut
+défendre.
+
+**Où les trous sont comblés, et pourquoi pas dans la chaîne.** Un humain qui lit un tableau ne veut pas de
+trous ; un programme, lui, en a besoin. Le comblement est donc calculé **à l'intérieur du programme
+d'apprentissage**, sur les seules données d'entraînement — le faire avant la séparation laisserait l'examen
+influencer la révision. Une version comblée du silver existe pour la lecture humaine, explicitement
+interdite d'apprentissage.
+
+### L'absence est-elle un signal ?
+
+Question posée en phase 2, tranchée ici de façon plus fine.
+
+| Type de colonne | Écart de taux de départ | Conclusion |
+|---|---|---|
+| Colonnes **reçues** | 4,5 points au plus | Hasard : le comblement statistique est légitime |
+| Colonnes **calculées** | jusqu'à 62 points | Signal : à déclarer, jamais à combler |
+
+Deux vérifications indépendantes soutiennent la première ligne : l'écart de taux de départ, et l'absence de
+cause structurelle. Une absence peut être sans lien avec ce qu'on cherche à prédire tout en étant
+structurelle, auquel cas la combler fabriquerait une valeur qui n'a jamais existé.
+
+### Les données produites sont tracées
+
+La chaîne calcule les trois niveaux en mémoire. Rien n'était conservé — et l'étape 4 du
+cycle de vie décrite en phase 2, « instantané d'entraînement, jeu figé, horodaté et
+empreinté », restait donc déclarative.
+
+Elle est désormais effective. Les jeux nettoyé et prêt-pour-l'apprentissage sont enregistrés
+au format Parquet, avec leur empreinte et la version du programme qui les a produits. Un
+contrôle compare ces empreintes avant tout entraînement.
+
+| Jeu | Support | Conservé dans l'historique |
+|---|---|---|
+| Fichiers de départ | `data/raw/*.csv` | **Oui** — 2 Mo, référence de tout le reste |
+| Jeu nettoyé | `data/processed/*.parquet` | Non — recalculable |
+| Jeu d'entraînement | `data/processed/*.parquet` | Non — recalculable |
+| Fiche de version | `data/manifeste_v1.0.json` | **Oui** — c'est elle le contrat |
+
+**Pourquoi enregistrer un résultat reproductible.** Parce que le supposer ne suffit pas.
+Une mise à jour d'outil peut modifier le résultat sans que rien ne le signale, et le modèle
+serait entraîné sur des données différentes de celles que sa fiche décrit. Le triangle
+programme–données–modèle avait un sommet manquant : rien ne reliait une version de modèle au
+jeu exact qui l'avait produite.
+
+**Pourquoi pas en base de données.** Une base n'archive rien par nature : une mise à jour
+efface l'état précédent. Elle reste le bon support pour les scores produits, qu'on
+interroge, pas pour des données d'entraînement qu'on fige.
+
+### Constats du profilage
 
 | Observation | Valeur | Ce que cela implique |
 |---|---|---|
-| Doublons exacts | 35 sur 5 035 lignes | À supprimer — 5 000 comptes uniques restent |
-| Taux de résiliation | **28 %** | Déséquilibre modéré : environ un client sur quatre part |
-| Données manquantes | 3 à 10 % selon les colonnes | Gérable ; une colonne à 55 % est écartée |
-| Concentration du chiffre d'affaires | 10 % des comptes = 68 % du revenu | Tous les clients ne se valent pas, loin de là |
-| Défauts de format | Nombres écrits en texte, dates en formats mélangés, majuscules incohérentes | Introduits volontairement dans l'exercice — à corriger et à documenter |
+| Doublons exacts | 35 sur 5 035 lignes | Supprimés — 5 000 comptes uniques restent |
+| Doublons sur la clé client | Aucun | La suppression est sans risque |
+| Taux de résiliation | **28 %** | Déséquilibre modéré, non sévère : le discours du cas rare serait faux |
+| Données manquantes | 3 à 10 % selon les colonnes | Comblement légitime ; une colonne à 55 % reste écartée |
+| Revenu moyen / revenu médian | **5,2×** | Comblement par la médiane, jamais par la moyenne |
+| Valeurs extrêmes | 1 compte sur 8, la moitié du revenu | Conservées : ce sont les clients stratégiques |
+| Écarts entre segments | 6 à 8 points | Aucun segment ne concentre le risque : un modèle se justifie |
 
-**Une question ouverte importante.** Les taux de données manquantes sont étonnamment réguliers, ce qui
-suggère une absence purement aléatoire. Mais si l'absence d'une donnée était liée au départ du client — par
-exemple parce qu'un client désengagé cesse d'être suivi — alors **le manque serait lui-même un signal**, à
-conserver plutôt qu'à combler. À vérifier avant de décider comment traiter ces trous.
+### Le code produit
 
-🔧 **Outils** : pandas · matplotlib *(production de graphiques)*
-📦 **Artefacts** : section 6 du notebook · graphiques de distribution
-**Statut** : **en cours** — graphiques préparés, interprétation écrite à produire
+| Module | Rôle |
+|---|---|
+| `donnees/profilage.py` | Manquants, doublons, distributions, mécanisme des manquants |
+| `features/pipeline.py` | Chaîne bronze → silver → gold, avec journal |
+| `features/exploration.py` | Déséquilibre, corrélations, tendances par tranche |
+| `features/materialisation.py` | Écriture des instantanés, empreintes, contrôle d'intégrité |
+| `figures.py` | Enregistrement des graphiques et cache fondé sur données + code de tracé |
+
+🔧 **Outils** : pandas · matplotlib *(production de graphiques)* · scipy *(tests statistiques)*
+📦 **Artefacts** : `notebooks/03_exploration.ipynb` · `docs/03.EXPLORATION_explications.md` ·
+`data/processed/*.parquet` *(instantanés datés)* · `data/manifeste_v1.0.json` *(étendu)* ·
+`reports/figures/*.png` et `*.svg` *(9 figures réutilisables)* ·
+sections 5, 6 et 7 du notebook de certification
+**Statut** : **terminé** — 23 décisions arrêtées, code couvert par 68 cas de test, carnet exécuté
 
 ---
 
@@ -576,7 +687,7 @@ test de Kolmogorov-Smirnov · tableau de bord de suivi
 | Phase | Outils retenus | Écartés, et pourquoi |
 |---|---|---|
 | Cadrage | RGPD, AI Act, dictionnaire de données | — |
-| Données | Git *(CSV et fiches de version)*, pandas, SHA-256, Parquet + Git-LFS, PostgreSQL | DVC *(pertinent au-delà de quelques instantanés ; inutile à ce volume)* · Git-LFS sur les CSV *(dépendance côté client, échec silencieux sans l'extension)* |
+| Données | Git *(CSV et fiches de version)*, pandas, SHA-256, Parquet *(instantanés dérivés)*, PostgreSQL *(scores produits)* | DVC *(pertinent au-delà de quelques instantanés ; inutile à ce volume)* · Git-LFS sur les CSV *(dépendance côté client, échec silencieux sans l'extension)* |
 | Exploration | pandas, matplotlib | — |
 | Préparation | pandas, imputation médiane | Z-score, IQR *(les valeurs extrêmes sont réelles, pas des erreurs)* |
 | Feature engineering | ratios d'usage, `train_test_split`, mise à l'échelle | SMOTE/ADASYN *(fabriquent de faux clients)*, PCA *(détruit l'explicabilité)*, TimeSeriesSplit *(pas de série chronologique)* |
@@ -622,6 +733,14 @@ argument défendable devant un jury.
 | **Manifeste** | Fiche recensant les fichiers d'une version et leurs empreintes |
 | **Pseudonyme** | Identifiant permettant de remonter à une personne ou entreprise via une autre source |
 | **Variable indirecte (proxy)** | Colonne qui approche une caractéristique protégée sans la nommer |
+| **Bronze / silver / gold** | Trois états successifs des données : brutes, nettoyées, prêtes pour l'apprentissage |
+| **Corrélation** | Nombre entre −1 et +1 indiquant si deux informations varient ensemble |
+| **Médiane** | Valeur partageant une population en deux moitiés égales ; insensible aux valeurs extrêmes |
+| **Modalité** | Une des valeurs possibles d'une catégorie, par exemple « PME » |
+| **Monotone** | Se dit d'une relation qui va toujours dans le même sens |
+| **Profilage** | Mesure de ce que les données contiennent : trous, doublons, répartitions |
+| **Quintile** | Un cinquième d'une population, classée par ordre croissant |
+| **Ratio** | Rapport entre deux nombres, plus parlant que chacun pris seul |
 | **Validation croisée** | Répétition de l'évaluation sur plusieurs découpages des données |
 
 ---
@@ -632,7 +751,7 @@ argument défendable devant un jury.
 |---|---|---|
 | 1 · Cadrage | 🟢 Terminé | — |
 | 2 · Données | 🟢 Terminé | — |
-| 3 · Exploration | 🟡 En cours | 23/09 |
+| 3 · Exploration | 🟢 Terminé | — |
 | 4 · Préparation | 🟡 En cours | 23/09 |
 | 5 · Feature engineering | 🟡 En cours | 24/09 |
 | 6 · Baseline | 🟡 En cours | 25/09 |

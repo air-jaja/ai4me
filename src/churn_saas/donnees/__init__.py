@@ -7,6 +7,10 @@ Three refinement levels, the usual data engineering convention:
     GOLD    ready for learning: derived features added, forbidden columns removed,
             target separated
 
+`profilage.py` measures what the data actually contain, which is what decides the
+preparation. The pipeline composing the three levels lives in activity 2, since it ends
+with the gold dataset and its derived variables.
+
 The silver -> gold boundary carries the heaviest decision of the project: leaking
 columns are dropped there (notebook section 7).
 """
@@ -30,12 +34,23 @@ from .gouvernance import (
     table_sensibilite,
 )
 from .ingestion import charger_bronze, inventaire
+from .profilage import (
+    bornes_valeurs_extremes,
+    manquants_structurels,
+    mecanisme_manquants,
+    profil_distributions,
+    profil_doublons,
+    profil_manquants,
+    resume_profilage,
+)
 from .schema import auditer_qualite, controler_jointure, decrire_schema
 from .silver import (
     construire_silver,
     nettoyer_decimal_texte,
     normaliser_cle,
+    normaliser_modalites,
     parser_dates_multiformat,
+    silver_lisible,
 )
 
 __all__ = [
@@ -43,6 +58,7 @@ __all__ = [
     "charger_bronze",
     "inventaire",
     "construire_silver",
+    "silver_lisible",
     "construire_gold",
     "separer_cible",
     "MOTIFS_EXCLUSION",
@@ -50,6 +66,15 @@ __all__ = [
     "nettoyer_decimal_texte",
     "parser_dates_multiformat",
     "normaliser_cle",
+    "normaliser_modalites",
+    # Profiling
+    "profil_manquants",
+    "profil_doublons",
+    "profil_distributions",
+    "mecanisme_manquants",
+    "manquants_structurels",
+    "resume_profilage",
+    "bornes_valeurs_extremes",
     # Schema and quality
     "decrire_schema",
     "auditer_qualite",

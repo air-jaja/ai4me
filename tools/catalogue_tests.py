@@ -57,6 +57,23 @@ CONTEXTE: dict[str, dict[str, str]] = {
         "competences": "C3, C5",
         "protege": "Les ratios d'usage et la détection générique de fuite",
     },
+    "test_exploration.py": {
+        "titre": "Profilage et exploration",
+        "activite": "1 · Données · 2 · Features",
+        "competences": "C3, C4",
+        "protege": (
+            "Le profilage qui décide la préparation, et le pipeline bronze → silver → gold"
+        ),
+    },
+    "test_materialisation.py": {
+        "titre": "Matérialisation des jeux dérivés",
+        "activite": "2 · Features",
+        "competences": "C3, C6",
+        "protege": (
+            "Le lien entre une version de modèle et le jeu exact qui l'a produite : "
+            "écriture, empreinte, contrôle avant entraînement"
+        ),
+    },
     "test_evaluation.py": {
         "titre": "Métriques, décision et impact",
         "activite": "4 · Évaluation",
@@ -89,11 +106,29 @@ CONTEXTE: dict[str, dict[str, str]] = {
             "Les taux affichés en fin de run : un taux faux donnerait confiance sans raison"
         ),
     },
+    "test_figures.py": {
+        "titre": "Stockage et cache des figures",
+        "activite": "Transverse",
+        "competences": "C3, C8",
+        "protege": (
+            "Le cache des figures : une image périmée servie en silence serait pire "
+            "qu'une régénération systématique"
+        ),
+    },
     "test_conventions.py": {
         "titre": "Conventions de travail",
         "activite": "Transverse",
         "competences": "—",
         "protege": ("Les règles de langue : commentaires en anglais, contenu affiché en français"),
+    },
+    "test_regression_casse_modalites.py": {
+        "titre": "Défaut de casse des modalités",
+        "activite": "1 · Données",
+        "competences": "C3",
+        "protege": (
+            "Le défaut trouvé en phase 3 : ce qu'il produisait, et ce que la correction "
+            "produit — les deux sont figés pour rester traçables"
+        ),
     },
     "test_non_regression.py": {
         "titre": "Non-régression des phases terminées",
@@ -111,12 +146,16 @@ ORDRE = [
     "test_donnees.py",
     "test_donnees_gouvernance.py",
     "test_features.py",
+    "test_exploration.py",
+    "test_materialisation.py",
     "test_evaluation.py",
     "test_packaging.py",
     "test_monitoring.py",
     "test_notebook.py",
     "test_conventions.py",
+    "test_figures.py",
     "test_recapitulatif.py",
+    "test_regression_casse_modalites.py",
     "test_non_regression.py",
 ]
 

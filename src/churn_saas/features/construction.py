@@ -23,14 +23,31 @@ def _ratio(numerateur: pd.Series, denominateur: pd.Series) -> pd.Series:
 
 
 def ajouter_ratios_usage(df: pd.DataFrame) -> pd.DataFrame:
-    """Add usage ratios. Every variable relies only on data available before renewal.
+    """Add usage ratios, and the indicator their denominator hides.
+
+    Ratios built here:
 
     - `taux_activation`      share of purchased seats actually used
     - `taux_couverture_fonc` share of plan features actually used
     - `usage_par_actif`      usage intensity per active user
     - `tickets_par_actif`    support pressure relative to account size
+
+    **Plus one indicator that is not a ratio, and matters more than all of them.**
+    Dividing by the number of active users yields NaN when that number is zero. Those NaN
+    are not missing data: they encode a precise business situation - an account still
+    being paid for that nobody uses.
+
+    On this portfolio the situation covers 5.9% of accounts, which churn at 86.5% against
+    24.3% for the rest. Leaving the signal inside a NaN would mean losing it at the first
+    imputation, since a median would replace it with the value of an ordinary account.
+    `compte_sans_utilisateur_actif` therefore states it explicitly (notebook 03, § 3).
     """
     out = df.copy()
+    if "utilisateurs_actifs" in out.columns:
+        # Declared before the ratios: the indicator explains the NaN they are about to
+        # produce, and a reader meets the cause before the consequence.
+        actifs = pd.to_numeric(out["utilisateurs_actifs"], errors="coerce")
+        out["compte_sans_utilisateur_actif"] = (actifs == 0).astype("Int8")
     if {"utilisateurs_actifs", "sieges_souscrits"} <= set(out.columns):
         out["taux_activation"] = _ratio(out["utilisateurs_actifs"], out["sieges_souscrits"])
     if {"fonctionnalites_utilisees", "fonctionnalites_total"} <= set(out.columns):

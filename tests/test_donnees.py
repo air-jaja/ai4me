@@ -89,3 +89,35 @@ def test_separation_de_la_cible():
     X, y = separer_cible(gold)
     assert "churn" not in X.columns
     assert list(y) == [0, 1]
+
+
+def test_les_variantes_de_casse_sont_fusionnees_en_une_seule_modalite():
+    """`TPE` and `tpe` are one category written two ways, not two categories.
+
+    Normalising the join key alone was not enough: the join worked while the stored values
+    kept every spelling. One-hot encoding then turned each spelling into its own column, so
+    the model saw several rare categories instead of one common one, split the signal
+    between them, and made any importance reading misleading.
+    """
+    from churn_saas.donnees import normaliser_modalites
+
+    serie = pd.Series(["TPE", "tpe", " TPE ", "PME", "pme", None])
+    resultat = normaliser_modalites(serie)
+    assert resultat.dropna().nunique() == 2
+    # The canonical label is the most frequent original spelling, not a lowercase form:
+    # a deliverable should show `TPE`, not `tpe`.
+    assert resultat.iloc[0] == "TPE"
+    assert pd.isna(resultat.iloc[5])
+
+
+def test_le_silver_ne_conserve_aucune_variante_de_casse():
+    """The whole chain must leave one label per business category."""
+    brut = pd.DataFrame(
+        {
+            "secteur": ["Tech", "TECH", "tech", "Finance"],
+            "taille_entreprise": ["PME", "pme", "PME", "ETI"],
+        }
+    )
+    silver = construire_silver(brut)
+    assert silver["secteur"].nunique() == 2
+    assert silver["taille_entreprise"].nunique() == 2

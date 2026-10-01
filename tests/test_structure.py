@@ -32,7 +32,11 @@ ACTIVITES: dict[str, str] = {
 }
 
 # Modules that legitimately sit at package root because they serve every activity.
-TRANSVERSES = {"__init__", "config", "notebook"}
+#   config    parameters read by all seven
+#   notebook  display helpers used by every notebook
+#   figures   figure storage, written by every phase and read by the documents
+# Anything else belongs to the activity it serves, and the test below says so.
+TRANSVERSES = {"__init__", "config", "notebook", "figures"}
 
 # Permitted dependency edges between activities.
 #
