@@ -28,6 +28,14 @@ EXCLUES_IDENTIFIANT = ["client_id"]  # identifier, no predictive power
 EXCLUES_RGPD = ["commentaire_csm"]  # free text, personal data risk
 EXCLUES_ARTEFACT = ["groupe_experimentation"]  # internal process artefact
 EXCLUES_CIBLE_SECONDAIRE = ["valeur_vie_client_eur"]  # decision weight, never a feature
+# Added in phase 4. Neither is forbidden in principle: both are redundant, and one of them
+# could not be encoded meaningfully as it stood.
+# Duplicate -> the column already carrying the same information.
+EXCLUES_DOUBLON = {
+    "fonctionnalites_incluses": "fonctionnalites_total",  # exact catalogue copy
+    "taux_activation": "taux_adoption_pct",  # same ratio, scaled by 100 (phase 4)
+}
+EXCLUES_DATE_BRUTE = ["date_souscription"]  # one category per day; anciennete_mois carries it
 
 CIBLE = "churn"
 CIBLE_SECONDAIRE = "valeur_vie_client_eur"

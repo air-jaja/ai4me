@@ -1,6 +1,7 @@
 """Activity 2 - feature construction and control."""
 
 import pandas as pd
+import pytest
 
 from churn_saas.features.construction import ajouter_ratios_usage
 from churn_saas.features.controle import (
@@ -50,3 +51,108 @@ def test_confirmation_empirique_des_leurres():
     )
     resultat = verifier_leurres(importances, leurres_attendus=("couleur_theme_interface",))
     assert bool(resultat["confirme"].iloc[0]) is True
+
+
+# --- Phase 4 · Structural gaps -----------------------------------------------------------
+def _ratios() -> pd.DataFrame:
+    from churn_saas.features import combler_ratios_structurels
+
+    return combler_ratios_structurels(
+        ajouter_ratios_usage(
+            pd.DataFrame(
+                {
+                    "utilisateurs_actifs": [0, 0, 4, 4],
+                    "sieges_souscrits": [5, 5, 5, 5],
+                    "heures_usage_30j": [0.0, None, 8.0, None],
+                    "tickets_support_90j": [3, 0, 2, 2],
+                }
+            )
+        )
+    )
+
+
+def test_les_ratios_structurels_valent_zero():
+    """No active user: the per-user ratios are undefined, set to 0 by convention.
+
+    The indicator carries the meaning. Without the zero, these 297 accounts would be
+    imputed with the median of ordinary accounts - mixed with genuinely unknown values.
+    """
+    resultat = _ratios()
+    assert resultat.loc[:1, "usage_par_actif"].tolist() == [0.0, 0.0]
+    assert resultat.loc[:1, "tickets_par_actif"].tolist() == [0.0, 0.0]
+    assert resultat.loc[:1, "compte_sans_utilisateur_actif"].tolist() == [1, 1]
+
+
+def test_un_vrai_manquant_de_ratio_reste_manquant():
+    """Users present, hours unknown: that gap is genuine and must reach the median imputation."""
+    resultat = _ratios()
+    assert resultat.loc[2, "usage_par_actif"] == 2.0
+    assert pd.isna(resultat.loc[3, "usage_par_actif"])
+
+
+def test_la_chaine_partagee_produit_le_meme_gold_que_le_pipeline():
+    """Training and monthly batch go through `preparer_gold`; it must match the pipeline.
+
+    The batch used to rebuild silver without the column lists and to skip what the
+    pipeline did. This compares on a small frame; the non-regression suite compares on
+    the full dataset.
+    """
+    from churn_saas.features import construire_silver_standard, preparer_gold
+
+    brut = pd.DataFrame(
+        {
+            "client_id": ["A", "B"],
+            "utilisateurs_actifs": ["0", "4"],
+            "sieges_souscrits": ["5", "5"],
+            "heures_usage_30j": ["0", "8,5"],
+            "tickets_support_90j": ["1", "2"],
+            "churn": ["1", "0"],
+        }
+    )
+    gold = preparer_gold(construire_silver_standard(brut)).gold
+    assert gold["usage_par_actif"].tolist() == [0.0, pytest.approx(2.125)]
+    assert "taux_activation" not in gold.columns
+
+
+def test_le_silver_garde_les_nan_que_l_exploration_lit():
+    """The zeros apply on the way to gold; silver keeps the phase 3 NaN as they were."""
+    brut = pd.DataFrame({"utilisateurs_actifs": [0], "tickets_support_90j": [3]})
+    assert ajouter_ratios_usage(brut)["tickets_par_actif"].isna().all()
+
+
+# --- Phase 4 · Figures of the certification notebook ------------------------------------
+def test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues():
+    """Each drawing function works on its arguments alone: no global, no file written.
+
+    They were inline closures in the phase notebooks, reading notebook variables. Moved
+    here so the certification notebook calls them instead of holding a second copy.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from matplotlib.figure import Figure
+
+    from churn_saas.features import graphiques
+
+    df = pd.DataFrame(
+        {
+            "revenu": [100.0, 50.0, 10.0, 5.0, 1.0, 1.0],
+            "churn": [1, 0, 1, 0, 0, 1],
+            "utilisateurs_actifs": [0, 3, 2, 0, 1, 4],
+            "secteur": ["A", "B", "A", "B", "A", "B"],
+        }
+    )
+    profil = pd.DataFrame({"colonne": ["x", "y"], "manquants_pct": [4.0, 12.0]})
+    tranches = pd.DataFrame({"taux (%)": [50.0, 20.0, 15.0]})
+    figures = [
+        graphiques.tracer_concentration(df["revenu"], df["churn"]),
+        graphiques.tracer_completude(profil, 10, 50),
+        graphiques.tracer_compte_abandonne(df),
+        graphiques.tracer_fragmentation(
+            pd.DataFrame({"colonne": ["secteur"], "avant": [3], "après": [2]})
+        ),
+        graphiques.tracer_risque_par_segment(df, ["secteur"]),
+        graphiques.tracer_tendances({"x": tranches}, taux_global=28.0),
+    ]
+    assert all(isinstance(f, Figure) for f in figures)
+    assert all(f.axes and (f.axes[0].get_title() or f._suptitle) for f in figures)

@@ -17,6 +17,9 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from ..config import GRAINE
 
+# Label given to a missing category (phase 4), instead of the most frequent one.
+MODALITE_MANQUANTE = "Non renseigné"
+
 
 def construire_preprocesseur(X: pd.DataFrame) -> ColumnTransformer:
     """Preparation chain: impute then encode, per column type.
@@ -47,7 +50,14 @@ def construire_preprocesseur(X: pd.DataFrame) -> ColumnTransformer:
                 "cat",
                 Pipeline(
                     [
-                        ("imputation", SimpleImputer(strategy="most_frequent")),
+                        # An explicit category rather than the most frequent one
+                        # (phase 4): the mode would inflate the dominant sector or country
+                        # and bias the per-segment fairness analysis; an explicit
+                        # "missing" label keeps the gap visible, and usable by the model.
+                        (
+                            "imputation",
+                            SimpleImputer(strategy="constant", fill_value=MODALITE_MANQUANTE),
+                        ),
                         (
                             "encodage",
                             # min_frequency groups rare categories: without it a category

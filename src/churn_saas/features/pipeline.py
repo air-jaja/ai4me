@@ -37,9 +37,13 @@ from ..donnees import (
     charger_bronze,
     construire_gold,
     construire_silver,
+    exiger_contrat,
+    reconstruire_valeurs_deterministes,
     separer_cible,
+    statut_global,
+    verifier_contrat,
 )
-from .construction import ajouter_ratios_usage
+from .construction import ajouter_ratios_usage, combler_ratios_structurels
 
 # Columns whose numbers arrive as text, and dates in mixed formats. Declared once: the
 # notebooks and the monthly batch must not each hold their own copy of this list.
@@ -68,6 +72,52 @@ COLONNES_ENTIERES = (
 COLONNES_DATES = ("date_souscription",)
 
 
+def construire_silver_standard(
+    bronze: pd.DataFrame, catalogue: pd.DataFrame | None = None, **options: Any
+) -> pd.DataFrame:
+    """Silver built with the project's column lists - the one entry point for every caller.
+
+    Until phase 4 the monthly batch called `construire_silver` without these lists: it
+    would have scored on numbers left as text and unparsed dates, while training used
+    converted ones. Same function, different preparation - the training-serving skew.
+    """
+    parametres: dict[str, Any] = {
+        "colonnes_decimales": list(COLONNES_DECIMALES),
+        "colonnes_dates": list(COLONNES_DATES),
+        "colonnes_entieres": list(COLONNES_ENTIERES),
+    }
+    parametres.update(options)
+    return construire_silver(bronze, catalogue=catalogue, **parametres)
+
+
+@dataclass
+class PreparationGold:
+    """What `preparer_gold` produced: enriched silver, gold, and the reconstruction report."""
+
+    silver_enrichi: pd.DataFrame
+    gold: pd.DataFrame
+    reconstructions: pd.DataFrame
+
+
+def preparer_gold(silver: pd.DataFrame, enrichir: bool = True) -> PreparationGold:
+    """Silver -> gold, identically for training and for the monthly batch.
+
+    Order: usage ratios, structural zeros, deterministic reconstruction, exclusions. The
+    statistical imputation is *not* here: it is learnt inside the model pipeline, on
+    training folds only.
+
+    Zeros and reconstruction apply to the gold path only. Silver stays faithful to the
+    source - a reader sees a missing revenue as missing, the exploration still sees the
+    NaN of abandoned accounts - and the data contract, run on silver, keeps measuring the
+    real gaps of incoming data.
+    """
+    enrichi = ajouter_ratios_usage(silver) if enrichir else silver.copy()
+    reconstruit, bilan = reconstruire_valeurs_deterministes(combler_ratios_structurels(enrichi))
+    return PreparationGold(
+        silver_enrichi=enrichi, gold=construire_gold(reconstruit), reconstructions=bilan
+    )
+
+
 @dataclass
 class ResultatPipeline:
     """Datasets produced, and the report of what produced them."""
@@ -78,6 +128,8 @@ class ResultatPipeline:
     X: pd.DataFrame
     y: pd.Series
     journal: pd.DataFrame = field(default_factory=pd.DataFrame)
+    contrat: pd.DataFrame = field(default_factory=pd.DataFrame)
+    reconstructions: pd.DataFrame = field(default_factory=pd.DataFrame)
 
 
 def _journal(etapes: list[dict[str, Any]]) -> pd.DataFrame:
@@ -89,12 +141,17 @@ def executer_pipeline(
     chemin_catalogue: Path | str | None = None,
     enrichir: bool = True,
     cible: str = CIBLE,
+    exiger: bool = True,
 ) -> ResultatPipeline:
     """Run the three levels and record what each one changed.
 
     `enrichir` adds the usage ratios. It is a parameter rather than a constant because
     the evaluation -> features loop compares the model with and without them: measuring
     the contribution of feature engineering requires being able to switch it off.
+
+    The data contract runs right after silver, on the same terms as the monthly batch.
+    With `exiger` (the default) a blocking check stops the chain; `exiger=False` lets a
+    notebook display a failing contract instead of an exception.
     """
     etapes: list[dict[str, Any]] = []
 
@@ -110,13 +167,7 @@ def executer_pipeline(
     )
 
     catalogue = charger_bronze(chemin_catalogue) if chemin_catalogue else None
-    silver = construire_silver(
-        bronze,
-        catalogue=catalogue,
-        colonnes_decimales=list(COLONNES_DECIMALES),
-        colonnes_dates=list(COLONNES_DATES),
-        colonnes_entieres=list(COLONNES_ENTIERES),
-    )
+    silver = construire_silver_standard(bronze, catalogue=catalogue)
     etapes.append(
         {
             "niveau": "silver",
@@ -130,20 +181,50 @@ def executer_pipeline(
         }
     )
 
+    contrat = verifier_contrat(
+        silver,
+        brut=bronze,
+        colonnes_numeriques=list(COLONNES_DECIMALES) + list(COLONNES_ENTIERES),
+        colonnes_dates=list(COLONNES_DATES),
+    )
+    etapes.append(
+        {
+            "niveau": "contrat",
+            "opération": "Contrat de données (mêmes contrôles qu'au lot mensuel)",
+            "lignes": len(silver),
+            "colonnes": silver.shape[1],
+            "effet": (f"{len(contrat)} contrôles, statut global : {statut_global(contrat)}"),
+        }
+    )
+    if exiger:
+        exiger_contrat(contrat)
+
     avant_enrichissement = silver.shape[1]
+    preparation = preparer_gold(silver, enrichir=enrichir)
+    silver, gold = preparation.silver_enrichi, preparation.gold
     if enrichir:
-        silver = ajouter_ratios_usage(silver)
         etapes.append(
             {
                 "niveau": "silver+",
                 "opération": "Variables dérivées (ratios d'usage)",
                 "lignes": len(silver),
                 "colonnes": silver.shape[1],
-                "effet": f"{silver.shape[1] - avant_enrichissement} ratios ajoutés",
+                "effet": f"{silver.shape[1] - avant_enrichissement} variables ajoutées",
             }
         )
+    reconstruits = preparation.reconstructions
+    etapes.append(
+        {
+            "niveau": "reconstruction",
+            "opération": "Zéros structurels et valeurs recalculées ligne à ligne",
+            "lignes": len(gold),
+            "colonnes": silver.shape[1],
+            "effet": ", ".join(
+                f"{r['colonne']} : {r['reconstruits']}" for _, r in reconstruits.iterrows()
+            ),
+        }
+    )
 
-    gold = construire_gold(silver)
     retirees = sorted(set(silver.columns) - set(gold.columns))
     etapes.append(
         {
@@ -167,7 +248,14 @@ def executer_pipeline(
     )
 
     return ResultatPipeline(
-        bronze=bronze, silver=silver, gold=gold, X=X, y=y, journal=_journal(etapes)
+        bronze=bronze,
+        silver=silver,
+        gold=gold,
+        X=X,
+        y=y,
+        journal=_journal(etapes),
+        contrat=contrat,
+        reconstructions=preparation.reconstructions,
     )
 
 

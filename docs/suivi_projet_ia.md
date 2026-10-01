@@ -52,7 +52,7 @@ argumentée. C'est pourquoi ce document insiste autant sur les *pourquoi*.
 | **Client / commanditaire** | Direction Customer Success de l'éditeur *(cas d'usage pédagogique)* |
 | **Date de début** | 08/08/2026 |
 | **Échéance cible** | **30/09/2026** (gel des livrables) — remise 01/10/2026 |
-| **Statut global** | 🟡 En cours — phases 1 à 3 terminées, 4 à 6 engagées, 7 à 9 à exécuter |
+| **Statut global** | 🟡 En cours — phases 1 à 4 terminées (notebook de certification aligné jusqu'à la section 7), 5 à 11 à exécuter |
 | **Nature** | Exercice de certification. **Aucun déploiement réel** : les phases 10 et 11 sont conçues et documentées, pas mises en service. |
 
 **Légende statut** : `[ ]` à faire · `[~]` en cours · `[x]` terminé · `[—]` sans objet ici
@@ -389,7 +389,7 @@ interroge, pas pour des données d'entraînement qu'on fige.
 | Taux de résiliation | **28 %** | Déséquilibre modéré, non sévère : le discours du cas rare serait faux |
 | Données manquantes | 3 à 10 % selon les colonnes | Comblement légitime ; une colonne à 55 % reste écartée |
 | Revenu moyen / revenu médian | **5,2×** | Comblement par la médiane, jamais par la moyenne |
-| Valeurs extrêmes | 1 compte sur 8, la moitié du revenu | Conservées : ce sont les clients stratégiques |
+| Valeurs extrêmes | 13,6 % des comptes, 76 % du revenu | Conservées : ce sont les clients stratégiques |
 | Écarts entre segments | 6 à 8 points | Aucun segment ne concentre le risque : un modèle se justifie |
 
 ### Le code produit
@@ -411,7 +411,7 @@ sections 5, 6 et 7 du notebook de certification
 
 ---
 
-## 4 · Préparation & nettoyage *(🟡 en cours)*
+## 4 · Préparation & nettoyage *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Corriger les défauts repérés à l'étape précédente. Convertir les nombres stockés
 > comme du texte, unifier les dates, supprimer les doublons, décider quoi faire des valeurs manquantes.
@@ -419,9 +419,51 @@ sections 5, 6 et 7 du notebook de certification
 > autres clients.
 
 - [x] Fonctions de nettoyage réutilisables (nombres en texte, dates multi-formats, uniformisation de la casse)
-- [x] Suppression des doublons
-- [~] Traitement des valeurs manquantes, colonne par colonne
-- [ ] Tests de qualité automatisés sur les données d'entrée
+  — *rouvert puis corrigé le 01/10 : deux défauts silencieux, voir ci-dessous*
+- [x] Suppression des doublons — *en deux passes depuis le 01/10, avec blocage des comptes en conflit*
+- [x] Traitement des valeurs manquantes, colonne par colonne — *quatre familles, mises en œuvre le 01/10*
+- [x] Tests de qualité automatisés sur les données d'entrée — *contrat de données, 9 contrôles (10 au lot mensuel)*
+
+### Ce que la phase 4 a trouvé en mesurant ce que la phase 2 avait coché
+
+Deux cases étaient cochées sur la foi du code, pas sur celle d'une mesure. Mesurées, elles ne tenaient pas.
+
+| Défaut | Ampleur | Pourquoi rien ne l'avait signalé | Correction |
+|---|---|---|---|
+| Délais de support écrits « 3.1 h » | **570 valeurs effacées** : 21,4 % de manquants affichés en phase 3 au lieu de **10,0 %** | La conversion transforme en silence ce qu'elle ne comprend pas en « valeur manquante » | Unité retirée de façon générique, et toute valeur perdue à la conversion **arrête la chaîne** |
+| Dates ISO lues jour et mois inversés | **960 dates sur 5 000** (19 %) : « 2024-02-06 » lu 2 juin | Toutes les dates étaient lues — aucune n'était vide, rien n'avait l'air faux | Chaque format est lu explicitement ; le jour de semaine fourni par la source sert de **témoin** : 100 % d'accord désormais |
+| Colonnes du catalogue en texte | Prix, SLA et quotas encodés comme des **catégories** | Le catalogue est lu en texte comme toute source, et rien ne le retypait | Typage automatique, sans perte, après la jointure |
+| Date brute et doublon parmi les variables | `date_souscription` (une catégorie par jour) et `fonctionnalites_incluses` (copie exacte d'une autre colonne) | — | Exclues au passage au gold, chacune avec son motif |
+
+Le modèle n'avait pas encore été entraîné : aucun résultat publié n'a reposé sur ces défauts. Les chiffres
+de la phase 3 qui en dépendaient — 21,4 % de manquants, 34 colonnes gold, 33 variables explicatives — sont
+corrigés en **10,0 %, 32 et 31**, et figés par les tests de non-régression.
+
+**Le contrat de données.** Neuf contrôles s'appliquent à chaque lot (un dixième au lot mensuel : modalités inconnues à l'entraînement), à l'entraînement comme au lot
+mensuel : colonnes attendues, aucune perte à la conversion, unicité des comptes, plages de valeurs,
+invariants métier, cohérence date / jour de semaine, orthographe unique des catégories, taux de manquants,
+cible binaire. **Il aurait bloqué les deux défauts silencieux** : c'est l'argument qui le justifie.
+
+### Traitement des valeurs manquantes : quatre raisons de manquer, quatre traitements
+
+| Famille | Colonnes | Traitement | Où |
+|---|---|---|---|
+| Trou structurel | ratios par utilisateur des 297 comptes sans utilisateur actif | Zéro par convention, l'indicateur portant le sens | chemin du gold |
+| Reconstructible | revenu (150), taux d'adoption (250) | Recalcul ligne à ligne : sièges × prix ; actifs ÷ sièges | chemin du gold, **après** le contrat |
+| Manque au hasard | délai, satisfaction, heures, intégrations, retards (3 à 10 %) | Médiane, apprise sur les seuls plis d'entraînement | chaîne du modèle |
+| Catégorie manquante | secteur, pays | Modalité « Non renseigné » | chaîne du modèle |
+
+**La reconstruction est validée sur les valeurs connues** : appliquée aux 4 850 revenus observés, la règle
+sièges × prix se trompe de 9,0 % en valeur médiane, contre 91,4 % pour la médiane globale.
+
+**Le lot mensuel prépare désormais ses données exactement comme l'entraînement** : même chaîne de
+fonctions, même contrat. Il reconstruisait auparavant ses données sans convertir les nombres ni les dates —
+un *training-serving skew* que rien n'aurait signalé. Sur le jeu complet, les deux chaînes produisent un
+jeu gold identique à l'octet.
+
+**Ce qui a été laissé de côté** — méthodes d'imputation écartées, alternatives non retenues, actions
+différées, outils en attente d'arbitrage — est consigné dans le **registre des éléments écartés**
+(`docs/05.REGISTRE_elements_ecartes.md`, règle 13), qui consolide aussi les phases 1 à 3.
 
 **Un choix technique important.** Les fonctions de nettoyage sont écrites une fois et **réutilisées à
 l'identique** au moment d'appliquer le modèle à de nouveaux clients. Si l'on nettoyait différemment les
@@ -429,12 +471,14 @@ données d'apprentissage et les données réelles, le modèle recevrait des info
 reconnaît pas et se tromperait sans que rien ne l'indique. Ce défaut classique porte un nom en anglais :
 *training-serving skew*, littéralement « décalage entre l'entraînement et le service ».
 
-🔧 **Outils** : pandas · imputation par la médiane ou par la dernière valeur connue
-*(Outils du modèle générique non retenus ici : détection d'outliers par Z-score ou IQR — les valeurs extrêmes
+🔧 **Outils** : pandas · imputation par la médiane, reconstruction déterministe
+*(« Dernière valeur connue » écartée : un seul instantané par compte, il n'y a pas de valeur précédente.
+Outils du modèle générique non retenus ici : détection d'outliers par Z-score ou IQR — les valeurs extrêmes
 observées, comme un chiffre d'affaires très élevé, sont réelles et non des erreurs ; les supprimer
 retirerait précisément les clients les plus importants.)*
-📦 **Artefacts** : section 7 du notebook · fonctions de nettoyage
-**Statut** : **en cours** — stratégie d'imputation à finaliser colonne par colonne
+📦 **Artefacts** : section 7 du notebook · `donnees/silver.py` · `donnees/qualite.py` ·
+`donnees/reconstruction.py` · `docs/04.SOUTENANCE_phases_4_a_11.md` · `docs/05.REGISTRE_elements_ecartes.md`
+**Statut** : **terminé** — code, tests, documents, et sections 0 à 7 du notebook de certification réalignées sur les phases 1 à 4 (01/10)
 
 ---
 
@@ -752,7 +796,7 @@ argument défendable devant un jury.
 | 1 · Cadrage | 🟢 Terminé | — |
 | 2 · Données | 🟢 Terminé | — |
 | 3 · Exploration | 🟢 Terminé | — |
-| 4 · Préparation | 🟡 En cours | 23/09 |
+| 4 · Préparation | 🟢 Terminé | 01/10 |
 | 5 · Feature engineering | 🟡 En cours | 24/09 |
 | 6 · Baseline | 🟡 En cours | 25/09 |
 | 7 · Entraînement | 🔴 À faire | 25/09 |

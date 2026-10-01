@@ -247,3 +247,100 @@ def test_tout_nom_utilise_hors_de_son_module_est_exporte(paquet: str):
         f"Noms utilisés hors de leur module mais absents de `{paquet}.__all__` :\n  "
         + "\n  ".join(sorted(manquants))
     )
+
+
+# --- The README tree describes the package as it is ------------------------------------
+# The tree in README.md is hand-written: each line carries a description no generator could
+# produce. It is therefore checked rather than generated, like the test catalogue is checked
+# in CI: a module added without its line, or a line left behind by a removed module, fails
+# the suite. Until this check existed, `features/graphiques.py` shipped without a line.
+README = RACINE_PAQUET.parents[1] / "README.md"
+SECTION_ARBORESCENCE = "## Structure du dépôt"
+MARQUEURS = ("├── ", "└── ")
+
+
+def lire_arborescence(texte: str) -> set[str]:
+    """Paths listed in a `tree`-style block, rebuilt from the indentation.
+
+    Each level is four characters wide ("│   " or "    "). An entry ending with "/" opens
+    a directory for the deeper lines below it; an entry may span several path segments
+    ("src/churn_saas/"). Whatever follows the name, after whitespace, is a description.
+    """
+    chemins: set[str] = set()
+    pile: list[str] = []
+    for ligne in texte.splitlines():
+        position = next((ligne.find(m) for m in MARQUEURS if m in ligne), -1)
+        if position < 0:
+            continue
+        profondeur = position // 4
+        nom = ligne[position + len(MARQUEURS[0]) :].split()[0]
+        del pile[profondeur:]
+        chemins.add("".join(pile) + nom)
+        if nom.endswith("/"):
+            pile.append(nom)
+    return chemins
+
+
+def _arborescence_du_readme() -> set[str]:
+    texte = README.read_text(encoding="utf-8")
+    debut = texte.index(SECTION_ARBORESCENCE)
+    bloc = texte[debut:].split("```")[1]
+    return lire_arborescence(bloc)
+
+
+def _modules_du_paquet() -> set[str]:
+    racine = RACINE_PAQUET.parents[1]
+    return {
+        chemin.relative_to(racine).as_posix()
+        for chemin in RACINE_PAQUET.rglob("*.py")
+        if chemin.name != "__init__.py" and "__pycache__" not in chemin.parts
+    }
+
+
+def test_le_lecteur_d_arborescence_reconstruit_les_chemins():
+    """The parser itself: without this, an empty result would make the checks pass vacuously."""
+    exemple = "\n".join(
+        [
+            "projet/",
+            "├── docs/                   documents",
+            "│",
+            "└── src/paquet/             code",
+            "    ├── config.py                 paramètres",
+            "    └── donnees/            1. DONNÉES",
+            "        ├── silver.py             nettoyage",
+            "        └── gold.py               exclusions",
+        ]
+    )
+    assert lire_arborescence(exemple) == {
+        "docs/",
+        "src/paquet/",
+        "src/paquet/config.py",
+        "src/paquet/donnees/",
+        "src/paquet/donnees/silver.py",
+        "src/paquet/donnees/gold.py",
+    }
+
+
+def test_l_arborescence_du_readme_est_lue():
+    """The README tree yields the package modules - a broken parse would return nothing."""
+    modules = {c for c in _arborescence_du_readme() if c.endswith(".py")}
+    assert len(modules) >= 30, f"Arborescence du README mal lue : {len(modules)} modules trouvés"
+
+
+def test_chaque_module_figure_dans_l_arborescence_du_readme():
+    """A module the README does not list is a module a newcomer will not find."""
+    absents = sorted(_modules_du_paquet() - _arborescence_du_readme())
+    assert not absents, (
+        "Modules absents de l'arborescence du README (section « Structure du dépôt ») : "
+        f"{absents}. Ajouter pour chacun une ligne avec sa description."
+    )
+
+
+def test_l_arborescence_du_readme_ne_cite_aucun_module_disparu():
+    """A line left behind by a removed or renamed module describes code that does not exist."""
+    cites = {c for c in _arborescence_du_readme() if c.startswith("src/") and c.endswith(".py")}
+    disparus = sorted(cites - _modules_du_paquet())
+    assert not disparus, (
+        f"Modules cités par le README mais absents du paquet : {disparus}. "
+        "Retirer ou renommer leur ligne dans la section « Structure du dépôt »."
+    )

@@ -48,3 +48,4 @@ reports/figures/*
 *.patch
 .catalogue-tests-tmp.md
 .venv-ci/
+.registre-tmp.md

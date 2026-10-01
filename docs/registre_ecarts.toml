@@ -1,0 +1,497 @@
+# Registre des éléments laissés de côté — SOURCE (règle 13).
+#
+# Ce fichier est la seule source du registre. Le document lisible
+# docs/05.REGISTRE_elements_ecartes.md en est GÉNÉRÉ par `make registre-doc` :
+# ne jamais éditer le document, éditer ce fichier.
+#
+# Les colonnes exclues du modèle n'y figurent PAS : elles sont lues dans le code
+# (MOTIFS_EXCLUSION, src/churn_saas/donnees/gold.py) et ajoutées par le générateur.
+# Les recopier ici créerait deux versions qui finiraient par diverger (règle 7).
+#
+# Champs
+#   id            E-xxx écarté · D-xx différé · A-xx à arbitrer (unique)
+#   titre         ce qui est laissé de côté
+#   nature        méthode | outil | variable | règle | action | architecture
+#   statut        écarté (décision définitive) · différé (faute de temps)
+#                 · à arbitrer (décision en attente du porteur)
+#   phase         phase du projet où la décision a été prise
+#   date          JJ/MM/AAAA si la décision est datée, sinon omis
+#   competence    C1 à C9
+#   section       section du notebook de certification où l'élément se défend
+#   motif         la raison, chiffrée si possible
+#   preuve        noms de tests (test_…) ou chemins de fichiers, séparés par « · »
+#                 — vérifiés par tests/test_registre.py
+#   source        document où la décision est consignée
+#   condition     condition de réexamen — OBLIGATOIRE pour « différé » et « à arbitrer »
+#   revirement    "oui" si l'élément avait d'abord été retenu (règle 9)
+
+# ═══ Phase 1 · Cadrage ═══════════════════════════════════════════════════════
+
+[[element]]
+id = "E-101"
+titre = "Seuil de décision global (contrainte de précision ≥ 0,30)"
+nature = "règle"
+statut = "écarté"
+phase = "1 · Cadrage"
+competence = "C4"
+section = "9"
+motif = "Le seuil rationnel varie d'un facteur 130 entre déciles de valeur : un seuil unique est cohérent pour les gros comptes et absurde pour les autres. Remplacé par un classement par valeur espérée, coupé à la capacité."
+preuve = "test_l_ecart_de_seuil_entre_deciles_reste_superieur_a_cent"
+source = "00.README_choix_methodologiques § 9 · règle 9"
+revirement = "oui"
+
+[[element]]
+id = "E-102"
+titre = "Décision binaire renvoyée par l'API, compte par compte"
+nature = "architecture"
+statut = "écarté"
+phase = "1 · Cadrage"
+competence = "C6"
+section = "10"
+motif = "La décision dépend du rang du compte dans tout le portefeuille et de la capacité : elle ne peut pas être calculée pour un compte isolé. L'API renvoie probabilité et valeur espérée ; la coupure est faite par le lot mensuel."
+preuve = "src/churn_saas/industrialisation/service.py"
+source = "00.README_choix_methodologiques § 10"
+revirement = "oui"
+
+[[element]]
+id = "E-103"
+titre = "Altérer le score pour le rendre « équitable »"
+nature = "méthode"
+statut = "écarté"
+phase = "1 · Cadrage"
+competence = "C2"
+section = "4"
+motif = "Masquerait l'arbitrage au lieu de l'exposer : l'arbitrage entre valeur et équité est porté à la direction, pas tranché dans le modèle."
+source = "00.README_choix_methodologiques § 4 · 01.CADRAGE_explications"
+
+[[element]]
+id = "E-104"
+titre = "Scoring en temps réel"
+nature = "architecture"
+statut = "écarté"
+phase = "1 · Cadrage"
+competence = "C7"
+section = "11"
+motif = "La décision de rétention n'est pas prise dans la seconde ; un lot mensuel est aligné sur le cycle d'échéance. Le temps réel serait une sur-ingénierie."
+source = "00.README_choix_methodologiques § 11"
+condition = "Si le métier doit réagir à un événement (connexion, ticket) dans la journée."
+
+[[element]]
+id = "E-105"
+titre = "Réseaux de neurones profonds"
+nature = "méthode"
+statut = "écarté"
+phase = "1 · Cadrage"
+competence = "C4"
+section = "8"
+motif = "5 000 lignes tabulaires : volume très insuffisant, coût de calcul engagé sans bénéfice attendu, et explicabilité dégradée."
+source = "suivi_projet_ia (modèles écartés d'emblée)"
+
+[[element]]
+id = "E-106"
+titre = "CNN, YOLO, autoencodeurs"
+nature = "méthode"
+statut = "écarté"
+phase = "1 · Cadrage"
+competence = "C4"
+section = "8"
+motif = "Sans objet : aucune image dans les données."
+source = "suivi_projet_ia (récapitulatif des outils)"
+
+# ═══ Phase 2 · Données ═══════════════════════════════════════════════════════
+
+[[element]]
+id = "E-201"
+titre = "Git-LFS pour les fichiers CSV"
+nature = "outil"
+statut = "écarté"
+phase = "2 · Données"
+competence = "C3"
+section = "3"
+motif = "Un clone sans git-lfs récupère des pointeurs de 128 octets au lieu de 700 000, sans aucune erreur. À 2 Mo, LFS ajoute un risque sans bénéfice."
+preuve = "test_les_sources_correspondent_toujours_au_manifeste"
+source = "02.DONNEES_explications · règle 9"
+revirement = "oui"
+condition = "Au-delà de quelques dizaines de mégaoctets de données versionnées."
+
+[[element]]
+id = "E-202"
+titre = "DVC pour versionner les données"
+nature = "outil"
+statut = "écarté"
+phase = "2 · Données"
+competence = "C3"
+section = "3"
+motif = "Pertinent au-delà de quelques instantanés ; inutile à ce volume. Le manifeste à empreintes remplit le besoin."
+preuve = "test_le_manifeste_decrit_les_jeux_produits_par_le_code"
+source = "suivi_projet_ia (récapitulatif des outils)"
+condition = "Si plusieurs instantanés d'entraînement doivent coexister et être rechargés."
+
+[[element]]
+id = "E-203"
+titre = "Supprimer par précaution les variables indirectes (pays, secteur, taille)"
+nature = "variable"
+statut = "écarté"
+phase = "2 · Données"
+competence = "C2"
+section = "4"
+motif = "Le modèle reconstituerait l'information par d'autres colonnes, et plus aucun indicateur ne permettrait de le détecter. Elles sont gardées et surveillées ; les écarts entre segments restent sous 15 points."
+preuve = "test_aucun_segment_ne_concentre_le_risque"
+source = "02.DONNEES_explications"
+
+[[element]]
+id = "E-204"
+titre = "Traiter l'absence d'une valeur source comme un signal (indicateurs de manque)"
+nature = "méthode"
+statut = "écarté"
+phase = "2 · Données"
+competence = "C3"
+section = "7"
+motif = "Écart de churn maximal de 4,5 points entre valeur présente et absente, pour un taux de 28 % : trop faible. Revérifié en phase 4 sur les données corrigées. Ne vaut pas pour les ratios construits (voir l'indicateur de compte abandonné)."
+preuve = "test_l_absence_d_une_valeur_source_n_est_toujours_pas_un_signal"
+source = "02.DONNEES_explications · 03.EXPLORATION_explications"
+condition = "Si l'écart dépasse 5,5 points au lot mensuel."
+
+[[element]]
+id = "E-205"
+titre = "Encodage ordinal (LabelEncoder) des variables nominales"
+nature = "méthode"
+statut = "écarté"
+phase = "2 · Données"
+competence = "C3"
+section = "7"
+motif = "Secteur, pays et plan sont nominales : un code ordinal introduirait un ordre arbitraire qu'un modèle linéaire lirait comme une relation de grandeur."
+source = "00.README_choix_methodologiques § 8"
+
+# ═══ Phase 3 · Exploration ═══════════════════════════════════════════════════
+
+[[element]]
+id = "E-301"
+titre = "Retrait automatique des valeurs extrêmes (Z-score, IQR)"
+nature = "méthode"
+statut = "écarté"
+phase = "3 · Exploration"
+competence = "C3"
+section = "7"
+motif = "La règle de Tukey écarterait 13,6 % des comptes, qui portent 76 % du revenu. Ce ne sont pas des erreurs : ce sont les clients stratégiques que le projet doit protéger."
+source = "03.EXPLORATION_explications · suivi_projet_ia § 4"
+
+[[element]]
+id = "E-302"
+titre = "Imputation par la moyenne"
+nature = "méthode"
+statut = "écarté"
+phase = "3 · Exploration"
+competence = "C3"
+section = "7"
+motif = "Le revenu moyen vaut plus de cinq fois le revenu médian : la moyenne attribuerait à un client ordinaire le revenu d'un client cinq fois plus gros."
+source = "03.EXPLORATION_explications"
+
+[[element]]
+id = "E-303"
+titre = "Écarter une variable sur sa seule corrélation faible"
+nature = "méthode"
+statut = "écarté"
+phase = "3 · Exploration"
+competence = "C3"
+section = "6"
+motif = "Une corrélation ne voit que les relations simples et par paires : une variable utile en combinaison paraît inutile isolément."
+source = "03.EXPLORATION_explications § 4"
+
+[[element]]
+id = "E-304"
+titre = "Choisir une famille de modèles avant d'observer les données"
+nature = "méthode"
+statut = "écarté"
+phase = "3 · Exploration"
+competence = "C4"
+section = "8"
+motif = "Des relations non monotones ont été observées : elles échappent aux modèles linéaires et sont captées par les arbres. D'où la comparaison des deux familles, décidée par l'observation."
+source = "03.EXPLORATION_explications § 4"
+
+[[element]]
+id = "E-305"
+titre = "Rééchantillonnage synthétique (SMOTE, ADASYN)"
+nature = "méthode"
+statut = "écarté"
+phase = "3 · Exploration"
+competence = "C4"
+section = "8"
+motif = "Fabrique des clients qui n'existent pas, sur des données riches en catégories ; le déséquilibre (28 %) est modéré. Pondération des classes retenue."
+source = "suivi_projet_ia § 5 · 00.README_choix_methodologiques § 8"
+
+[[element]]
+id = "E-306"
+titre = "Réduction de dimension (ACP / PCA)"
+nature = "méthode"
+statut = "écarté"
+phase = "3 · Exploration"
+competence = "C4"
+section = "7"
+motif = "Rend le modèle inexplicable alors que les conseillers doivent comprendre pourquoi un compte est signalé."
+source = "suivi_projet_ia § 5"
+
+[[element]]
+id = "E-307"
+titre = "Validation croisée temporelle (TimeSeriesSplit)"
+nature = "méthode"
+statut = "écarté"
+phase = "3 · Exploration"
+competence = "C5"
+section = "9"
+motif = "Sans objet : un seul instantané par compte, les données ne forment pas une série chronologique."
+source = "suivi_projet_ia § 5"
+condition = "Si plusieurs instantanés mensuels par compte deviennent disponibles."
+
+[[element]]
+id = "E-308"
+titre = "Exactitude (accuracy) comme métrique de sélection"
+nature = "méthode"
+statut = "écarté"
+phase = "3 · Exploration"
+competence = "C5"
+section = "9"
+motif = "Trompeuse avec 28 % de churn : un modèle prédisant « reste » partout atteint 72 %. Le PR-AUC est retenu."
+source = "suivi_projet_ia (récapitulatif des outils)"
+
+# ═══ Phase 4 · Préparation ═══════════════════════════════════════════════════
+
+[[element]]
+id = "E-401"
+titre = "Imputation par la dernière valeur connue"
+nature = "méthode"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C3"
+section = "7"
+motif = "Inapplicable : un seul instantané par compte, il n'existe pas de valeur précédente."
+source = "suivi_projet_ia § 4"
+condition = "Si un historique mensuel par compte devient disponible."
+
+[[element]]
+id = "E-402"
+titre = "Imputation par plus proches voisins (KNN) ou itérative"
+nature = "méthode"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C3"
+section = "7"
+motif = "Manques au hasard de 3 à 10 %, sans signal (écart de churn ≤ 4,2 points) : gain attendu faible pour un coût et une opacité supérieurs à la médiane."
+preuve = "test_l_absence_d_une_valeur_source_n_est_toujours_pas_un_signal"
+source = "suivi_projet_ia § 4"
+condition = "Si un taux de manquants dépasse 10 % ou cesse d'être aléatoire au lot mensuel."
+
+[[element]]
+id = "E-403"
+titre = "Modalité la plus fréquente pour les catégories manquantes"
+nature = "méthode"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C2"
+section = "7"
+motif = "Gonflerait le secteur ou le pays dominant et fausserait l'analyse d'équité par segment. Remplacée par une modalité « Non renseigné »."
+preuve = "test_les_categories_manquantes_deviennent_non_renseigne"
+source = "04.SOUTENANCE_phases_4_a_11 · règle 9"
+revirement = "oui"
+
+[[element]]
+id = "E-404"
+titre = "Médiane pour les ratios des comptes sans utilisateur actif"
+nature = "méthode"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C3"
+section = "7"
+motif = "Le ratio n'est pas inconnu mais non défini : zéro par convention, l'indicateur de compte abandonné portant le sens. Mélanger ces 297 trous aux vrais manquants brouillerait les deux causes."
+preuve = "test_les_trous_structurels_sont_combles_sur_le_chemin_du_gold · test_les_ratios_structurels_valent_zero"
+source = "04.SOUTENANCE_phases_4_a_11 · règle 9"
+
+[[element]]
+id = "E-405"
+titre = "Médiane globale pour le revenu mensuel manquant"
+nature = "méthode"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C3"
+section = "7"
+motif = "Comparée aux 4 850 revenus connus, la médiane globale se trompe de 91,4 % en valeur médiane, la reconstruction sièges × prix de 9,0 %."
+preuve = "test_les_chiffres_publies_sont_inchanges · src/churn_saas/donnees/reconstruction.py"
+source = "04.SOUTENANCE_phases_4_a_11"
+
+[[element]]
+id = "E-406"
+titre = "Lecture implicite des dates (format mêlé, jour en premier)"
+nature = "méthode"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C3"
+section = "7"
+motif = "Inversait jour et mois sur 960 dates ISO (19 % du jeu) sans laisser une date vide. Chaque format est désormais lu explicitement, le jour de semaine déclaré servant de témoin."
+preuve = "test_une_date_iso_n_est_jamais_inversee · test_le_contrat_bloque_une_date_inversee"
+source = "règle 9 · règle 12"
+revirement = "oui"
+
+[[element]]
+id = "E-407"
+titre = "Garder arbitrairement une ligne pour un compte en double en conflit"
+nature = "règle"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C3"
+section = "7"
+motif = "Aucune règle automatique ne peut dire quelle ligne est juste : la chaîne s'arrête et le dit. Le cas n'existe pas dans les données actuelles."
+preuve = "test_un_compte_en_conflit_bloque_la_chaine"
+source = "04.SOUTENANCE_phases_4_a_11"
+
+[[element]]
+id = "E-408"
+titre = "Reconstruire les valeurs avant le contrat de données"
+nature = "architecture"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C9"
+section = "13"
+motif = "Le contrat mesurerait 0 % de revenu manquant là où la source en a 3 % : la surveillance mensuelle de la qualité des données entrantes deviendrait aveugle."
+preuve = "test_le_contrat_mesure_les_manquants_de_la_source"
+source = "src/churn_saas/donnees/reconstruction.py"
+
+[[element]]
+id = "E-409"
+titre = "Garder taux_activation et exclure taux_adoption_pct (alternative écartée)"
+nature = "variable"
+statut = "écarté"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C3"
+section = "7"
+motif = "Les deux colonnes portent la même information (rapport de 100, corrélation 1,0). Le porteur a retenu taux_adoption_pct, indicateur lu par le métier, reconstruit pour ses 250 manques."
+preuve = "test_aucune_colonne_du_gold_n_est_le_doublon_d_une_autre"
+source = "arbitrage du porteur, 01/10/2026"
+
+# ═══ Différés ════════════════════════════════════════════════════════════════
+
+[[element]]
+id = "D-02"
+titre = "API unitaire appelée sans catalogue des plans"
+nature = "architecture"
+statut = "différé"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C6"
+section = "10"
+motif = "Le point d'entrée unitaire prépare un compte sans catalogue : les colonnes de prix, SLA et quotas manquent, et le revenu ne peut pas être reconstruit. Le lot mensuel, lui, reçoit le catalogue."
+preuve = "src/churn_saas/industrialisation/api.py"
+source = "constat de la phase 4"
+condition = "Phase 10, avant toute démonstration de l'API."
+
+[[element]]
+id = "D-03"
+titre = "Contrôle de langue des commentaires placés en fin de ligne"
+nature = "action"
+statut = "différé"
+phase = "4 · Préparation"
+date = "01/10/2026"
+competence = "C6"
+section = "15"
+motif = "Le test de la règle 1 n'examine que les lignes commençant par #. Un commentaire français en fin de ligne y échappe (un cas connu, dans un test)."
+preuve = "tests/test_conventions.py"
+source = "livraison phase 4, À LIRE"
+condition = "Après le gel, si le temps le permet ; sans effet sur le livrable."
+
+# ═══ À arbitrer ══════════════════════════════════════════════════════════════
+
+[[element]]
+id = "A-01"
+titre = "Optuna (recherche d'hyperparamètres)"
+nature = "outil"
+statut = "à arbitrer"
+phase = "8 · Optimisation"
+competence = "C5"
+section = "9"
+motif = "Sources contradictoires : retenu par le plan v4.1 (décision 10, 30 essais) et le README (§ 8) ; « écarté, contraire à la sobriété » dans le récapitulatif du suivi."
+source = "00.PLAN_ACTIONS § 2 · 00.README_choix_methodologiques · suivi_projet_ia"
+condition = "Arbitrage du porteur avant la phase 8 ; à défaut, GridSearchCV borné et retrait d'Optuna du texte."
+
+[[element]]
+id = "A-02"
+titre = "MLflow (traçabilité des entraînements)"
+nature = "outil"
+statut = "à arbitrer"
+phase = "10 · Déploiement"
+competence = "C6"
+section = "10"
+motif = "Retenu par le plan v4.1 (décision 11) et le README ; « n'est pas utilisé » dans le suivi § 7."
+source = "00.PLAN_ACTIONS § 2 · suivi_projet_ia § 7"
+condition = "Arbitrage du porteur avant la phase 8 ; si retenu, au moins une exécution visible."
+
+[[element]]
+id = "A-03"
+titre = "SHAP (explication compte par compte)"
+nature = "outil"
+statut = "à arbitrer"
+phase = "9 · Validation"
+competence = "C4"
+section = "12"
+motif = "Retenu par le plan v4.1 ; « option ouverte » dans le suivi. Si la régression logistique est retenue, coefficient × valeur donne une explication locale exacte sans SHAP."
+source = "00.PLAN_ACTIONS § 2 · suivi_projet_ia"
+condition = "Après le choix du modèle final (phase 9)."
+
+[[element]]
+id = "A-04"
+titre = "CodeCarbon (mesure de l'empreinte du calcul)"
+nature = "outil"
+statut = "à arbitrer"
+phase = "8 · Optimisation"
+competence = "C4"
+section = "9"
+motif = "Retenu par le plan v4.1 ; « option ouverte » dans le suivi. Lié au sort d'Optuna."
+source = "00.PLAN_ACTIONS § 2 · suivi_projet_ia"
+condition = "Avec l'arbitrage sur Optuna."
+
+[[element]]
+id = "A-05"
+titre = "Vérification de la pile Docker (V1 à V6)"
+nature = "action"
+statut = "à arbitrer"
+phase = "10 · Déploiement"
+competence = "C7"
+section = "11"
+motif = "Le plan v4.1 interdit de la sacrifier ; le calendrier de remise (05/10) laisse peu de marge. Abandonnée, les sections 10, 11 et 13 doivent dire « conçue et versionnée, non déployée »."
+source = "00.PLAN_ACTIONS § 8"
+condition = "Arbitrage du porteur au plus tard au gel du notebook."
+
+[[element]]
+id = "D-04"
+titre = "Sections 8 à 13 du notebook de certification, à réaligner sur la chaîne partagée"
+nature = "action"
+statut = "différé"
+phase = "5 · Features"
+date = "01/10/2026"
+competence = "C5"
+section = "8"
+motif = "Les sections 0 à 7 sont réalignées sur les phases 1 à 4. Les sections 8 à 13 gardent leur code d'origine (seuil de précision, forêt aléatoire codée en dur, API renvoyant une décision) ; une cellule-pont en fin de § 7 leur fournit les noms attendus."
+preuve = "notebooks/cas_usage_churn_saas.ipynb"
+source = "livraison du réalignement des sections 0 à 7"
+condition = "Livraison de la phase 5 ; la cellule-pont est alors retirée."
+
+[[element]]
+id = "D-05"
+titre = "Phrase erronée imprimée par le carnet 03 sur les valeurs extrêmes"
+nature = "action"
+statut = "différé"
+phase = "3 · Exploration"
+date = "01/10/2026"
+competence = "C3"
+section = "6"
+motif = "Le carnet imprime « un compte sur huit et près de la moitié du revenu » juste sous un calcul affichant 13,6 % des comptes et 76 % du revenu. Le chiffre est corrigé dans le notebook final, le document d'explications, le suivi et le registre, et figé par un test ; le carnet de phase, figé (règle 4), garde sa phrase."
+preuve = "test_les_chiffres_publies_sont_inchanges"
+source = "réalignement des sections 0 à 7"
+condition = "À corriger si le carnet 03 est ré-exécuté pour une autre raison."

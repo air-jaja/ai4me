@@ -12,9 +12,15 @@ from typing import Any
 import pandas as pd
 
 from ..config import CAPACITE_MENSUELLE, EFFICACITE_RETENTION
-from ..donnees import construire_gold, construire_silver
+from ..donnees import colonnes_attendues_au_scoring, exiger_contrat, verifier_contrat
 from ..evaluation import prioriser
-from ..features import ajouter_ratios_usage
+from ..features import (
+    COLONNES_DATES,
+    COLONNES_DECIMALES,
+    COLONNES_ENTIERES,
+    construire_silver_standard,
+    preparer_gold,
+)
 
 
 def preparer(
@@ -22,10 +28,33 @@ def preparer(
     catalogue: pd.DataFrame | None = None,
     **options_silver: Any,
 ) -> pd.DataFrame:
-    """Single preparation chain, shared between training and scoring."""
-    silver = construire_silver(brut, catalogue=catalogue, **options_silver)
-    silver = ajouter_ratios_usage(silver)
-    return construire_gold(silver)
+    """Single preparation chain, shared between training and scoring.
+
+    Since phase 4 it calls exactly what `executer_pipeline` calls - same column lists,
+    same structural zeros, same reconstruction, same exclusions. Before, it built silver
+    without the column lists and skipped nothing visible: the batch would have been
+    prepared differently from the training set, without any error.
+    """
+    silver = construire_silver_standard(brut, catalogue=catalogue, **options_silver)
+    return preparer_gold(silver).gold
+
+
+def controler_lot(brut: pd.DataFrame, catalogue: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Run the data contract on a monthly batch, as on the training set.
+
+    Not part of `preparer`, which the API also calls on a single account: a missing rate
+    computed on one row means nothing. Silver is built with `strict=False` so that a
+    conversion loss is reported by the contract, with every other check, instead of
+    stopping at the first exception.
+    """
+    silver = construire_silver_standard(brut, catalogue=catalogue, strict=False)
+    return verifier_contrat(
+        silver,
+        brut=brut,
+        colonnes_numeriques=list(COLONNES_DECIMALES) + list(COLONNES_ENTIERES),
+        colonnes_dates=list(COLONNES_DATES),
+        colonnes_attendues=colonnes_attendues_au_scoring(),
+    )
 
 
 def scorer_lot_mensuel(
@@ -47,6 +76,7 @@ def scorer_lot_mensuel(
     """
     # Identifiers are captured before preparation, since construire_gold drops them.
     identifiants = brut[identifiant] if identifiant in brut.columns else pd.Series(brut.index)
+    exiger_contrat(controler_lot(brut, catalogue=catalogue))
     X = preparer(brut, catalogue=catalogue, **options_silver)
     X = X.drop(columns=[c for c in ("churn",) if c in X.columns])
 
