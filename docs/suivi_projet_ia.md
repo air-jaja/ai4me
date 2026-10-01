@@ -52,7 +52,7 @@ argumentée. C'est pourquoi ce document insiste autant sur les *pourquoi*.
 | **Client / commanditaire** | Direction Customer Success de l'éditeur *(cas d'usage pédagogique)* |
 | **Date de début** | 08/08/2026 |
 | **Échéance cible** | **30/09/2026** (gel des livrables) — remise 01/10/2026 |
-| **Statut global** | 🟡 En cours — phases 1 à 3 terminées, 4 à 6 engagées, 7 à 9 à exécuter |
+| **Statut global** | 🟡 En cours — phases 1 à 4 terminées (notebook de certification aligné jusqu'à la section 7), 5 à 11 à exécuter |
 | **Nature** | Exercice de certification. **Aucun déploiement réel** : les phases 10 et 11 sont conçues et documentées, pas mises en service. |
 
 **Légende statut** : `[ ]` à faire · `[~]` en cours · `[x]` terminé · `[—]` sans objet ici
@@ -389,7 +389,7 @@ interroge, pas pour des données d'entraînement qu'on fige.
 | Taux de résiliation | **28 %** | Déséquilibre modéré, non sévère : le discours du cas rare serait faux |
 | Données manquantes | 3 à 10 % selon les colonnes | Comblement légitime ; une colonne à 55 % reste écartée |
 | Revenu moyen / revenu médian | **5,2×** | Comblement par la médiane, jamais par la moyenne |
-| Valeurs extrêmes | 1 compte sur 8, la moitié du revenu | Conservées : ce sont les clients stratégiques |
+| Valeurs extrêmes | 13,6 % des comptes, 76 % du revenu | Conservées : ce sont les clients stratégiques |
 | Écarts entre segments | 6 à 8 points | Aucun segment ne concentre le risque : un modèle se justifie |
 
 ### Le code produit
@@ -411,7 +411,7 @@ sections 5, 6 et 7 du notebook de certification
 
 ---
 
-## 4 · Préparation & nettoyage *(🟡 en cours)*
+## 4 · Préparation & nettoyage *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Corriger les défauts repérés à l'étape précédente. Convertir les nombres stockés
 > comme du texte, unifier les dates, supprimer les doublons, décider quoi faire des valeurs manquantes.
@@ -478,7 +478,7 @@ observées, comme un chiffre d'affaires très élevé, sont réelles et non des 
 retirerait précisément les clients les plus importants.)*
 📦 **Artefacts** : section 7 du notebook · `donnees/silver.py` · `donnees/qualite.py` ·
 `donnees/reconstruction.py` · `docs/04.SOUTENANCE_phases_4_a_11.md` · `docs/05.REGISTRE_elements_ecartes.md`
-**Statut** : **code terminé** — reste la rédaction de la section 7 du notebook de certification
+**Statut** : **terminé** — code, tests, documents, et sections 0 à 7 du notebook de certification réalignées sur les phases 1 à 4 (01/10)
 
 ---
 
@@ -796,7 +796,7 @@ argument défendable devant un jury.
 | 1 · Cadrage | 🟢 Terminé | — |
 | 2 · Données | 🟢 Terminé | — |
 | 3 · Exploration | 🟢 Terminé | — |
-| 4 · Préparation | 🟡 Code terminé — reste la section 7 | 02/10 |
+| 4 · Préparation | 🟢 Terminé | 01/10 |
 | 5 · Feature engineering | 🟡 En cours | 24/09 |
 | 6 · Baseline | 🟡 En cours | 25/09 |
 | 7 · Entraînement | 🔴 À faire | 25/09 |

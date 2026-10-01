@@ -68,51 +68,78 @@ d'acceptation bloquant du projet.
 churn-saas-cisia/
 ├── pyproject.toml          Dépendances et configuration des outils
 ├── uv.lock                 Résolution exacte des dépendances — reproductibilité
-├── Makefile                Raccourcis de commandes
-├── .github/workflows/      Chaîne CI (étapes 1–2 du notebook § 10)
+├── Makefile                Raccourcis de commandes (`make aide`)
+├── Dockerfile              Image du service de scoring
+├── docker-compose.yml      API · PostgreSQL · MLflow · Prometheus · Grafana
+├── .pre-commit-config.yaml Contrôles au commit, suite de tests au push
+├── .github/workflows/      Chaîne CI — tests, linter, hooks, fraîcheur du catalogue
 │
-├── data/                   raw · interim · processed — non versionnés
-├── notebooks/              Livrable principal remis au jury
+├── data/
+│   ├── raw/                      CSV sources — **versionnés** (2 Mo, référence de tout)
+│   ├── processed/                Instantanés Parquet — non versionnés, recalculables
+│   ├── interim/                  Travail intermédiaire — non versionné
+│   └── manifeste_v1.0.json       Empreintes des sources et des instantanés — versionné
+│
+├── notebooks/              Carnets de phase et livrable remis au jury
 ├── models/                 Modèles sérialisés et fiches — non versionnés
-├── reports/figures/        Figures produites
+├── reports/figures/        Figures en PNG et SVG — non versionnées, régénérables
+├── monitoring/             Configuration Prometheus et Grafana
+├── tools/                  Outils de dépôt — catalogue des tests, registre des écarts
 ├── docs/                   Documents méthodologiques et de suivi
 │                           (commencer par 00.REGLES_DE_TRAVAIL.md)
-├── tests/                  Un fichier par activité
+├── tests/                  Tests par activité, plus les contrôles transverses
 │
 └── src/churn_saas/         Source de vérité unique du code
     ├── config.py                 Paramètres et hypothèses, centralisés
-    ├── notebook.py               Affichage du code source dans le notebook
+    ├── notebook.py               Affichage du code et des tableaux dans les carnets
+    ├── figures.py                Enregistrement des figures, cache données + code
     │
     ├── donnees/            1. GESTION DES DONNÉES
     │   ├── ingestion.py          bronze — lecture brute, tout en texte
-    │   ├── silver.py             silver — nettoyage, typage, jointure catalogue
-    │   └── gold.py               gold   — exclusions motivées, séparation de la cible
+    │   ├── silver.py             silver — nettoyage, typage, normalisation, jointure
+    │   ├── gold.py               gold   — exclusions motivées, séparation de la cible
+    │   ├── schema.py             rôle de chaque colonne, audit de qualité
+    │   ├── qualite.py            contrat de données, appliqué à l'entraînement et au lot
+    │   ├── reconstruction.py     reconstruction déterministe depuis la ligne elle-même
+    │   ├── profilage.py          manquants, doublons, distributions, mécanisme
+    │   ├── gouvernance.py        cycle de vie, sensibilité, modes de stockage
+    │   └── empreinte.py          empreintes SHA-256, manifeste, contrôle d'intégrité
     │
     ├── features/           2. CONTRÔLE DES FEATURES
-    │   ├── construction.py       ratios d'usage
-    │   └── controle.py           schéma, détection générique de fuite, leurres
+    │   ├── construction.py       ratios d'usage, indicateur de compte abandonné
+    │   ├── controle.py           schéma, détection générique de fuite, leurres
+    │   ├── exploration.py        déséquilibre, corrélations, tendances
+    │   ├── pipeline.py           chaîne bronze → silver → gold, avec journal
+    │   └── materialisation.py    écriture des instantanés et de leurs empreintes
     │
     ├── modelisation/       3. MODÉLISATION
     │   ├── baseline.py           régression logistique et préprocesseur
-    │   └── selection.py          candidat, grille bornée, comparaison en CV
+    │   ├── selection.py          candidat, grille bornée, comparaison en CV
+    │   └── optimisation.py       Optuna avec élagage, empreinte carbone
     │
     ├── evaluation/         4. ÉVALUATION DE LA PERFORMANCE
     │   ├── metriques.py          métriques et intervalle de confiance
     │   ├── decision.py           priorisation par valeur espérée, sensibilité
-    │   └── impact.py             MRR exposé / couvert / préservé
+    │   ├── impact.py             MRR exposé / couvert / préservé
+    │   └── explicabilite.py      valeurs de Shapley, motif lisible par un CSM
     │
     ├── packaging/          5. PACKAGING DU MODÈLE
     │   ├── artefacts.py          sérialisation, fiche modèle, versioning
     │   ├── model_card.py         génération depuis le gabarit
-    │   └── modelcard_template.md gabarit Hugging Face
+    │   ├── modelcard_template.md gabarit Hugging Face
+    │   └── suivi.py              MLflow — expériences et registre de modèles
     │
     ├── industrialisation/  6. SERVICES D'INDUSTRIALISATION
     │   ├── scoring.py            lot mensuel — décide, voit tout le portefeuille
-    │   └── service.py            appel unitaire — ne décide pas
+    │   ├── service.py            appel unitaire — ne décide pas
+    │   ├── api.py                service HTTP FastAPI (/health, /ready, /score)
+    │   ├── flux.py               orchestration Prefect du lot mensuel
+    │   └── entrepot.py           entrepôt des scores produits (SQLAlchemy)
     │
     └── monitoring/         7. SERVICES DE MONITORING
         ├── derive.py             PSI, Kolmogorov-Smirnov, rapport
-        └── alertes.py            indicateur → seuil → action → responsable
+        ├── alertes.py            indicateur → seuil → action → responsable
+        └── exporteur.py          exposition des indicateurs à Prometheus
 ```
 
 Le découpage suit les **activités du cycle de vie**, pas les types d'objets. Une activité,

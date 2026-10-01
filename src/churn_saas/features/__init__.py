@@ -24,6 +24,14 @@ from .exploration import (
     taux_cible_par_segment,
     tendance_par_tranche,
 )
+from .graphiques import (
+    tracer_completude,
+    tracer_compte_abandonne,
+    tracer_concentration,
+    tracer_fragmentation,
+    tracer_risque_par_segment,
+    tracer_tendances,
+)
 from .materialisation import (
     charger_jeu_derive,
     materialiser,
@@ -45,6 +53,13 @@ from .pipeline import (
 
 __all__ = [
     "ajouter_ratios_usage",
+    # Figures of the certification notebook (single source, rule 7)
+    "tracer_concentration",
+    "tracer_completude",
+    "tracer_compte_abandonne",
+    "tracer_fragmentation",
+    "tracer_risque_par_segment",
+    "tracer_tendances",
     "combler_ratios_structurels",
     "desequilibre_cible",
     "desequilibre_categories",

@@ -118,3 +118,41 @@ def test_le_silver_garde_les_nan_que_l_exploration_lit():
     """The zeros apply on the way to gold; silver keeps the phase 3 NaN as they were."""
     brut = pd.DataFrame({"utilisateurs_actifs": [0], "tickets_support_90j": [3]})
     assert ajouter_ratios_usage(brut)["tickets_par_actif"].isna().all()
+
+
+# --- Phase 4 · Figures of the certification notebook ------------------------------------
+def test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues():
+    """Each drawing function works on its arguments alone: no global, no file written.
+
+    They were inline closures in the phase notebooks, reading notebook variables. Moved
+    here so the certification notebook calls them instead of holding a second copy.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from matplotlib.figure import Figure
+
+    from churn_saas.features import graphiques
+
+    df = pd.DataFrame(
+        {
+            "revenu": [100.0, 50.0, 10.0, 5.0, 1.0, 1.0],
+            "churn": [1, 0, 1, 0, 0, 1],
+            "utilisateurs_actifs": [0, 3, 2, 0, 1, 4],
+            "secteur": ["A", "B", "A", "B", "A", "B"],
+        }
+    )
+    profil = pd.DataFrame({"colonne": ["x", "y"], "manquants_pct": [4.0, 12.0]})
+    tranches = pd.DataFrame({"taux (%)": [50.0, 20.0, 15.0]})
+    figures = [
+        graphiques.tracer_concentration(df["revenu"], df["churn"]),
+        graphiques.tracer_completude(profil, 10, 50),
+        graphiques.tracer_compte_abandonne(df),
+        graphiques.tracer_fragmentation(
+            pd.DataFrame({"colonne": ["secteur"], "avant": [3], "après": [2]})
+        ),
+        graphiques.tracer_risque_par_segment(df, ["secteur"]),
+        graphiques.tracer_tendances({"x": tranches}, taux_global=28.0),
+    ]
+    assert all(isinstance(f, Figure) for f in figures)
+    assert all(f.axes and (f.axes[0].get_title() or f._suptitle) for f in figures)

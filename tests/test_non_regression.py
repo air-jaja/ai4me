@@ -194,6 +194,16 @@ def _ecart_taux_adoption(silver: pd.DataFrame) -> float:
     return float((taux - recalcule).abs().max())
 
 
+def _part_tukey(silver: pd.DataFrame) -> tuple[float, float]:
+    """Share of accounts (%) above Tukey's upper fence on revenue, and their revenue share."""
+    from churn_saas.donnees import bornes_valeurs_extremes
+
+    mrr = pd.to_numeric(silver["revenu_mensuel_recurrent_eur"], errors="coerce")
+    _, haute = bornes_valeurs_extremes(mrr)
+    au_dela = mrr > haute
+    return float(au_dela.mean() * 100), float(mrr[au_dela].sum() / mrr.sum() * 100)
+
+
 # --- Published figures, declared once -------------------------------------------------
 @dataclass(frozen=True)
 class ChiffrePublie:
@@ -614,6 +624,24 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
         attendu=284,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver)["usage_par_actif"].isna().sum()),
+    ),
+    ChiffrePublie(
+        phase="3 · Exploration",
+        libelle="Comptes au-delà de la borne haute de Tukey sur le revenu (%)",
+        # Phase 3 printed "one account in eight, nearly half the revenue" next to a computed
+        # 76 %: the sentence was wrong, the computation right. Corrected in phase 4.
+        cite_dans="notebook § 6.2 · 03.EXPLORATION_explications · suivi · registre E-301",
+        attendu=13.6,
+        tolerance=0.1,
+        calcul=lambda brut, silver: _part_tukey(silver)[0],
+    ),
+    ChiffrePublie(
+        phase="3 · Exploration",
+        libelle="Part du revenu portée par ces comptes (%)",
+        cite_dans="notebook § 6.2 · 03.EXPLORATION_explications · suivi · registre E-301",
+        attendu=76.0,
+        tolerance=0.5,
+        calcul=lambda brut, silver: _part_tukey(silver)[1],
     ),
     ChiffrePublie(
         phase="3 · Exploration",
