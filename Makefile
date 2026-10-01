@@ -45,9 +45,13 @@ install:
 # `.pre-commit-config.yaml` is only a declaration: Git runs `.git/hooks/pre-commit`,
 # which this creates. That directory is never versioned, so a fresh clone has no hook
 # until this target runs - which is why `install` calls it.
+# `--overwrite` : sans lui, un hook déjà présent dans .git/hooks est renommé en
+# `<type>.legacy` et pre-commit l'exécute avant le sien. Sous Windows, ce fichier
+# hérité porte un en-tête `#!/bin/sh` qui n'existe pas, et tout commit échoue sur
+# `ExecutableNotFoundError`. L'option supprime l'héritage au lieu de le conserver.
 hooks:
-	uv run pre-commit install
-	uv run pre-commit install --hook-type pre-push
+	uv run pre-commit install --overwrite
+	uv run pre-commit install --hook-type pre-push --overwrite
 	@echo "Hooks installés : contrôles courts au commit, suite de tests au push."
 
 install-plateforme:

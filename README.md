@@ -54,6 +54,7 @@ et sélectionner le même noyau en haut à droite du notebook.
 | `PermissionError [WinError 5]` sur `%TEMP%\pytest-of-<utilisateur>` | Ce dossier, que pytest réutilise d'une exécution à l'autre, est devenu illisible — souvent après une exécution interrompue ou lancée avec d'autres privilèges | Le supprimer : `Remove-Item -Recurse -Force "$env:TEMP\pytest-of-$env:USERNAME"`. La suite bascule sinon d'elle-même sur `~\.pytest-temp`, avec un avertissement |
 | `PermissionError [WinError 5]` sur `.pytest-tmp` | `--basetemp` pointe **dans** le dépôt, et pytest **efface** ce répertoire au démarrage | Retirer l'option : le repli automatique rend le contournement inutile |
 | Le pre-commit est vert mais les tests échouent | Les hooks de commit ne lancent pas les tests — ils tournent au **push** | Normal. Lancer `make test` avant de committer |
+| `ExecutableNotFoundError: Executable /bin/sh not found` au commit | Un hook préexistant a été conservé sous `.git/hooks/<type>.legacy` ; son en-tête `#!/bin/sh` n'existe pas sous Windows | `Remove-Item .git\hooks\*.legacy` puis `uv run pre-commit install --overwrite` *(et `--hook-type pre-push --overwrite`)*. `make hooks` emploie désormais cette option |
 
 **Règle générale :** toute installation passe par `uv`. Un `pip install` direct sort du
 verrou et rend l'environnement non reproductible — ce qui contredit un critère
