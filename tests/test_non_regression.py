@@ -630,3 +630,39 @@ def test_les_instantanes_derives_ne_sont_pas_versionnes():
         text=True,
     )
     assert suivis.stdout.strip(), "Le manifeste doit, lui, être versionné."
+
+
+def test_les_figures_produites_ne_sont_pas_versionnees():
+    """Figures are outputs: regenerable, and a binary diff at every retouch otherwise.
+
+    The documents that reuse them get them by running the notebook, not from the history.
+    """
+    import subprocess
+
+    resultat = subprocess.run(
+        ["git", "check-ignore", "reports/figures/03_correlations.png"],
+        cwd=RACINE,
+        capture_output=True,
+        text=True,
+    )
+    if resultat.returncode == 128:
+        pytest.skip("Hors copie de travail Git.")
+    assert resultat.returncode == 0, "Les figures doivent rester hors de Git."
+
+
+def test_le_cache_des_figures_depend_du_code_de_trace():
+    """The property the whole figure cache rests on, pinned here as well.
+
+    If the key stopped covering the drawing code, every notebook would keep displaying
+    figures from a previous version - and the deliverable would show pictures that no
+    longer match the numbers beside them.
+    """
+    from churn_saas.figures import cle_cache
+
+    def tracer():
+        return None
+
+    def tracer_modifie():
+        return None  # commentaire ajouté : le source change, donc la clé aussi
+
+    assert cle_cache("signature", tracer) != cle_cache("signature", tracer_modifie)

@@ -400,12 +400,14 @@ interroge, pas pour des données d'entraînement qu'on fige.
 | `features/pipeline.py` | Chaîne bronze → silver → gold, avec journal |
 | `features/exploration.py` | Déséquilibre, corrélations, tendances par tranche |
 | `features/materialisation.py` | Écriture des instantanés, empreintes, contrôle d'intégrité |
+| `figures.py` | Enregistrement des graphiques et cache fondé sur données + code de tracé |
 
 🔧 **Outils** : pandas · matplotlib *(production de graphiques)* · scipy *(tests statistiques)*
 📦 **Artefacts** : `notebooks/03_exploration.ipynb` · `docs/03.EXPLORATION_explications.md` ·
 `data/processed/*.parquet` *(instantanés datés)* · `data/manifeste_v1.0.json` *(étendu)* ·
+`reports/figures/*.png` et `*.svg` *(9 figures réutilisables)* ·
 sections 5, 6 et 7 du notebook de certification
-**Statut** : **terminé** — 21 décisions arrêtées, code couvert par 52 cas de test, carnet exécuté
+**Statut** : **terminé** — 23 décisions arrêtées, code couvert par 68 cas de test, carnet exécuté
 
 ---
 

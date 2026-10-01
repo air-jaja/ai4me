@@ -106,6 +106,15 @@ CONTEXTE: dict[str, dict[str, str]] = {
             "Les taux affichés en fin de run : un taux faux donnerait confiance sans raison"
         ),
     },
+    "test_figures.py": {
+        "titre": "Stockage et cache des figures",
+        "activite": "Transverse",
+        "competences": "C3, C8",
+        "protege": (
+            "Le cache des figures : une image périmée servie en silence serait pire "
+            "qu'une régénération systématique"
+        ),
+    },
     "test_conventions.py": {
         "titre": "Conventions de travail",
         "activite": "Transverse",
@@ -144,6 +153,7 @@ ORDRE = [
     "test_monitoring.py",
     "test_notebook.py",
     "test_conventions.py",
+    "test_figures.py",
     "test_recapitulatif.py",
     "test_regression_casse_modalites.py",
     "test_non_regression.py",

@@ -18,6 +18,15 @@ data/processed/*
 data/interim/*
 !data/**/.gitkeep
 
+# Figures produites par les carnets
+#
+# Non versionnées : ce sont des sorties, régénérables à l'identique depuis les données
+# et le code. Les versionner produirait un diff binaire à chaque retouche de graphique.
+# Le dossier existe, son contenu non — les documents qui les réutilisent les obtiennent
+# en exécutant le carnet correspondant.
+reports/figures/*
+!reports/figures/.gitkeep
+
 # Modèles sérialisés — artefacts de build, non versionnés dans Git
 models/*
 !models/.gitkeep

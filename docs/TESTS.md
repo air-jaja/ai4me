@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**313 cas de test** issus de 141 fonctions, répartis sur 14 fichiers.
+**335 cas de test** issus de 159 fonctions, répartis sur 15 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,10 +37,11 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 121 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 125 |
+| [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 38 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 40 |
 
 ---
 
@@ -242,14 +243,39 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×56)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×56)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×58)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×58)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×4)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
 | 8 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
+
+### Stockage et cache des figures
+
+**Fichier :** `tests/test_figures.py` — **Activité :** Transverse — **Compétences :** C3, C8
+
+**Ce que ce fichier protège :** Le cache des figures : une image périmée servie en silence serait pire qu'une régénération systématique
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_le_chemin_se_deduit_du_nom` | No caller writes a path: a hardcoded one breaks when the tree moves. | — |
+| 2 | `test_la_figure_est_ecrite_dans_les_deux_formats` | PNG for documents and slides, SVG for anything that may be enlarged. | — |
+| 3 | `test_la_cle_depend_des_donnees` | _(sans description)_ | — |
+| 4 | `test_la_cle_depend_du_code_de_trace` | This is the property that makes the cache safe. | A key built on the data alone would keep serving an old image after the plotting code changed - exactly the situation a cache must never create. Hashing the source means a changed colour invalidates the stored figure, with nobody having to remember a version number. |
+| 5 | `test_la_cle_est_stable_a_donnees_et_code_identiques` | _(sans description)_ | — |
+| 6 | `test_une_figure_absente_doit_etre_tracee` | _(sans description)_ | — |
+| 7 | `test_une_signature_illisible_force_le_trace` | A corrupted sidecar must not be read as agreement. | — |
+| 8 | `test_une_figure_supprimee_est_retracee_malgre_sa_signature` | _(sans description)_ | — |
+| 9 | `test_l_etat_du_cache_explique_sa_decision` | The reason is returned, not just a boolean: a cache that decides in silence is a cache nobody trusts, and the notebook prints the reason. | — |
+| 10 | `test_la_figure_n_est_tracee_qu_une_fois` | Two runs on unchanged data and code must not redraw anything. | — |
+| 11 | `test_un_changement_de_donnees_retrace_la_figure` | _(sans description)_ | — |
+| 12 | `test_un_changement_de_code_retrace_la_figure` | Editing the plot must change the stored image, without touching the data. | — |
+| 13 | `test_la_figure_rendue_est_bien_celle_du_dernier_trace` | Beyond the reason reported, the file on disk must have changed. | — |
+| 14 | `test_l_inventaire_recense_les_figures_disponibles` | _(sans description)_ | — |
+| 15 | `test_l_inventaire_d_un_dossier_absent_reste_lisible` | An empty inventory is a table with no row, never an exception. | — |
+| 16 | `test_la_signature_enregistree_est_relisible` | _(sans description)_ | — |
 
 ### Récapitulatif de la suite
 
@@ -312,3 +338,5 @@ soutenance.
 | 13 | `test_aucun_segment_ne_concentre_le_risque` | No segment stands out enough for a business rule to replace the model. | This is the framing conclusion of section 1.2: it justifies building a model rather than writing "watch sector X". It was published on overstated spreads - 13 to 17 points instead of 7 to 8 - which made it look weaker than it is. The threshold is set at 15 points: beyond that, a simple segmentation would start to compete with the model and the framing would need revisiting. |
 | 14 | `test_la_chaine_produit_deux_fois_le_meme_jeu_gold` | Two runs on the same sources must give the same gold dataset, byte for byte. | This is the assumption the whole snapshot mechanism rests on. If it broke - a pandas upgrade, a change in join order - the fingerprint recorded in the manifest would no longer identify anything, and a model card would describe data the model never saw. The check is cheap: the chain runs in under a second on this volume. |
 | 15 | `test_les_instantanes_derives_ne_sont_pas_versionnes` | Parquet snapshots stay out of Git; the manifest that describes them stays in. | Versioning the snapshots would produce a binary diff at every change to the cleaning rules, for information already held by the sources plus the code. The manifest is small, textual, and it is the contract. |
+| 16 | `test_les_figures_produites_ne_sont_pas_versionnees` | Figures are outputs: regenerable, and a binary diff at every retouch otherwise. | The documents that reuse them get them by running the notebook, not from the history. |
+| 17 | `test_le_cache_des_figures_depend_du_code_de_trace` | The property the whole figure cache rests on, pinned here as well. | If the key stopped covering the drawing code, every notebook would keep displaying figures from a previous version - and the deliverable would show pictures that no longer match the numbers beside them. |
