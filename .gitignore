@@ -5,11 +5,17 @@ __pycache__/
 .ipynb_checkpoints/
 .pytest-tmp/
 
-# Données — versionnées hors dépôt (voir docs/README_choix_methodologiques.md § 3)
-#         - Choix technique : mis dans Git-LFS
-# data/raw/*
-# data/interim/*
-# data/processed/*
+# Données
+#
+# data/raw/      versionné dans Git : sources de l'énoncé, 2 Mo au total, et c'est la
+#                référence à partir de laquelle tout se recalcule.
+# data/processed/ NON versionné : instantanés dérivés, recalculables depuis les sources et
+#                le code. Les versionner produirait un diff binaire à chaque modification
+#                des règles de nettoyage, pour une information déjà contenue ailleurs.
+#                Ce que Git conserve est le manifeste : petit, textuel, et c'est lui le
+#                contrat (voir docs/00.README_choix_methodologiques.md § 3).
+data/processed/*
+data/interim/*
 !data/**/.gitkeep
 
 # Modèles sérialisés — artefacts de build, non versionnés dans Git

@@ -19,6 +19,7 @@ rounding difference.
     Phase 1 - Framing                        notebooks/01_cadrage.ipynb
     Phase 2 - Ingestion and governance       notebooks/02_donnees.ipynb
     Phase 3 - Exploration and profiling      notebooks/03_exploration.ipynb
+              materialisation                data/processed/*.parquet + manifest
     Phase 4 - ...                            (to be added)
 """
 
@@ -117,6 +118,14 @@ def _part_concentree(serie: pd.Series, part: float = 0.10) -> float:
     """Share of the total carried by the largest `part` of the values."""
     valeurs = pd.to_numeric(serie, errors="coerce").dropna().sort_values(ascending=False)
     return float(valeurs.head(int(len(valeurs) * part)).sum() / valeurs.sum())
+
+
+def _gold(silver: pd.DataFrame) -> pd.DataFrame:
+    """Gold dataset rebuilt from the cleaned data, target included."""
+    from churn_saas.donnees import construire_gold
+    from churn_saas.features import ajouter_ratios_usage
+
+    return construire_gold(ajouter_ratios_usage(silver))
 
 
 def _amplitude_segment(silver: pd.DataFrame, colonne: str, effectif_minimal: int = 30) -> float:
@@ -355,6 +364,22 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
     ),
     ChiffrePublie(
         phase="3 · Exploration",
+        libelle="Colonnes du jeu gold livré au modèle",
+        cite_dans="03_exploration § 3.6 · fiche modèle",
+        attendu=34,
+        tolerance=0,
+        calcul=lambda brut, silver: float(_gold(silver).shape[1]),
+    ),
+    ChiffrePublie(
+        phase="3 · Exploration",
+        libelle="Variables explicatives après séparation de la cible",
+        cite_dans="03_exploration § 3.6 · suivi_projet_ia",
+        attendu=33,
+        tolerance=0,
+        calcul=lambda brut, silver: float(_gold(silver).shape[1] - 1),
+    ),
+    ChiffrePublie(
+        phase="3 · Exploration",
         libelle="Modalités de `secteur` après normalisation",
         cite_dans="03_exploration § 4.2 (21 orthographes pour 7 catégories)",
         attendu=7,
@@ -550,3 +575,58 @@ def test_aucun_segment_ne_concentre_le_risque(silver: pd.DataFrame):
             f"`{colonne}` sépare de {amplitude:.1f} points : une règle métier deviendrait "
             "compétitive et le cadrage serait à revoir."
         )
+
+
+# --- Phase 3 · Materialisation: the chain stays reproducible --------------------------
+def test_la_chaine_produit_deux_fois_le_meme_jeu_gold():
+    """Two runs on the same sources must give the same gold dataset, byte for byte.
+
+    This is the assumption the whole snapshot mechanism rests on. If it broke - a pandas
+    upgrade, a change in join order - the fingerprint recorded in the manifest would no
+    longer identify anything, and a model card would describe data the model never saw.
+
+    The check is cheap: the chain runs in under a second on this volume.
+    """
+    from churn_saas.donnees import empreinte_donnees
+    from churn_saas.features import executer_pipeline
+
+    fichier = DONNEES / "churn_saas_complet.csv"
+    if not fichier.exists() or fichier.stat().st_size < 10_000:
+        pytest.skip("Jeu de données absent ou réduit à un pointeur Git-LFS.")
+
+    catalogue = DONNEES / "catalogue_plans.csv"
+    premier = executer_pipeline(fichier, catalogue)
+    second = executer_pipeline(fichier, catalogue)
+
+    assert empreinte_donnees(premier.silver) == empreinte_donnees(second.silver)
+    assert empreinte_donnees(premier.gold) == empreinte_donnees(second.gold)
+
+
+def test_les_instantanes_derives_ne_sont_pas_versionnes():
+    """Parquet snapshots stay out of Git; the manifest that describes them stays in.
+
+    Versioning the snapshots would produce a binary diff at every change to the cleaning
+    rules, for information already held by the sources plus the code. The manifest is
+    small, textual, and it is the contract.
+    """
+    import subprocess
+
+    resultat = subprocess.run(
+        ["git", "check-ignore", "data/processed/gold_v1.0_20260101.parquet"],
+        cwd=RACINE,
+        capture_output=True,
+        text=True,
+    )
+    if resultat.returncode == 128:
+        pytest.skip("Hors copie de travail Git.")
+    assert resultat.returncode == 0, (
+        "Les instantanés Parquet doivent rester hors de Git : vérifier `.gitignore`."
+    )
+
+    suivis = subprocess.run(
+        ["git", "ls-files", "data/manifeste_v1.0.json"],
+        cwd=RACINE,
+        capture_output=True,
+        text=True,
+    )
+    assert suivis.stdout.strip(), "Le manifeste doit, lui, être versionné."

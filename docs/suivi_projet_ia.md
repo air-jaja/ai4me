@@ -353,6 +353,33 @@ Deux vérifications indépendantes soutiennent la première ligne : l'écart de 
 cause structurelle. Une absence peut être sans lien avec ce qu'on cherche à prédire tout en étant
 structurelle, auquel cas la combler fabriquerait une valeur qui n'a jamais existé.
 
+### Les données produites sont tracées
+
+La chaîne calcule les trois niveaux en mémoire. Rien n'était conservé — et l'étape 4 du
+cycle de vie décrite en phase 2, « instantané d'entraînement, jeu figé, horodaté et
+empreinté », restait donc déclarative.
+
+Elle est désormais effective. Les jeux nettoyé et prêt-pour-l'apprentissage sont enregistrés
+au format Parquet, avec leur empreinte et la version du programme qui les a produits. Un
+contrôle compare ces empreintes avant tout entraînement.
+
+| Jeu | Support | Conservé dans l'historique |
+|---|---|---|
+| Fichiers de départ | `data/raw/*.csv` | **Oui** — 2 Mo, référence de tout le reste |
+| Jeu nettoyé | `data/processed/*.parquet` | Non — recalculable |
+| Jeu d'entraînement | `data/processed/*.parquet` | Non — recalculable |
+| Fiche de version | `data/manifeste_v1.0.json` | **Oui** — c'est elle le contrat |
+
+**Pourquoi enregistrer un résultat reproductible.** Parce que le supposer ne suffit pas.
+Une mise à jour d'outil peut modifier le résultat sans que rien ne le signale, et le modèle
+serait entraîné sur des données différentes de celles que sa fiche décrit. Le triangle
+programme–données–modèle avait un sommet manquant : rien ne reliait une version de modèle au
+jeu exact qui l'avait produite.
+
+**Pourquoi pas en base de données.** Une base n'archive rien par nature : une mise à jour
+efface l'état précédent. Elle reste le bon support pour les scores produits, qu'on
+interroge, pas pour des données d'entraînement qu'on fige.
+
 ### Constats du profilage
 
 | Observation | Valeur | Ce que cela implique |
@@ -372,11 +399,13 @@ structurelle, auquel cas la combler fabriquerait une valeur qui n'a jamais exist
 | `donnees/profilage.py` | Manquants, doublons, distributions, mécanisme des manquants |
 | `features/pipeline.py` | Chaîne bronze → silver → gold, avec journal |
 | `features/exploration.py` | Déséquilibre, corrélations, tendances par tranche |
+| `features/materialisation.py` | Écriture des instantanés, empreintes, contrôle d'intégrité |
 
 🔧 **Outils** : pandas · matplotlib *(production de graphiques)* · scipy *(tests statistiques)*
 📦 **Artefacts** : `notebooks/03_exploration.ipynb` · `docs/03.EXPLORATION_explications.md` ·
+`data/processed/*.parquet` *(instantanés datés)* · `data/manifeste_v1.0.json` *(étendu)* ·
 sections 5, 6 et 7 du notebook de certification
-**Statut** : **terminé** — 18 décisions arrêtées, code couvert par 38 cas de test, carnet exécuté
+**Statut** : **terminé** — 21 décisions arrêtées, code couvert par 52 cas de test, carnet exécuté
 
 ---
 
@@ -656,7 +685,7 @@ test de Kolmogorov-Smirnov · tableau de bord de suivi
 | Phase | Outils retenus | Écartés, et pourquoi |
 |---|---|---|
 | Cadrage | RGPD, AI Act, dictionnaire de données | — |
-| Données | Git *(CSV et fiches de version)*, pandas, SHA-256, Parquet + Git-LFS, PostgreSQL | DVC *(pertinent au-delà de quelques instantanés ; inutile à ce volume)* · Git-LFS sur les CSV *(dépendance côté client, échec silencieux sans l'extension)* |
+| Données | Git *(CSV et fiches de version)*, pandas, SHA-256, Parquet *(instantanés dérivés)*, PostgreSQL *(scores produits)* | DVC *(pertinent au-delà de quelques instantanés ; inutile à ce volume)* · Git-LFS sur les CSV *(dépendance côté client, échec silencieux sans l'extension)* |
 | Exploration | pandas, matplotlib | — |
 | Préparation | pandas, imputation médiane | Z-score, IQR *(les valeurs extrêmes sont réelles, pas des erreurs)* |
 | Feature engineering | ratios d'usage, `train_test_split`, mise à l'échelle | SMOTE/ADASYN *(fabriquent de faux clients)*, PCA *(détruit l'explicabilité)*, TimeSeriesSplit *(pas de série chronologique)* |

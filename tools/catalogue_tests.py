@@ -65,6 +65,15 @@ CONTEXTE: dict[str, dict[str, str]] = {
             "Le profilage qui décide la préparation, et le pipeline bronze → silver → gold"
         ),
     },
+    "test_materialisation.py": {
+        "titre": "Matérialisation des jeux dérivés",
+        "activite": "2 · Features",
+        "competences": "C3, C6",
+        "protege": (
+            "Le lien entre une version de modèle et le jeu exact qui l'a produite : "
+            "écriture, empreinte, contrôle avant entraînement"
+        ),
+    },
     "test_evaluation.py": {
         "titre": "Métriques, décision et impact",
         "activite": "4 · Évaluation",
@@ -129,6 +138,7 @@ ORDRE = [
     "test_donnees_gouvernance.py",
     "test_features.py",
     "test_exploration.py",
+    "test_materialisation.py",
     "test_evaluation.py",
     "test_packaging.py",
     "test_monitoring.py",

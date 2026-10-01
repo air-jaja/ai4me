@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**291 cas de test** issus de 125 fonctions, répartis sur 13 fichiers.
+**313 cas de test** issus de 141 fonctions, répartis sur 14 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -32,14 +32,15 @@ soutenance.
 | [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 25 |
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 4 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
+| [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 14 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 6 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 117 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 121 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 34 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 38 |
 
 ---
 
@@ -156,6 +157,29 @@ soutenance.
 | 20 | `test_l_indicateur_de_compte_abandonne_rend_le_signal_explicite` | The signal becomes a variable instead of a side effect of a division by zero. | A NaN survives no imputation; a declared indicator does. It is also readable by a CSM, which a missing value is not. |
 | 21 | `test_le_resume_de_profilage_couvre_les_constats_cles` | _(sans description)_ | — |
 
+### Matérialisation des jeux dérivés
+
+**Fichier :** `tests/test_materialisation.py` — **Activité :** 2 · Features — **Compétences :** C3, C6
+
+**Ce que ce fichier protège :** Le lien entre une version de modèle et le jeu exact qui l'a produite : écriture, empreinte, contrôle avant entraînement
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_silver_et_gold_sont_ecrits_en_parquet` | Parquet rather than CSV: types survive the round trip. | Reparsing decimals and dates on reload would undo the whole preparation step - the very defects phase 2 spent its time fixing. |
+| 2 | `test_le_bronze_n_est_pas_reecrit` | Bronze already exists under `data/raw/`, versioned in Git. | Writing a second copy would create a file that can drift from the one the manifest fingerprints - two references instead of one. |
+| 3 | `test_le_nom_du_fichier_porte_sa_version_et_sa_date` | A snapshot that cannot be dated cannot be matched to a model. | — |
+| 4 | `test_le_manifeste_enregistre_l_empreinte_du_contenu` | The fingerprint is computed on the content, not on the file. | Two Parquet writes of the same rows can differ byte for byte - compression, metadata - while describing the same data. Fingerprinting the content is what makes the check meaningful. |
+| 5 | `test_le_manifeste_enregistre_la_version_du_code` | Code, data and model are versioned together, or reproducibility is a claim. | A snapshot without the commit that produced it cannot be recomputed: the cleaning rules may have changed since. |
+| 6 | `test_le_manifeste_conserve_les_sources` | Adding the derived datasets must not drop the source section. | — |
+| 7 | `test_le_manifeste_se_relit_depuis_le_disque` | _(sans description)_ | — |
+| 8 | `test_le_controle_confirme_un_instantane_intact` | _(sans description)_ | — |
+| 9 | `test_le_controle_detecte_un_jeu_qui_a_derive` | A changed pipeline must be reported, not absorbed. | The run would otherwise produce a model whose card describes data it was not trained on - and no metric reports that. |
+| 10 | `test_le_controle_detecte_un_fichier_disparu` | _(sans description)_ | — |
+| 11 | `test_le_jeu_relu_est_identique_a_celui_ecrit` | The round trip preserves content and types, which is the point of Parquet. | — |
+| 12 | `test_relire_un_instantane_modifie_leve_une_erreur` | Loading a snapshot without checking it defeats its purpose. | The error names both fingerprints: a message saying only "mismatch" leaves the reader unable to tell which side moved. |
+| 13 | `test_le_controle_peut_etre_leve_explicitement` | Inspecting a snapshot known to have drifted stays possible, but never by default. | — |
+| 14 | `test_la_table_de_materialisation_est_lisible` | _(sans description)_ | — |
+
 ### Métriques, décision et impact
 
 **Fichier :** `tests/test_evaluation.py` — **Activité :** 4 · Évaluation — **Compétences :** C5, C8
@@ -218,8 +242,8 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×54)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×54)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×56)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×56)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×4)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
@@ -273,7 +297,7 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_chiffres_publies_sont_inchanges` _(×22)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
+| 1 | `test_les_chiffres_publies_sont_inchanges` _(×24)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
 | 2 | `test_l_ecart_de_seuil_entre_deciles_reste_superieur_a_cent` | The "factor over 100" argument justifies rejecting a single global threshold. | It is the central argument of the decision rule, quoted in the framing notebook, in the explanatory document and in the oral pitch. If the spread narrowed, a global threshold would become defensible and the whole design would need rethinking. |
 | 3 | `test_le_seuil_du_dernier_decile_reste_tres_bas` | Acting on a top-decile account stays rational below 1% risk. | The 0.3% figure is the striking end of the argument presented to the jury. |
 | 4 | `test_les_hypotheses_de_cadrage_sont_inchangees` | These values are quoted verbatim in the documents and in the oral pitch. | — |
@@ -286,3 +310,5 @@ soutenance.
 | 11 | `test_les_modalites_ne_comportent_plus_de_variante_de_casse` | One label per business category, across every categorical column. | Normalising the join key alone left `TPE` and `tpe` as two categories in the dataset. One-hot encoding then produced a column per spelling: the model saw several rare categories where the business has one, split the signal between them, and every importance reading became misleading. |
 | 12 | `test_les_nan_des_ratios_ont_une_cause_unique_et_connue` | Every NaN in `tickets_par_actif` comes from a zero denominator, nothing else. | The claim made in section 3.4 - that these NaN encode an abandoned account - only holds while this is true. Another cause appearing would make the explanatory indicator partly wrong without any metric saying so. |
 | 13 | `test_aucun_segment_ne_concentre_le_risque` | No segment stands out enough for a business rule to replace the model. | This is the framing conclusion of section 1.2: it justifies building a model rather than writing "watch sector X". It was published on overstated spreads - 13 to 17 points instead of 7 to 8 - which made it look weaker than it is. The threshold is set at 15 points: beyond that, a simple segmentation would start to compete with the model and the framing would need revisiting. |
+| 14 | `test_la_chaine_produit_deux_fois_le_meme_jeu_gold` | Two runs on the same sources must give the same gold dataset, byte for byte. | This is the assumption the whole snapshot mechanism rests on. If it broke - a pandas upgrade, a change in join order - the fingerprint recorded in the manifest would no longer identify anything, and a model card would describe data the model never saw. The check is cheap: the chain runs in under a second on this volume. |
+| 15 | `test_les_instantanes_derives_ne_sont_pas_versionnes` | Parquet snapshots stay out of Git; the manifest that describes them stays in. | Versioning the snapshots would produce a binary diff at every change to the cleaning rules, for information already held by the sources plus the code. The manifest is small, textual, and it is the contract. |

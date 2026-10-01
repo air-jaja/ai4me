@@ -18,5 +18,26 @@
       "octets": 203,
       "sha256": "c94f6f52652532c578cb7a44d752b8b197ef84f5e6c6e17a58579fa195e9ad08"
     }
+  },
+  "jeux_derives": {
+    "date_materialisation": "20261001",
+    "jeux": {
+      "silver": {
+        "chemin": "data/processed/silver_v1.0_20261001.parquet",
+        "lignes": 5000,
+        "colonnes": 39,
+        "octets": 281027,
+        "empreinte_contenu": "ec5333f76bb792adbdd655a0eb0657539a5ca22c5ba07ca80637b064fc3bbdd7",
+        "version_code": "c3b5fb7"
+      },
+      "gold": {
+        "chemin": "data/processed/gold_v1.0_20261001.parquet",
+        "lignes": 5000,
+        "colonnes": 34,
+        "octets": 208578,
+        "empreinte_contenu": "df825603715dcc9b6953789a45977bce4e090843f15e40ba76b9004595f87851",
+        "version_code": "c3b5fb7"
+      }
+    }
   }
 }
