@@ -83,3 +83,39 @@ def test_un_taux_arrondi_ne_pretend_jamais_atteindre_cent(taux, attendu):
     from conftest import _format_taux
 
     assert _format_taux(taux) == attendu
+
+
+# --- Temp root guard (tests/conftest.py) ----------------------------------------------
+def test_une_racine_temporaire_saine_est_conservee(tmp_path):
+    """A working temp root must be left alone: the fallback is an exception, not a rule."""
+    from conftest import _racine_temporaire_inutilisable
+
+    assert _racine_temporaire_inutilisable(tmp_path) is None
+
+
+def test_un_dossier_pytest_illisible_est_detecte(tmp_path):
+    """The exact failure seen on Windows: `pytest-of-<user>` unreadable.
+
+    pytest reuses that directory across runs, and `os.scandir` raises on it. Every test
+    taking `tmp_path` then errors at setup - thirteen of them - for a reason unrelated to
+    the code. Detecting it turns a wall of stack traces into one actionable line.
+    """
+    import getpass
+
+    from conftest import _racine_temporaire_inutilisable
+
+    # A file where pytest expects a directory reproduces the failure whatever the
+    # privileges, which chmod does not do when the tests run as root.
+    (tmp_path / f"pytest-of-{getpass.getuser()}").write_text("", encoding="utf-8")
+    motif = _racine_temporaire_inutilisable(tmp_path)
+    assert motif is not None
+    assert "illisible" in motif
+
+
+def test_une_racine_impossible_a_creer_est_detectee(tmp_path):
+    """A temp root that cannot even be created is reported, not silently retried."""
+    from conftest import _racine_temporaire_inutilisable
+
+    obstacle = tmp_path / "obstacle"
+    obstacle.write_text("", encoding="utf-8")
+    assert _racine_temporaire_inutilisable(obstacle / "racine") is not None

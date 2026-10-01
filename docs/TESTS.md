@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**288 cas de test** issus de 122 fonctions, répartis sur 13 fichiers.
+**291 cas de test** issus de 125 fonctions, répartis sur 13 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,7 +37,7 @@ soutenance.
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
 | [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 117 |
-| [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 16 |
+| [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
 | [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 34 |
 
@@ -243,6 +243,9 @@ soutenance.
 | 6 | `test_un_fichier_prend_la_couleur_de_son_issue_la_plus_grave` _(×5)_ | One failure among twenty passes must colour the file red, not green. | — |
 | 7 | `test_chaque_issue_porte_un_symbole_distinct` | The symbol carries the meaning when colour is unavailable: CI logs, redirection. | — |
 | 8 | `test_un_taux_arrondi_ne_pretend_jamais_atteindre_cent` _(×5)_ | 99.5% must never be displayed as "100%". | Announcing a flawless run while a test failed is the single most misleading thing a summary can do - and rounding does it silently. |
+| 9 | `test_une_racine_temporaire_saine_est_conservee` | A working temp root must be left alone: the fallback is an exception, not a rule. | — |
+| 10 | `test_un_dossier_pytest_illisible_est_detecte` | The exact failure seen on Windows: `pytest-of-<user>` unreadable. | pytest reuses that directory across runs, and `os.scandir` raises on it. Every test taking `tmp_path` then errors at setup - thirteen of them - for a reason unrelated to the code. Detecting it turns a wall of stack traces into one actionable line. |
+| 11 | `test_une_racine_impossible_a_creer_est_detectee` | A temp root that cannot even be created is reported, not silently retried. | — |
 
 ### Défaut de casse des modalités
 

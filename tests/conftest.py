@@ -27,9 +27,87 @@ No dependency is added: pytest hooks only.
 
 from __future__ import annotations
 
+import getpass
+import os
+import tempfile
+import warnings
 from collections import defaultdict
+from pathlib import Path
 
 import pytest
+
+
+def _racine_temporaire_inutilisable(racine: Path) -> str | None:
+    """Return why pytest could not use this temp root, or None if it can.
+
+    pytest reuses a `pytest-of-<user>` directory inside the temp root across runs. One
+    unreadable directory there poisons every run afterwards: `os.scandir` raises, and
+    every test taking `tmp_path` errors out at setup - not because anything is wrong with
+    the code, but because of a leftover folder.
+
+    Seen on Windows after a run interrupted or launched with different privileges.
+    """
+    try:
+        racine.mkdir(parents=True, exist_ok=True)
+    except OSError as erreur:
+        return f"création impossible ({erreur.__class__.__name__})"
+
+    dossier_pytest = racine / f"pytest-of-{getpass.getuser()}"
+    if dossier_pytest.exists():
+        try:
+            # The exact call pytest makes, and the one that fails.
+            next(os.scandir(dossier_pytest), None)
+        except OSError as erreur:
+            return f"`{dossier_pytest}` illisible ({erreur.__class__.__name__})"
+
+    try:
+        temoin = racine / ".pytest-ecriture-temoin"
+        temoin.write_text("", encoding="utf-8")
+        temoin.unlink()
+    except OSError as erreur:
+        return f"écriture impossible ({erreur.__class__.__name__})"
+
+    return None
+
+
+def _choisir_racine_temporaire() -> None:
+    """Fall back to a usable temp root rather than failing every `tmp_path` test.
+
+    `PYTEST_DEBUG_TEMPROOT` is the documented way to move pytest's temp root. Setting it
+    here, at conftest import time, happens before the factory is built.
+
+    The fallback is a directory under the user's home - never inside the repository, where
+    pytest's own cleanup and the antivirus have repeatedly got in each other's way.
+    """
+    if os.environ.get("PYTEST_DEBUG_TEMPROOT"):
+        return
+
+    defaut = Path(tempfile.gettempdir())
+    motif = _racine_temporaire_inutilisable(defaut)
+    if motif is None:
+        return
+
+    secours = Path.home() / ".pytest-temp"
+    motif_secours = _racine_temporaire_inutilisable(secours)
+    if motif_secours is not None:
+        warnings.warn(
+            f"Racine temporaire par défaut inutilisable ({motif}) et le repli "
+            f"{secours} ne l'est pas davantage ({motif_secours}). "
+            "Définir PYTEST_DEBUG_TEMPROOT vers un dossier accessible.",
+            stacklevel=2,
+        )
+        return
+
+    os.environ["PYTEST_DEBUG_TEMPROOT"] = str(secours)
+    warnings.warn(
+        f"Racine temporaire par défaut inutilisable : {motif}. "
+        f"Repli sur {secours}. Pour revenir au défaut, supprimer le dossier "
+        f"`pytest-of-{getpass.getuser()}` de {defaut}.",
+        stacklevel=2,
+    )
+
+
+_choisir_racine_temporaire()
 
 # One symbol, one French label and one colour per outcome. The symbol carries the meaning
 # on its own, which matters when colour is unavailable: redirected output, CI logs, or a
