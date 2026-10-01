@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**430 cas de test** issus de 217 fonctions, répartis sur 18 fichiers.
+**434 cas de test** issus de 221 fonctions, répartis sur 18 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -27,7 +27,7 @@ soutenance.
 
 | Domaine | Fichier | Activité du cycle de vie | Compétences | Cas |
 |---|---|---|---|---|
-| [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 27 |
+| [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 31 |
 | [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 42 |
 | [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 26 |
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 9 |
@@ -67,6 +67,10 @@ soutenance.
 | 7 | `test_les_dependances_respectent_l_ordre_du_cycle_de_vie` | An activity may only rely on those the declaration allows. | Without this check the split survives on the filename alone: a backward dependency - data management calling the model, say - would make the two activities inseparable while the folders still suggest otherwise. |
 | 8 | `test_les_activites_communiquent_par_leur_interface_publique` | Cross-activity imports target the package, never one of its submodules. | Reaching into `..donnees.gold` rather than `..donnees` ties the caller to an internal layout it does not own: any reorganisation inside the activity then breaks code elsewhere. `__all__` exists precisely to prevent that. |
 | 9 | `test_tout_nom_utilise_hors_de_son_module_est_exporte` _(×7)_ | A function used outside its own module belongs to the activity's public surface. | Otherwise callers reach into a submodule they do not own, and `__all__` stops describing what the activity actually offers. The rule already applies between activities; this extends it to the notebooks and the test suite, which are the other consumers of that surface. |
+| 10 | `test_le_lecteur_d_arborescence_reconstruit_les_chemins` | The parser itself: without this, an empty result would make the checks pass vacuously. | — |
+| 11 | `test_l_arborescence_du_readme_est_lue` | The README tree yields the package modules. | a broken parse would return nothing. |
+| 12 | `test_chaque_module_figure_dans_l_arborescence_du_readme` | A module the README does not list is a module a newcomer will not find. | — |
+| 13 | `test_l_arborescence_du_readme_ne_cite_aucun_module_disparu` | A line left behind by a removed or renamed module describes code that does not exist. | — |
 
 ### Nettoyage et niveaux de raffinage
 
