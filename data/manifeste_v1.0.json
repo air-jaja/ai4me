@@ -27,16 +27,16 @@
         "lignes": 5000,
         "colonnes": 39,
         "octets": 282184,
-        "empreinte_contenu": "30e080bf37dc64fdb5435ec7ce62ef695450a068a1f8cf9109bab6667fc229d7",
-        "version_code": "be57976"
+        "empreinte_contenu": "835f0c2ece91740d1e377405167fa46381889fad04240a3b3c7eee37c9afce8d",
+        "version_code": "14717ac"
       },
       "gold": {
         "chemin": "data/processed/gold_v1.0_20261001.parquet",
         "lignes": 5000,
-        "colonnes": 32,
-        "octets": 196590,
-        "empreinte_contenu": "476ead59d4d91bc64a85c7b7ff088295d8b78840db8dcbbede21cdd18ed92f69",
-        "version_code": "be57976"
+        "colonnes": 31,
+        "octets": 179239,
+        "empreinte_contenu": "c20eed85f8f8b7e774844592b26fd0bf31c4fb652fe34fc9ffc4e668dc45ab81",
+        "version_code": "14717ac"
       }
     }
   }
