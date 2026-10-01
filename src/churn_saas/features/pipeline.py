@@ -37,7 +37,10 @@ from ..donnees import (
     charger_bronze,
     construire_gold,
     construire_silver,
+    exiger_contrat,
     separer_cible,
+    statut_global,
+    verifier_contrat,
 )
 from .construction import ajouter_ratios_usage
 
@@ -78,6 +81,7 @@ class ResultatPipeline:
     X: pd.DataFrame
     y: pd.Series
     journal: pd.DataFrame = field(default_factory=pd.DataFrame)
+    contrat: pd.DataFrame = field(default_factory=pd.DataFrame)
 
 
 def _journal(etapes: list[dict[str, Any]]) -> pd.DataFrame:
@@ -89,12 +93,17 @@ def executer_pipeline(
     chemin_catalogue: Path | str | None = None,
     enrichir: bool = True,
     cible: str = CIBLE,
+    exiger: bool = True,
 ) -> ResultatPipeline:
     """Run the three levels and record what each one changed.
 
     `enrichir` adds the usage ratios. It is a parameter rather than a constant because
     the evaluation -> features loop compares the model with and without them: measuring
     the contribution of feature engineering requires being able to switch it off.
+
+    The data contract runs right after silver, on the same terms as the monthly batch.
+    With `exiger` (the default) a blocking check stops the chain; `exiger=False` lets a
+    notebook display a failing contract instead of an exception.
     """
     etapes: list[dict[str, Any]] = []
 
@@ -129,6 +138,24 @@ def executer_pipeline(
             ),
         }
     )
+
+    contrat = verifier_contrat(
+        silver,
+        brut=bronze,
+        colonnes_numeriques=list(COLONNES_DECIMALES) + list(COLONNES_ENTIERES),
+        colonnes_dates=list(COLONNES_DATES),
+    )
+    etapes.append(
+        {
+            "niveau": "contrat",
+            "opération": "Contrat de données (mêmes contrôles qu'au lot mensuel)",
+            "lignes": len(silver),
+            "colonnes": silver.shape[1],
+            "effet": (f"{len(contrat)} contrôles, statut global : {statut_global(contrat)}"),
+        }
+    )
+    if exiger:
+        exiger_contrat(contrat)
 
     avant_enrichissement = silver.shape[1]
     if enrichir:
@@ -167,7 +194,13 @@ def executer_pipeline(
     )
 
     return ResultatPipeline(
-        bronze=bronze, silver=silver, gold=gold, X=X, y=y, journal=_journal(etapes)
+        bronze=bronze,
+        silver=silver,
+        gold=gold,
+        X=X,
+        y=y,
+        journal=_journal(etapes),
+        contrat=contrat,
     )
 
 

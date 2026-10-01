@@ -20,7 +20,8 @@ rounding difference.
     Phase 2 - Ingestion and governance       notebooks/02_donnees.ipynb
     Phase 3 - Exploration and profiling      notebooks/03_exploration.ipynb
               materialisation                data/processed/*.parquet + manifest
-    Phase 4 - ...                            (to be added)
+    Phase 4 - Preparation and cleaning       certification notebook § 7 (rule 4 amended)
+              data contract                  src/churn_saas/donnees/qualite.py
 """
 
 from __future__ import annotations
@@ -95,6 +96,69 @@ def silver(brut: pd.DataFrame) -> pd.DataFrame:
         colonnes_dates=["date_souscription"],
         colonnes_entieres=COLONNES_ENTIERES,
     )
+
+
+def _pertes_totales(brut: pd.DataFrame) -> float:
+    """Values present in the source and lost on conversion, every converted column."""
+    from churn_saas.donnees import (
+        nettoyer_decimal_texte,
+        parser_dates_multiformat,
+        pertes_de_conversion,
+    )
+
+    source = brut.drop_duplicates()
+    total = sum(
+        int(pertes_de_conversion(source[c], nettoyer_decimal_texte(source[c])).sum())
+        for c in COLONNES_DECIMALES + COLONNES_ENTIERES
+    )
+    dates = source["date_souscription"]
+    return float(total + pertes_de_conversion(dates, parser_dates_multiformat(dates)).sum())
+
+
+def _dates_ambigues(brut: pd.DataFrame) -> pd.Series:
+    """Slash dates whose first two fields could both be a month (day <= 12)."""
+    texte = brut.drop_duplicates()["date_souscription"].astype(str)
+    return texte.str.match(r"^(0?[1-9]|1[0-2])/(0?[1-9]|1[0-2])/")
+
+
+JOURS_SEMAINE = ("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+
+
+def _accord_jour_semaine(brut: pd.DataFrame, masque: str, format_: str | None = None) -> float:
+    """Share of dates (%) falling on the weekday the source states in `jour_souscription`.
+
+    The weekday is an independent witness of the date parsing: a date read with day and
+    month swapped almost never lands on it. `masque` selects the rows ("toutes", "iso",
+    "ambigues"); `format_` forces one reading, to measure the alternative that was rejected
+    ("ancienne lecture" being the `format="mixed", dayfirst=True` used until phase 4).
+    """
+    from churn_saas.donnees import parser_dates_multiformat
+
+    source = brut.drop_duplicates().reset_index(drop=True)
+    texte = source["date_souscription"].astype(str)
+    selection = {
+        "toutes": pd.Series(True, index=texte.index),
+        "iso": texte.str.match(r"^\d{4}-\d{2}-\d{2}$"),
+        "ambigues": _dates_ambigues(brut).reset_index(drop=True),
+    }[masque]
+    if format_ == "ancienne lecture":
+        lues = pd.to_datetime(texte[selection], format="mixed", dayfirst=True)
+    elif format_:
+        lues = pd.to_datetime(texte[selection], format=format_)
+    else:
+        lues = parser_dates_multiformat(texte[selection])
+    jour = lues.dt.dayofweek.map(dict(enumerate(JOURS_SEMAINE)))
+    declare = source.loc[selection, "jour_souscription"].str.strip().str.casefold()
+    return float((jour == declare).mean() * 100)
+
+
+def _iso_inversees_par_l_ancienne_lecture(brut: pd.DataFrame) -> float:
+    """ISO dates that `format="mixed", dayfirst=True` - the reading used until phase 4 -
+    returns with day and month swapped. Pinned to keep the size of the defect on record."""
+    texte = brut.drop_duplicates()["date_souscription"].astype(str)
+    iso = texte[texte.str.match(r"^\d{4}-\d{2}-\d{2}$")]
+    ancienne = pd.to_datetime(iso, format="mixed", dayfirst=True)
+    return float((ancienne != pd.to_datetime(iso, format="%Y-%m-%d")).sum())
 
 
 # --- Published figures, declared once -------------------------------------------------
@@ -365,18 +429,109 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
     ChiffrePublie(
         phase="3 · Exploration",
         libelle="Colonnes du jeu gold livré au modèle",
-        cite_dans="03_exploration § 3.6 · fiche modèle",
-        attendu=34,
+        # 34 until phase 4, which excluded the raw date and the catalogue duplicate.
+        cite_dans="03_exploration § 3.6 (34 avant la phase 4) · notebook § 7 · fiche modèle",
+        attendu=32,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver).shape[1]),
     ),
     ChiffrePublie(
         phase="3 · Exploration",
         libelle="Variables explicatives après séparation de la cible",
-        cite_dans="03_exploration § 3.6 · suivi_projet_ia",
-        attendu=33,
+        cite_dans="03_exploration § 3.6 (33 avant la phase 4) · notebook § 7 · suivi_projet_ia",
+        attendu=31,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver).shape[1] - 1),
+    ),
+    # --- Phase 4 · Preparation and cleaning -----------------------------------------------
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Valeurs présentes perdues à la conversion",
+        cite_dans="notebook § 7 · suivi_projet_ia § 4 · 04.SOUTENANCE",
+        attendu=0,
+        tolerance=0,
+        calcul=lambda brut, silver: _pertes_totales(brut),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Délais de support écrits avec l'unité « h »",
+        cite_dans="notebook § 7 · suivi_projet_ia § 4 · 04.SOUTENANCE",
+        attendu=570,
+        tolerance=0,
+        calcul=lambda brut, silver: float(
+            brut.drop_duplicates()["delai_reponse_support_h"]
+            .astype(str)
+            .str.contains(r"\d\s*h$")
+            .sum()
+        ),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Manquants réels sur `delai_reponse_support_h` (%)",
+        # 21.4 % in 03_exploration § 2.2: 570 of those 1,070 were conversion losses.
+        cite_dans="notebook § 7 · 03_exploration § 2.2 (21,4 % avant correction) · suivi",
+        attendu=10.0,
+        tolerance=0.1,
+        calcul=lambda brut, silver: float(silver["delai_reponse_support_h"].isna().mean() * 100),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Manquants du délai avec l'ancienne conversion (%)",
+        # Real gaps plus the values written "3.1 h", which the old conversion turned to NaN.
+        cite_dans="03_exploration § 2.2 (avant ré-exécution) · suivi § 4 · 04.SOUTENANCE",
+        attendu=21.4,
+        tolerance=0.1,
+        calcul=lambda brut, silver: float(
+            (
+                silver["delai_reponse_support_h"].isna().sum()
+                + brut.drop_duplicates()["delai_reponse_support_h"]
+                .astype(str)
+                .str.contains(r"\d\s*h$")
+                .sum()
+            )
+            / len(silver)
+            * 100
+        ),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Dates ambiguës (jour <= 12, format JJ/MM)",
+        cite_dans="notebook § 7 · docstring de parser_dates_multiformat",
+        attendu=955,
+        tolerance=0,
+        calcul=lambda brut, silver: float(_dates_ambigues(brut).sum()),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Dates ISO lues jour et mois inversés avant correction",
+        cite_dans="notebook § 7 · suivi_projet_ia § 4 · 04.SOUTENANCE · FORMATS_DATE",
+        attendu=960,
+        tolerance=0,
+        calcul=lambda brut, silver: _iso_inversees_par_l_ancienne_lecture(brut),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Dates ISO d'accord avec le jour de semaine, ancienne lecture (%)",
+        cite_dans="04.SOUTENANCE (encadré « un témoin dans les données »)",
+        attendu=48.2,
+        tolerance=0.5,
+        calcul=lambda brut, silver: _accord_jour_semaine(brut, "iso", "ancienne lecture"),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Dates d'accord avec le jour de semaine déclaré (%)",
+        cite_dans="notebook § 7 · docstring de parser_dates_multiformat",
+        attendu=100.0,
+        tolerance=0,
+        calcul=lambda brut, silver: _accord_jour_semaine(brut, "toutes"),
+    ),
+    ChiffrePublie(
+        phase="4 · Préparation",
+        libelle="Dates ambiguës d'accord si lues mois en premier (%)",
+        cite_dans="notebook § 7 · docstring de parser_dates_multiformat",
+        attendu=15.1,
+        tolerance=0.5,
+        calcul=lambda brut, silver: _accord_jour_semaine(brut, "ambigues", "%m/%d/%Y"),
     ),
     ChiffrePublie(
         phase="3 · Exploration",
@@ -666,3 +821,131 @@ def test_le_cache_des_figures_depend_du_code_de_trace():
         return None  # commentaire ajouté : le source change, donc la clé aussi
 
     assert cle_cache("signature", tracer) != cle_cache("signature", tracer_modifie)
+
+
+# --- Phase 4 · Preparation: guarantees that are not a single figure ---------------------
+@pytest.fixture(scope="module")
+def chaine():
+    """The full chain, as the notebook and the monthly batch run it."""
+    from churn_saas.features import executer_pipeline
+
+    fichier = DONNEES / "churn_saas_complet.csv"
+    if not fichier.exists() or fichier.stat().st_size < 10_000:
+        pytest.skip("Jeu de données absent ou réduit à un pointeur Git-LFS.")
+    return executer_pipeline(fichier, DONNEES / "catalogue_plans.csv")
+
+
+def test_le_contrat_de_donnees_est_respecte_sur_le_jeu_de_reference(chaine):
+    """The reference data pass every check of the contract, without a single watch flag.
+
+    If a check turned to "to watch" here, either the data moved (the manifest test says
+    so) or a cleaning rule regressed.
+    """
+    from churn_saas.donnees import CONFORME
+
+    assert (chaine.contrat["statut"] == CONFORME).all(), chaine.contrat.to_string()
+
+
+def test_aucune_colonne_numerique_n_entre_dans_le_modele_comme_categorie(chaine):
+    """Every non-numeric explanatory column is genuinely textual.
+
+    Generic on purpose: it names no column. The catalogue prices reached the model as
+    categories until phase 4; the next column read as text by mistake will fail here too.
+    """
+    from churn_saas.donnees import nettoyer_decimal_texte
+
+    X = chaine.X
+    textuelles = [c for c in X.columns if not pd.api.types.is_numeric_dtype(X[c])]
+    deguisees = [
+        c
+        for c in textuelles
+        if nettoyer_decimal_texte(X[c].dropna()).notna().all() and X[c].notna().any()
+    ]
+    assert not deguisees, f"Colonnes numériques encodées comme catégories : {deguisees}"
+
+
+def test_aucune_date_n_entre_dans_le_modele(chaine):
+    """A raw date one-hot encoded is one category per day: noise, and unknown at scoring."""
+    dates = [c for c in chaine.X.columns if pd.api.types.is_datetime64_any_dtype(chaine.X[c])]
+    assert not dates, f"Dates brutes parmi les variables explicatives : {dates}"
+
+
+def test_aucune_colonne_du_gold_n_est_le_doublon_d_une_autre(chaine):
+    """Two identical columns give the model the same information twice, under two names.
+
+    `fonctionnalites_incluses` was an exact copy of `fonctionnalites_total` until phase 4.
+    Generic: compares every pair, names none.
+    """
+    X = chaine.X
+    colonnes = list(X.columns)
+    doublons = [
+        (a, b)
+        for i, a in enumerate(colonnes)
+        for b in colonnes[i + 1 :]
+        if X[a].astype("string").fillna("<NA>").equals(X[b].astype("string").fillna("<NA>"))
+    ]
+    assert not doublons, f"Colonnes identiques dans le gold : {doublons}"
+
+
+def test_les_manquants_du_delai_restent_au_hasard_apres_correction(chaine):
+    """The phase 3 conclusion still holds on the corrected column.
+
+    Phase 3 concluded that support delays are missing at random, on a column where more
+    than half the gaps were conversion losses. Corrected, the column must still show no
+    structural cause (no ticket) and no churn signal - otherwise the imputation strategy
+    built on that conclusion would rest on nothing.
+    """
+    silver = chaine.silver
+    manquant = silver["delai_reponse_support_h"].isna()
+    sans_ticket = pd.to_numeric(silver["tickets_support_90j"], errors="coerce") == 0
+    churn = pd.to_numeric(silver["churn"], errors="coerce")
+    assert abs(sans_ticket[manquant].mean() - sans_ticket.mean()) * 100 < 3
+    assert abs(churn[manquant].mean() - churn[~manquant].mean()) * 100 < 3
+
+
+def test_l_absence_d_une_valeur_source_n_est_toujours_pas_un_signal(chaine):
+    """Phase 2 published a 4.5-point maximum churn gap on raw data; it holds after cleaning.
+
+    Measured on silver now, since the cleaning is what phase 4 changed. A gap growing past
+    the published figure plus its tolerance would mean the cleaning creates a signal.
+    """
+    silver = chaine.silver
+    churn = pd.to_numeric(silver["churn"], errors="coerce")
+    from churn_saas.donnees.schema import ROLES_COLONNES
+
+    sources = [
+        c
+        for c, role in ROLES_COLONNES.items()
+        if c in silver.columns and role not in {"texte libre", "cible principale"}
+    ]
+    ecarts = {
+        c: abs(churn[silver[c].isna()].mean() - churn[silver[c].notna()].mean()) * 100
+        for c in sources
+        if silver[c].isna().any()
+    }
+    assert max(ecarts.values()) <= 4.5 + 1.0, ecarts
+
+
+def test_le_manifeste_decrit_les_jeux_produits_par_le_code(chaine):
+    """The derived datasets recorded in the manifest are the ones the code produces today.
+
+    Changing a cleaning rule changes silver and gold. Without this test the manifest kept
+    describing the phase 3 gold - 34 columns, misread dates - while the code produced
+    another one, and a model card would have cited a fingerprint nobody can reproduce.
+
+    When it fails after a deliberate change: re-run the materialisation (README of the
+    phase 4 delivery), then commit the manifest with the code.
+    """
+    from churn_saas.donnees import empreinte_donnees
+
+    chemin = RACINE / "data" / "manifeste_v1.0.json"
+    manifeste = json.loads(chemin.read_text(encoding="utf-8"))
+    jeux = manifeste.get("jeux_derives", {}).get("jeux", {})
+    if not jeux:
+        pytest.skip("Aucun jeu dérivé matérialisé dans le manifeste.")
+    for nom, df in (("silver", chaine.silver), ("gold", chaine.gold)):
+        assert jeux[nom]["empreinte_contenu"] == empreinte_donnees(df), (
+            f"Le manifeste décrit un {nom} que le code ne produit plus "
+            f"({jeux[nom]['colonnes']} colonnes enregistrées, {df.shape[1]} produites). "
+            "Re-matérialiser puis committer le manifeste avec le code."
+        )

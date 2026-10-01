@@ -28,6 +28,10 @@ EXCLUES_IDENTIFIANT = ["client_id"]  # identifier, no predictive power
 EXCLUES_RGPD = ["commentaire_csm"]  # free text, personal data risk
 EXCLUES_ARTEFACT = ["groupe_experimentation"]  # internal process artefact
 EXCLUES_CIBLE_SECONDAIRE = ["valeur_vie_client_eur"]  # decision weight, never a feature
+# Added in phase 4. Neither is forbidden in principle: both are redundant, and one of them
+# could not be encoded meaningfully as it stood.
+EXCLUES_DOUBLON = ["fonctionnalites_incluses"]  # catalogue copy of fonctionnalites_total
+EXCLUES_DATE_BRUTE = ["date_souscription"]  # one category per day; anciennete_mois carries it
 
 CIBLE = "churn"
 CIBLE_SECONDAIRE = "valeur_vie_client_eur"

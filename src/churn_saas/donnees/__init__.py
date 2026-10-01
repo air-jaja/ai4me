@@ -8,7 +8,8 @@ Three refinement levels, the usual data engineering convention:
             target separated
 
 `profilage.py` measures what the data actually contain, which is what decides the
-preparation. The pipeline composing the three levels lives in activity 2, since it ends
+preparation. `qualite.py` holds the data contract every batch must pass, at training and
+at scoring time alike. The pipeline composing the three levels lives in activity 2, since it ends
 with the gold dataset and its derived variables.
 
 The silver -> gold boundary carries the heaviest decision of the project: leaking
@@ -43,6 +44,15 @@ from .profilage import (
     profil_manquants,
     resume_profilage,
 )
+from .qualite import (
+    BLOQUANT,
+    CONFORME,
+    SURVEILLANCE,
+    exiger_contrat,
+    referentiel_modalites,
+    statut_global,
+    verifier_contrat,
+)
 from .schema import auditer_qualite, controler_jointure, decrire_schema
 from .silver import (
     construire_silver,
@@ -50,7 +60,9 @@ from .silver import (
     normaliser_cle,
     normaliser_modalites,
     parser_dates_multiformat,
+    pertes_de_conversion,
     silver_lisible,
+    typer_colonnes_catalogue,
 )
 
 __all__ = [
@@ -67,6 +79,16 @@ __all__ = [
     "parser_dates_multiformat",
     "normaliser_cle",
     "normaliser_modalites",
+    "pertes_de_conversion",
+    "typer_colonnes_catalogue",
+    # Data contract, run identically at training and at scoring time
+    "verifier_contrat",
+    "exiger_contrat",
+    "statut_global",
+    "referentiel_modalites",
+    "CONFORME",
+    "SURVEILLANCE",
+    "BLOQUANT",
     # Profiling
     "profil_manquants",
     "profil_doublons",

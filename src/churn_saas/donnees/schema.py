@@ -54,7 +54,7 @@ ROLES_COLONNES: dict[str, str] = {
 FORME_ATTENDUE: dict[str, str] = {
     "taux_adoption_pct": "décimal stocké en texte (virgule, %)",
     "heures_usage_30j": "décimal stocké en texte (virgule)",
-    "delai_reponse_support_h": "décimal stocké en texte (virgule)",
+    "delai_reponse_support_h": "décimal stocké en texte (virgule, unité « h »)",
     "revenu_mensuel_recurrent_eur": "décimal stocké en texte (virgule, €)",
     "valeur_vie_client_eur": "décimal stocké en texte (virgule)",
     "date_souscription": "date en formats mêlés",

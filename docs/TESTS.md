@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**335 cas de test** issus de 159 fonctions, répartis sur 15 fichiers.
+**381 cas de test** issus de 188 fonctions, répartis sur 15 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -28,7 +28,7 @@ soutenance.
 | Domaine | Fichier | Activité du cycle de vie | Compétences | Cas |
 |---|---|---|---|---|
 | [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 27 |
-| [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 9 |
+| [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 37 |
 | [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 25 |
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 4 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
@@ -37,11 +37,11 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 125 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 127 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 40 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 56 |
 
 ---
 
@@ -82,6 +82,28 @@ soutenance.
 | 7 | `test_separation_de_la_cible` | The target must never remain among the explanatory variables. | — |
 | 8 | `test_les_variantes_de_casse_sont_fusionnees_en_une_seule_modalite` | `TPE` and `tpe` are one category written two ways, not two categories. | Normalising the join key alone was not enough: the join worked while the stored values kept every spelling. One-hot encoding then turned each spelling into its own column, so the model saw several rare categories instead of one common one, split the signal between them, and made any importance reading misleading. |
 | 9 | `test_le_silver_ne_conserve_aucune_variante_de_casse` | The whole chain must leave one label per business category. | — |
+| 10 | `test_un_suffixe_d_unite_est_converti` | A unit written in letters after the number must not turn the value into NaN. | 570 support delays arrived as "3.1 h". The symbol list removed spaces but not the letter, `to_numeric` coerced the rest to NaN, and the missing rate of the column went from 10 % to 21.4 % with no error anywhere. |
+| 11 | `test_les_formats_deja_couverts_restent_convertis` | Handling units must not break the formats the primitive already covered. | — |
+| 12 | `test_une_perte_de_conversion_est_detectee_sans_cibler_de_colonne` | The guard compares presence before and after; it knows no column and no format. | That is what makes it catch the next unexpected format, not only the one already met. |
+| 13 | `test_une_perte_de_conversion_bloque_la_chaine` | A value present in the source and lost on conversion stops the chain, by name. | — |
+| 14 | `test_le_mode_non_strict_reproduit_le_defaut_en_connaissance_de_cause` | `strict=False` exists to show the defect, and only produces NaN where it lies. | — |
+| 15 | `test_une_date_illisible_bloque_la_chaine` | Dates go through the same guard: an unparsed date is a lost value too. | — |
+| 16 | `test_les_colonnes_du_catalogue_sont_typees` | Numeric catalogue columns become numbers; a genuinely textual one stays text. | Read as text like every source, the prices and quotas reached the model as categories: "12" and "25" EUR with no ordering left between them. |
+| 17 | `test_la_jointure_apporte_des_colonnes_numeriques` | End to end: after the join, a catalogue price is a number in silver. | — |
+| 18 | `test_un_doublon_au_format_different_est_retire` | Two rows describing one account, written differently, are one account. | Deduplicating only the raw text kept them both: "12,5" and "12.5" differ as strings. |
+| 19 | `test_un_compte_en_conflit_bloque_la_chaine` | One account, two different values: no rule can tell which is right, so stop. | — |
+| 20 | `test_la_cle_de_compte_peut_etre_desactivee` | Tables without an account key (a catalogue, a test frame) must still build. | — |
+| 21 | `test_gold_retire_la_date_brute_et_le_doublon_du_catalogue` | Each phase 4 exclusion is applied, and carries its own motive. | — |
+| 22 | `test_le_contrat_passe_sur_un_lot_sain` | _(sans description)_ | — |
+| 23 | `test_le_contrat_bloque_un_lot_defectueux` _(×7)_ | Each blocking rule, broken alone, is reported under its own name. | — |
+| 24 | `test_le_contrat_bloque_une_perte_de_conversion` | The conversion check reads the raw text: once typed, a lost value looks missing. | — |
+| 25 | `test_le_contrat_met_sous_surveillance_un_taux_de_manquants_eleve` | Between the watch and the blocking threshold, the batch passes but is flagged. | — |
+| 26 | `test_une_modalite_inconnue_est_a_surveiller_et_non_bloquante` | An unseen category degrades the score without corrupting it: watch, do not stop. | — |
+| 27 | `test_exiger_contrat_nomme_chaque_controle_en_echec` | _(sans description)_ | — |
+| 28 | `test_une_date_iso_n_est_jamais_inversee` | "2024-02-06" is 6 February, whatever convention applies to slash dates. | `format="mixed", dayfirst=True` read it as 2 June: 960 ISO dates were swapped until phase 4, while every one of them still parsed - nothing looked wrong. |
+| 29 | `test_les_dates_textuelles_sont_lues` | _(sans description)_ | — |
+| 30 | `test_un_format_de_date_non_declare_n_est_pas_devine` | An undeclared format becomes NaT. | reported as a loss - rather than a guess. |
+| 31 | `test_le_contrat_bloque_une_date_inversee` | A date contradicting the stated weekday is reported, which is how the swap was found. | — |
 
 ### Schéma, gouvernance et versionnement des données
 
@@ -243,8 +265,8 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×58)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×58)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×59)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×59)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×4)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
@@ -323,7 +345,7 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_chiffres_publies_sont_inchanges` _(×24)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
+| 1 | `test_les_chiffres_publies_sont_inchanges` _(×33)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
 | 2 | `test_l_ecart_de_seuil_entre_deciles_reste_superieur_a_cent` | The "factor over 100" argument justifies rejecting a single global threshold. | It is the central argument of the decision rule, quoted in the framing notebook, in the explanatory document and in the oral pitch. If the spread narrowed, a global threshold would become defensible and the whole design would need rethinking. |
 | 3 | `test_le_seuil_du_dernier_decile_reste_tres_bas` | Acting on a top-decile account stays rational below 1% risk. | The 0.3% figure is the striking end of the argument presented to the jury. |
 | 4 | `test_les_hypotheses_de_cadrage_sont_inchangees` | These values are quoted verbatim in the documents and in the oral pitch. | — |
@@ -340,3 +362,10 @@ soutenance.
 | 15 | `test_les_instantanes_derives_ne_sont_pas_versionnes` | Parquet snapshots stay out of Git; the manifest that describes them stays in. | Versioning the snapshots would produce a binary diff at every change to the cleaning rules, for information already held by the sources plus the code. The manifest is small, textual, and it is the contract. |
 | 16 | `test_les_figures_produites_ne_sont_pas_versionnees` | Figures are outputs: regenerable, and a binary diff at every retouch otherwise. | The documents that reuse them get them by running the notebook, not from the history. |
 | 17 | `test_le_cache_des_figures_depend_du_code_de_trace` | The property the whole figure cache rests on, pinned here as well. | If the key stopped covering the drawing code, every notebook would keep displaying figures from a previous version - and the deliverable would show pictures that no longer match the numbers beside them. |
+| 18 | `test_le_contrat_de_donnees_est_respecte_sur_le_jeu_de_reference` | The reference data pass every check of the contract, without a single watch flag. | If a check turned to "to watch" here, either the data moved (the manifest test says so) or a cleaning rule regressed. |
+| 19 | `test_aucune_colonne_numerique_n_entre_dans_le_modele_comme_categorie` | Every non-numeric explanatory column is genuinely textual. | Generic on purpose: it names no column. The catalogue prices reached the model as categories until phase 4; the next column read as text by mistake will fail here too. |
+| 20 | `test_aucune_date_n_entre_dans_le_modele` | A raw date one-hot encoded is one category per day: noise, and unknown at scoring. | — |
+| 21 | `test_aucune_colonne_du_gold_n_est_le_doublon_d_une_autre` | Two identical columns give the model the same information twice, under two names. | `fonctionnalites_incluses` was an exact copy of `fonctionnalites_total` until phase 4. Generic: compares every pair, names none. |
+| 22 | `test_les_manquants_du_delai_restent_au_hasard_apres_correction` | The phase 3 conclusion still holds on the corrected column. | Phase 3 concluded that support delays are missing at random, on a column where more than half the gaps were conversion losses. Corrected, the column must still show no structural cause (no ticket) and no churn signal - otherwise the imputation strategy built on that conclusion would rest on nothing. |
+| 23 | `test_l_absence_d_une_valeur_source_n_est_toujours_pas_un_signal` | Phase 2 published a 4.5-point maximum churn gap on raw data; it holds after cleaning. | Measured on silver now, since the cleaning is what phase 4 changed. A gap growing past the published figure plus its tolerance would mean the cleaning creates a signal. |
+| 24 | `test_le_manifeste_decrit_les_jeux_produits_par_le_code` | The derived datasets recorded in the manifest are the ones the code produces today. | Changing a cleaning rule changes silver and gold. Without this test the manifest kept describing the phase 3 gold - 34 columns, misread dates - while the code produced another one, and a model card would have cited a fingerprint nobody can reproduce. When it fails after a deliberate change: re-run the materialisation (README of the phase 4 delivery), then commit the manifest with the code. |

@@ -13,6 +13,8 @@ from ..config import (
     CIBLE,
     EXCLUES_ARTEFACT,
     EXCLUES_CIBLE_SECONDAIRE,
+    EXCLUES_DATE_BRUTE,
+    EXCLUES_DOUBLON,
     EXCLUES_FUITE,
     EXCLUES_IDENTIFIANT,
     EXCLUES_RGPD,
@@ -35,6 +37,15 @@ MOTIFS_EXCLUSION: dict[str, str] = {
     **{
         c: "cible secondaire — pondération de décision, jamais variable explicative"
         for c in EXCLUES_CIBLE_SECONDAIRE
+    },
+    **{
+        c: "doublon — copie exacte d'une colonne source (fonctionnalites_total)"
+        for c in EXCLUES_DOUBLON
+    },
+    **{
+        c: "date brute — encodée telle quelle, une catégorie par jour ; "
+        "anciennete_mois porte déjà l'information"
+        for c in EXCLUES_DATE_BRUTE
     },
 }
 

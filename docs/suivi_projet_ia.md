@@ -419,9 +419,38 @@ sections 5, 6 et 7 du notebook de certification
 > autres clients.
 
 - [x] Fonctions de nettoyage réutilisables (nombres en texte, dates multi-formats, uniformisation de la casse)
-- [x] Suppression des doublons
-- [~] Traitement des valeurs manquantes, colonne par colonne
-- [ ] Tests de qualité automatisés sur les données d'entrée
+  — *rouvert puis corrigé le 01/10 : deux défauts silencieux, voir ci-dessous*
+- [x] Suppression des doublons — *en deux passes depuis le 01/10, avec blocage des comptes en conflit*
+- [~] Traitement des valeurs manquantes, colonne par colonne — *stratégie arrêtée, mise en œuvre à venir*
+- [x] Tests de qualité automatisés sur les données d'entrée — *contrat de données, 9 contrôles (10 au lot mensuel)*
+
+### Ce que la phase 4 a trouvé en mesurant ce que la phase 2 avait coché
+
+Deux cases étaient cochées sur la foi du code, pas sur celle d'une mesure. Mesurées, elles ne tenaient pas.
+
+| Défaut | Ampleur | Pourquoi rien ne l'avait signalé | Correction |
+|---|---|---|---|
+| Délais de support écrits « 3.1 h » | **570 valeurs effacées** : 21,4 % de manquants affichés en phase 3 au lieu de **10,0 %** | La conversion transforme en silence ce qu'elle ne comprend pas en « valeur manquante » | Unité retirée de façon générique, et toute valeur perdue à la conversion **arrête la chaîne** |
+| Dates ISO lues jour et mois inversés | **960 dates sur 5 000** (19 %) : « 2024-02-06 » lu 2 juin | Toutes les dates étaient lues — aucune n'était vide, rien n'avait l'air faux | Chaque format est lu explicitement ; le jour de semaine fourni par la source sert de **témoin** : 100 % d'accord désormais |
+| Colonnes du catalogue en texte | Prix, SLA et quotas encodés comme des **catégories** | Le catalogue est lu en texte comme toute source, et rien ne le retypait | Typage automatique, sans perte, après la jointure |
+| Date brute et doublon parmi les variables | `date_souscription` (une catégorie par jour) et `fonctionnalites_incluses` (copie exacte d'une autre colonne) | — | Exclues au passage au gold, chacune avec son motif |
+
+Le modèle n'avait pas encore été entraîné : aucun résultat publié n'a reposé sur ces défauts. Les chiffres
+de la phase 3 qui en dépendaient — 21,4 % de manquants, 34 colonnes gold, 33 variables explicatives — sont
+corrigés en **10,0 %, 32 et 31**, et figés par les tests de non-régression.
+
+**Le contrat de données.** Neuf contrôles s'appliquent à chaque lot (un dixième au lot mensuel : modalités inconnues à l'entraînement), à l'entraînement comme au lot
+mensuel : colonnes attendues, aucune perte à la conversion, unicité des comptes, plages de valeurs,
+invariants métier, cohérence date / jour de semaine, orthographe unique des catégories, taux de manquants,
+cible binaire. **Il aurait bloqué les deux défauts silencieux** : c'est l'argument qui le justifie.
+
+### Stratégie d'imputation retenue (mise en œuvre à venir)
+
+Quatre familles, traitées dans cet ordre : les **trous structurels** (comptes sans utilisateur actif)
+reçoivent un indicateur puis zéro, jamais la médiane ; les valeurs **reconstructibles** (taux d'adoption,
+revenu mensuel) sont recalculées ligne à ligne ; les manques **au hasard** (écart de churn ≤ 4,2 points)
+sont imputés par la médiane, apprise sur les plis d'entraînement ; `secteur` et `pays` reçoivent une
+modalité « Non renseigné ».
 
 **Un choix technique important.** Les fonctions de nettoyage sont écrites une fois et **réutilisées à
 l'identique** au moment d'appliquer le modèle à de nouveaux clients. Si l'on nettoyait différemment les
@@ -429,12 +458,14 @@ données d'apprentissage et les données réelles, le modèle recevrait des info
 reconnaît pas et se tromperait sans que rien ne l'indique. Ce défaut classique porte un nom en anglais :
 *training-serving skew*, littéralement « décalage entre l'entraînement et le service ».
 
-🔧 **Outils** : pandas · imputation par la médiane ou par la dernière valeur connue
-*(Outils du modèle générique non retenus ici : détection d'outliers par Z-score ou IQR — les valeurs extrêmes
+🔧 **Outils** : pandas · imputation par la médiane, reconstruction déterministe
+*(« Dernière valeur connue » écartée : un seul instantané par compte, il n'y a pas de valeur précédente.
+Outils du modèle générique non retenus ici : détection d'outliers par Z-score ou IQR — les valeurs extrêmes
 observées, comme un chiffre d'affaires très élevé, sont réelles et non des erreurs ; les supprimer
 retirerait précisément les clients les plus importants.)*
-📦 **Artefacts** : section 7 du notebook · fonctions de nettoyage
-**Statut** : **en cours** — stratégie d'imputation à finaliser colonne par colonne
+📦 **Artefacts** : section 7 du notebook · `donnees/silver.py` · `donnees/qualite.py` ·
+`docs/04.SOUTENANCE_phases_4_a_11.md`
+**Statut** : **en cours** — nettoyage, doublons et contrat terminés ; imputation à mettre en œuvre
 
 ---
 
@@ -752,7 +783,7 @@ argument défendable devant un jury.
 | 1 · Cadrage | 🟢 Terminé | — |
 | 2 · Données | 🟢 Terminé | — |
 | 3 · Exploration | 🟢 Terminé | — |
-| 4 · Préparation | 🟡 En cours | 23/09 |
+| 4 · Préparation | 🟡 En cours — reste l'imputation | 02/10 |
 | 5 · Feature engineering | 🟡 En cours | 24/09 |
 | 6 · Baseline | 🟡 En cours | 25/09 |
 | 7 · Entraînement | 🔴 À faire | 25/09 |
