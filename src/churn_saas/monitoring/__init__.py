@@ -8,11 +8,12 @@ is useless. The two modules are inseparable.
 """
 
 from .alertes import REGLES_ALERTE, evaluer_alertes, table_regles
-from .derive import ks_deux_echantillons, psi, rapport_derive
+from .derive import ks_deux_echantillons, psi, psi_categoriel, rapport_derive
 from .exporteur import publier_lot
 
 __all__ = [
     "psi",
+    "psi_categoriel",
     "ks_deux_echantillons",
     "rapport_derive",
     "REGLES_ALERTE",

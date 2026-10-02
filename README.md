@@ -26,6 +26,7 @@ make test               # tests unitaires
 make lint               # style du code
 make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise
 make ressources         # mesure CE poste : ressources et temps de calcul (docs/06.SOBRIETE_calcul.md)
+make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
@@ -70,7 +71,7 @@ churn-saas-cisia/
 ├── models/                 Modèles sérialisés et fiches — non versionnés
 ├── reports/figures/        Figures en PNG et SVG — non versionnées, régénérables
 ├── monitoring/             Configuration Prometheus et Grafana
-├── tools/                  Outils de dépôt — catalogue des tests, registre, ressources du poste
+├── tools/                  Outils de dépôt — catalogue, registre, ressources du poste, matérialisation
 ├── docs/                   Documents méthodologiques et de suivi
 │                           (commencer par 00.REGLES_DE_TRAVAIL.md ; dépannage : DEPANNAGE.md)
 ├── tests/                  Tests par activité, plus les contrôles transverses
@@ -102,7 +103,8 @@ churn-saas-cisia/
     ├── modelisation/       3. MODÉLISATION
     │   ├── baseline.py           régression logistique et préprocesseur
     │   ├── selection.py          candidat, grille bornée, comparaison en CV
-    │   └── sobriete.py           temps de calcul mesurés, charge déclarée, énergie et CO₂e
+    │   ├── sobriete.py           temps de calcul mesurés, charge déclarée, énergie et CO₂e
+    │   └── validation.py         validation adverse, test de permutation, courbe d'apprentissage
     │
     ├── evaluation/         4. ÉVALUATION DE LA PERFORMANCE
     │   ├── metriques.py          métriques et intervalle de confiance

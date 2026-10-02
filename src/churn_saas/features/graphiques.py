@@ -186,3 +186,140 @@ def tracer_tendances(profils: dict[str, pd.DataFrame], taux_global: float) -> Fi
     ax.legend(fontsize=8)
     fig.tight_layout()
     return fig
+
+
+# --- Phase 5 · Validating the split and the dataset ---------------------------------------
+def tracer_psi(rapport: pd.DataFrame, seuil: float) -> Figure:
+    """Per-variable stability index between training and test parts, against its threshold.
+
+    Titles here describe, they do not conclude: the reading belongs to the notebook text,
+    which states it against the rule fixed beforehand.
+
+    `rapport` is the output of `monitoring.rapport_derive`.
+    """
+    donnees = rapport.sort_values("psi")
+    couleurs = [PALETTE["accent"] if v > seuil else PALETTE["principal"] for v in donnees["psi"]]
+    fig, ax = plt.subplots(figsize=(7.6, 0.28 * len(donnees) + 1.4))
+    ax.barh(donnees["variable"], donnees["psi"], color=couleurs)
+    ax.axvline(seuil, color=PALETTE["accent"], ls="--", lw=1)
+    ax.text(seuil, len(donnees) - 0.5, f" seuil {seuil:.2f}", color=PALETTE["accent"], fontsize=8)
+    ax.set_xlim(0, max(seuil * 1.4, float(donnees["psi"].max()) * 1.2))
+    ax.set_xlabel("Indice de stabilité (PSI) entre entraînement et test")
+    ax.tick_params(axis="y", labelsize=8)
+    ax.set_title("Stabilité de chaque variable entre entraînement et test")
+    fig.tight_layout()
+    return fig
+
+
+def tracer_validation_adverse(taux_faux: np.ndarray, taux_vrais: np.ndarray, auc: float) -> Figure:
+    """ROC curve of a classifier asked to tell training rows from test rows."""
+    fig, ax = plt.subplots(figsize=(5.0, 4.4))
+    ax.plot(taux_faux, taux_vrais, color=PALETTE["principal"], lw=2, label=f"AUC = {auc:.3f}")
+    ax.plot([0, 1], [0, 1], color=PALETTE["neutre"], ls=":", lw=1, label="Hasard (0,5)")
+    ax.set_xlabel("Taux de faux positifs")
+    ax.set_ylabel("Taux de vrais positifs")
+    ax.set_title("Validation adverse : distinguer l'entraînement du test")
+    ax.legend(loc="lower right", fontsize=8.5)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_permutation(scores_permutes: np.ndarray, score: float, taux_base: float) -> Figure:
+    """Scores obtained on shuffled labels, against the score on the real labels."""
+    fig, ax = plt.subplots(figsize=(7.0, 3.8))
+    ax.hist(
+        scores_permutes, bins=20, color=PALETTE["neutre"], alpha=0.8, label="Étiquettes mélangées"
+    )
+    ax.axvline(score, color=PALETTE["accent"], lw=2, label=f"Étiquettes réelles : {score:.3f}")
+    ax.axvline(
+        taux_base,
+        color=PALETTE["principal"],
+        ls=":",
+        lw=1.2,
+        label=f"Taux de base : {taux_base:.2f}",
+    )
+    ax.set_xlabel("PR-AUC en validation croisée")
+    ax.set_ylabel("Nombre de mélanges")
+    ax.set_title("Test de permutation des étiquettes")
+    ax.legend(fontsize=8.5)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_courbes_apprentissage(courbes: dict[str, pd.DataFrame]) -> Figure:
+    """Training and validation PR-AUC by training size, one panel per model.
+
+    `courbes` maps a model name to the output of `modelisation.courbe_apprentissage`.
+    """
+    fig, axes = plt.subplots(1, len(courbes), figsize=(5.2 * len(courbes), 3.9), sharey=True)
+    for ax, (nom, courbe) in zip(np.atleast_1d(axes), courbes.items(), strict=True):
+        effectifs = courbe["comptes d'entraînement"]
+        ax.plot(
+            effectifs,
+            courbe["PR-AUC entraînement"],
+            marker="o",
+            color=PALETTE["neutre"],
+            label="Entraînement",
+        )
+        ax.plot(
+            effectifs,
+            courbe["PR-AUC validation"],
+            marker="o",
+            color=PALETTE["principal"],
+            label="Validation",
+        )
+        ax.fill_between(
+            effectifs,
+            courbe["PR-AUC validation"] - courbe["écart-type validation"],
+            courbe["PR-AUC validation"] + courbe["écart-type validation"],
+            color=PALETTE["principal"],
+            alpha=0.15,
+        )
+        ax.set_title(nom, fontsize=10)
+        ax.set_xlabel("Comptes d'entraînement")
+        ax.legend(fontsize=8)
+    np.atleast_1d(axes)[0].set_ylabel("PR-AUC")
+    fig.suptitle("Courbes d'apprentissage (PR-AUC, validation croisée à 5 plis)", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_valeur_vie_par_anciennete(
+    df: pd.DataFrame, tranches: int = 5, cible: str = "churn"
+) -> Figure:
+    """Lifetime value in months of revenue, by seniority bucket, leavers against stayers.
+
+    If the value encoded the outcome, leavers would sit below stayers within every bucket.
+    If the overall gap is a composition effect, the two lines merge once seniority is fixed.
+    """
+    mois = pd.to_numeric(df["valeur_vie_client_eur"], errors="coerce") / pd.to_numeric(
+        df["revenu_mensuel_recurrent_eur"], errors="coerce"
+    )
+    anciennete = pd.to_numeric(df["anciennete_mois"], errors="coerce")
+    tranche = pd.qcut(anciennete, tranches, labels=False, duplicates="drop") + 1
+    issue = pd.to_numeric(df[cible], errors="coerce")
+    medianes = mois.groupby([tranche, issue]).median().unstack()
+    fig, ax = plt.subplots(figsize=(7.0, 4.0))
+    ax.plot(medianes.index, medianes[0], marker="o", color=PALETTE["principal"], label="Restent")
+    ax.plot(medianes.index, medianes[1], marker="o", color=PALETTE["accent"], label="Partent")
+    ax.set_xticks(list(medianes.index))
+    ax.set_xlabel("Tranche d'ancienneté (1 = comptes les plus récents)")
+    ax.set_ylabel("Valeur vie client, en mois de revenu (médiane)")
+    ax.set_title("Valeur vie client par ancienneté, selon l'issue")
+    ax.legend(fontsize=8.5)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_charge_calcul(charge: pd.DataFrame) -> Figure:
+    """Seconds of computation per planned step, from `modelisation.estimer_charge`."""
+    donnees = charge.sort_values("secondes")
+    fig, ax = plt.subplots(figsize=(7.6, 0.42 * len(donnees) + 1.4))
+    ax.barh(donnees["étape"], donnees["secondes"] / 60, color=PALETTE["principal"])
+    for i, v in enumerate(donnees["secondes"] / 60):
+        ax.text(v, i, f" {v:.1f}", va="center", fontsize=8)
+    ax.set_xlabel("Minutes de calcul sur le poste de développement")
+    ax.tick_params(axis="y", labelsize=8)
+    ax.set_title("Charge de calcul de la phase 5, étape par étape")
+    fig.tight_layout()
+    return fig

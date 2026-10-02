@@ -11,7 +11,7 @@ CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
 REGISTRE_TEMPORAIRE := .registre-tmp.md
 SOBRIETE_TEMPORAIRE := .sobriete-tmp.md
 
-.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check registre-doc registre-doc-check ressources sobriete-doc sobriete-doc-check lint format check \
+.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check registre-doc registre-doc-check ressources sobriete-doc sobriete-doc-check materialiser lint format check \
         notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
@@ -28,6 +28,7 @@ aide:
 	@echo "  registre-doc        Régénère le registre des éléments écartés (règle 13)"
 	@echo "  registre-doc-check  Vérifie que le registre correspond à sa source"
 	@echo "  ressources          Mesure CE poste (à lancer sur le poste de développement)"
+	@echo "  materialiser        Réécrit silver, gold et découpage au manifeste (sans Jupyter)"
 	@echo "  sobriete-doc        Régénère docs/06.SOBRIETE_calcul.md depuis config/ressources_poste.toml"
 	@echo "  sobriete-doc-check  Vérifie que le document de sobriété correspond à son entrée"
 	@echo "  lint                Style du code"
@@ -113,6 +114,11 @@ registre-doc-check:
 		    rm -f $(REGISTRE_TEMPORAIRE); exit 1)
 	@rm -f $(REGISTRE_TEMPORAIRE)
 	@echo "Registre des éléments écartés à jour."
+
+# Derived datasets and split, recorded in the manifest. Run after any change to the
+# preparation, then commit data/manifeste_v1.0.json with the code.
+materialiser:
+	uv run python tools/materialiser.py
 
 # Compute resources: measured on the development laptop, rendered anywhere. The CI only
 # checks the rendering - re-measuring there would describe the CI machine, not the laptop.

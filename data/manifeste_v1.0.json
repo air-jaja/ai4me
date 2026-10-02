@@ -20,24 +20,36 @@
     }
   },
   "jeux_derives": {
-    "date_materialisation": "20261001",
+    "date_materialisation": "20261002",
     "jeux": {
       "silver": {
-        "chemin": "data/processed/silver_v1.0_20261001.parquet",
+        "chemin": "data/processed/silver_v1.0_20261002.parquet",
         "lignes": 5000,
         "colonnes": 39,
         "octets": 282184,
         "empreinte_contenu": "835f0c2ece91740d1e377405167fa46381889fad04240a3b3c7eee37c9afce8d",
-        "version_code": "14717ac"
+        "version_code": "50a1791"
       },
       "gold": {
-        "chemin": "data/processed/gold_v1.0_20261001.parquet",
+        "chemin": "data/processed/gold_v1.0_20261002.parquet",
         "lignes": 5000,
-        "colonnes": 31,
-        "octets": 179239,
-        "empreinte_contenu": "c20eed85f8f8b7e774844592b26fd0bf31c4fb652fe34fc9ffc4e668dc45ab81",
-        "version_code": "14717ac"
+        "colonnes": 26,
+        "octets": 170273,
+        "empreinte_contenu": "2c6fa66eaf76ff7f37e070f472870efeae07b161400cca8fd580544fed268947",
+        "version_code": "50a1791"
       }
     }
+  },
+  "decoupage": {
+    "graine": 42,
+    "part_test": 0.2,
+    "stratifie_sur": "churn",
+    "comptes_entrainement": 4000,
+    "comptes_test": 1000,
+    "taux_churn_entrainement": 0.28,
+    "taux_churn_test": 0.28,
+    "empreinte_comptes_test": "c0e443d62fa63a85b1b81d974c8e5ea9e34abf4eaae231fe34fbf116cfb3349c",
+    "empreinte_entrainement": "c3500a53a3217c4115f99964acaa602974c6166afe8f60b530594045485c0d5b",
+    "empreinte_test": "715b8d8aa8044f260642546fc492ed27069248e8323ed562ce4f1fa964501619"
   }
 }

@@ -7,6 +7,7 @@ drift is reported instead of being absorbed silently.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -175,3 +176,38 @@ def test_la_table_de_materialisation_est_lisible(materialise):
     table = table_materialisation(manifeste)
     assert set(table["Jeu"]) == {"silver", "gold"}
     assert (table["Empreinte du contenu"].str.len() > 10).all()
+
+
+def test_l_outil_de_materialisation_ecrit_un_manifeste_conforme(tmp_path):
+    """`make materialiser` refreshes the manifest without Jupyter, and checks what it wrote.
+
+    The phase 3 notebook used to be the only way to refresh it; when Jupyter failed (the
+    orjson episode of 02/10), the manifest could not follow the code.
+    """
+    import subprocess
+    import sys
+
+    racine = Path(__file__).resolve().parents[1]
+    if (racine / "data" / "raw" / "churn_saas_complet.csv").stat().st_size < 10_000:
+        pytest.skip("Jeu de données absent ou réduit à un pointeur Git-LFS.")
+    manifeste = tmp_path / "manifeste.json"
+    manifeste.write_text(
+        (racine / "data" / "manifeste_v1.0.json").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    sortie = subprocess.run(
+        [
+            sys.executable,
+            str(racine / "tools" / "materialiser.py"),
+            "--manifeste",
+            str(manifeste),
+            "--dossier",
+            str(tmp_path / "processed"),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        cwd=racine,
+    )
+    assert sortie.returncode == 0, sortie.stdout + sortie.stderr
+    assert "Manifeste conforme au code." in sortie.stdout
+    assert "decoupage" in json.loads(manifeste.read_text(encoding="utf-8"))

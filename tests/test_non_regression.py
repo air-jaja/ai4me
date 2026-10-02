@@ -1182,3 +1182,84 @@ def test_les_attributs_de_formule_ne_prennent_qu_une_valeur_par_plan(silver: pd.
 
     valeurs = silver.groupby("plan")[EXCLUES_ATTRIBUT_FORMULE].nunique()
     assert (valeurs <= 1).all().all(), valeurs.to_string()
+
+
+# --- Phase 5 · Bloc A: the split and the dataset are valid --------------------------------
+@pytest.fixture(scope="module")
+def parties(chaine):
+    from churn_saas.features import parties_du_decoupage
+
+    return parties_du_decoupage(chaine)
+
+
+def test_le_decoupage_reste_celui_qui_a_ete_publie(parties):
+    """4,000 / 1,000 accounts, the same 28 % churn rate in both parts."""
+    from churn_saas.config import ECART_STRATIFICATION_MAX_PTS
+
+    assert (len(parties.y_entrainement), len(parties.y_test)) == (4000, 1000)
+    ecart = abs(parties.y_entrainement.mean() - parties.y_test.mean()) * 100
+    assert ecart < ECART_STRATIFICATION_MAX_PTS
+
+
+def test_chaque_variable_est_stable_entre_entrainement_et_test(chaine, parties):
+    """Largest PSI published at 0.033 (utilisateurs_actifs), rule: below 0.10 everywhere."""
+    from churn_saas.config import SEUIL_PSI_DECOUPAGE
+    from churn_saas.monitoring import rapport_derive
+
+    rapport = rapport_derive(
+        parties.X_entrainement, parties.X_test, list(chaine.X.columns), SEUIL_PSI_DECOUPAGE
+    )
+    assert len(rapport) == chaine.X.shape[1], "Une variable manque au rapport de dérive."
+    assert rapport["psi"].max() == pytest.approx(0.033, abs=0.01)
+    assert not rapport["alerte"].any(), rapport.head().to_string()
+
+
+def test_l_entrainement_et_le_test_sont_indiscernables(chaine, parties):
+    """Adversarial validation, published at 0.52 with the forest; checked here with the
+    logistic regression, which reaches the same verdict in a second instead of fifteen."""
+    from churn_saas.modelisation import construire_baseline, validation_adverse
+
+    resultat = validation_adverse(
+        construire_baseline(chaine.X), parties.X_entrainement, parties.X_test
+    )
+    assert resultat["conforme"] and resultat["auc"] == pytest.approx(0.516, abs=0.03)
+
+
+def test_le_modele_bat_les_etiquettes_melangees(chaine, parties):
+    """Published with 100 shuffles: 0.789 against 0.285, p = 0.01. Twenty shuffles here,
+    the fewest that can reach p < 0.05, to keep the suite fast."""
+    from churn_saas.modelisation import construire_baseline, tester_permutation
+
+    resultat = tester_permutation(
+        construire_baseline(chaine.X), parties.X_entrainement, parties.y_entrainement, 20
+    )
+    assert resultat["conforme"]
+    assert resultat["score"] == pytest.approx(0.789, abs=0.01)
+    assert resultat["moyenne_permutee"] == pytest.approx(0.28, abs=0.03)
+
+
+def test_la_regression_logistique_a_converge(chaine, parties):
+    """Learning curve: validation PR-AUC 0.789 at full size, 0.016 from the training score."""
+    from churn_saas.modelisation import construire_baseline, courbe_apprentissage
+
+    courbe = courbe_apprentissage(
+        construire_baseline(chaine.X), parties.X_entrainement, parties.y_entrainement
+    )
+    finale = courbe.iloc[-1]
+    assert finale["PR-AUC validation"] == pytest.approx(0.789, abs=0.01)
+    assert finale["écart entraînement - validation"] < 0.05
+
+
+def test_le_manifeste_decrit_le_decoupage_produit_par_le_code(chaine):
+    """The test part recorded is the one the code sets aside today.
+
+    When it fails after a deliberate change: re-run the materialisation (carnet 03), then
+    commit the manifest with the code. Until then, no result on the test part is comparable.
+    """
+    from churn_saas.features import verifier_decoupage
+
+    manifeste = json.loads((RACINE / "data" / "manifeste_v1.0.json").read_text(encoding="utf-8"))
+    if "decoupage" not in manifeste:
+        pytest.fail("Le manifeste n'enregistre pas le découpage : re-matérialiser (carnet 03).")
+    controle = verifier_decoupage(chaine, manifeste)
+    assert controle["conforme"].all(), controle.to_string()

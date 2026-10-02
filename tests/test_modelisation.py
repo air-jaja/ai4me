@@ -119,3 +119,54 @@ def test_la_mesure_des_temps_renvoie_chaque_operation():
     }
     assert attendus <= set(temps)
     assert all(v > 0 for v in temps.values())
+
+
+# --- Phase 5 · Validating the split and the dataset ---------------------------------------
+def _donnees_informatives(n: int = 400, signal: bool = True):
+    generateur = np.random.default_rng(1)
+    X = pd.DataFrame({"a": generateur.normal(size=n), "b": generateur.normal(size=n)})
+    bruit = generateur.normal(scale=0.5, size=n)
+    y = pd.Series(((X["a"] + bruit > 0.6) if signal else (generateur.random(n) < 0.28)).astype(int))
+    return X, y
+
+
+def test_la_validation_adverse_ne_distingue_pas_deux_tirages_de_la_meme_source():
+    from churn_saas.modelisation import construire_baseline, validation_adverse
+
+    X, _ = _donnees_informatives()
+    resultat = validation_adverse(construire_baseline(X), X.iloc[:300], X.iloc[300:])
+    assert resultat["auc"] < 0.6 and resultat["conforme"]
+
+
+def test_la_validation_adverse_detecte_un_decalage():
+    """A test part drawn elsewhere is told apart.
+
+    The check can fail, which is what gives its passing a meaning.
+    """
+    from churn_saas.modelisation import construire_baseline, validation_adverse
+
+    X, _ = _donnees_informatives()
+    decale = X.iloc[300:].assign(a=lambda d: d["a"] + 2)
+    resultat = validation_adverse(construire_baseline(X), X.iloc[:300], decale)
+    assert resultat["auc"] > 0.8 and not resultat["conforme"]
+
+
+def test_le_test_de_permutation_separe_signal_et_bruit():
+    """Real signal beats every shuffle; pure noise does not."""
+    from churn_saas.modelisation import construire_baseline, tester_permutation
+
+    X, y = _donnees_informatives(signal=True)
+    avec = tester_permutation(construire_baseline(X), X, y, n_permutations=20)
+    X, y = _donnees_informatives(signal=False)
+    sans = tester_permutation(construire_baseline(X), X, y, n_permutations=20)
+    assert avec["conforme"] and avec["p_valeur"] < 0.05
+    assert not sans["conforme"]
+
+
+def test_la_courbe_d_apprentissage_couvre_chaque_taille():
+    from churn_saas.modelisation import construire_baseline, courbe_apprentissage
+
+    X, y = _donnees_informatives()
+    courbe = courbe_apprentissage(construire_baseline(X), X, y, tailles=(0.5, 1.0))
+    assert len(courbe) == 2
+    assert {"PR-AUC entraînement", "PR-AUC validation", "écart-type validation"} <= set(courbe)

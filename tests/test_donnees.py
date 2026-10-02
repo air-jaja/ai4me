@@ -435,3 +435,46 @@ def test_une_regle_inapplicable_est_signalee_et_non_ignoree():
 
     _, bilan = reconstruire_valeurs_deterministes(_comptes().drop(columns="sieges_souscrits"))
     assert bilan["statut"].str.startswith("non applicable").all()
+
+
+# --- Phase 5 · Training / test split ------------------------------------------------------
+def _jeu_a_decouper(n: int = 500) -> tuple[pd.DataFrame, pd.Series]:
+    import numpy as np
+
+    generateur = np.random.default_rng(0)
+    X = pd.DataFrame({"a": generateur.normal(size=n), "b": generateur.choice(["x", "y"], n)})
+    y = pd.Series((generateur.random(n) < 0.28).astype(int))
+    return X, y
+
+
+def test_le_decoupage_est_deterministe_disjoint_et_complet():
+    """Same seed, same accounts in the test part; no account in both; none lost."""
+    from churn_saas.donnees import decouper_entrainement_test
+
+    X, y = _jeu_a_decouper()
+    premier, second = decouper_entrainement_test(X, y), decouper_entrainement_test(X, y)
+    assert list(premier.X_test.index) == list(second.X_test.index)
+    assert set(premier.X_test.index).isdisjoint(premier.X_entrainement.index)
+    assert len(premier.X_test) + len(premier.X_entrainement) == len(X)
+    assert len(premier.X_test) == round(len(X) * premier.part_test)
+
+
+def test_le_decoupage_est_stratifie_sur_la_cible():
+    """Both parts keep the churn rate: the gap stays under the threshold fixed beforehand."""
+    from churn_saas.config import ECART_STRATIFICATION_MAX_PTS
+    from churn_saas.donnees import decouper_entrainement_test, resume_decoupage
+
+    X, y = _jeu_a_decouper()
+    resume = resume_decoupage(decouper_entrainement_test(X, y))
+    ecart = resume.loc[resume["partie"] == "écart (points)", "taux de churn (%)"].iloc[0]
+    assert ecart < ECART_STRATIFICATION_MAX_PTS
+
+
+def test_une_autre_graine_change_le_jeu_de_test():
+    """The seed matters: a change of seed must show in the recorded fingerprint."""
+    from churn_saas.donnees import decouper_entrainement_test
+
+    X, y = _jeu_a_decouper()
+    a = decouper_entrainement_test(X, y, graine=1)
+    b = decouper_entrainement_test(X, y, graine=2)
+    assert set(a.X_test.index) != set(b.X_test.index)

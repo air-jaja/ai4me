@@ -24,6 +24,12 @@ FICHIER_RESSOURCES = RACINE / "config" / "ressources_poste.toml"
 GRAINE = 42
 PART_TEST = 0.20
 
+# --- Phase 5 decision rules, fixed on 01/10/2026 before any result (choix § 7 bis) -----
+ECART_STRATIFICATION_MAX_PTS = 1.0  # churn rate gap between train and test, in points
+SEUIL_PSI_DECOUPAGE = 0.10  # per-variable stability between train and test
+SEUIL_AUC_ADVERSE = 0.60  # a classifier must not tell train from test
+SEUIL_P_PERMUTATION = 0.05  # the model must beat shuffled labels
+
 # --- Excluded columns, each with its own rationale (notebook sections 4 and 7) -------
 # The motives are distinct and not interchangeable: the grid separates ethics from
 # technical preparation, so one blanket justification would satisfy neither.

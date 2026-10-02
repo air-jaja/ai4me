@@ -494,8 +494,11 @@ retirerait précisément les clients les plus importants.)*
 - [x] Vérifier l'absence de **fuite de données**
 - [~] Sélectionner les variables à conserver
 - [ ] Mesurer l'apport réel des variables construites
-- [ ] Séparer le jeu gold en entraînement et test, valider la séparation
-- [ ] Valider le jeu de données préparé (test de permutation, courbe d'apprentissage)
+- [x] Séparer le jeu gold en entraînement et test, valider la séparation — *80/20 stratifié, enregistré au manifeste ; stratification, PSI et validation adverse conformes (bloc A, 02/10)*
+- [x] Valider le jeu de données préparé (test de permutation, courbe d'apprentissage) — *p = 0,01 ; la régression logistique converge, la forêt sur-apprend (à régulariser en phase 7)*
+
+**Carnet de travail** : `notebooks/05_feature_engineering.ipynb` (blocs 0 et A, exécuté) ; conclusions
+reportées au notebook de certification, § 7.7 et § 8.A.
 
 **Préalables faits le 02/10 (bloc 0).** Catalogue réduit à `plan` (gold : 26 colonnes, 25 variables
 explicatives) ; valeur vie client diagnostiquée — elle n'encode pas l'issue, la valeur observée évaluera la

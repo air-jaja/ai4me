@@ -25,6 +25,7 @@ contract itself.
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,7 +33,14 @@ from typing import Any
 
 import pandas as pd
 
-from ..donnees import charger_manifeste, ecrire_manifeste, empreinte_donnees, racine_projet
+from ..donnees import (
+    Decoupage,
+    charger_manifeste,
+    decouper_entrainement_test,
+    ecrire_manifeste,
+    empreinte_donnees,
+    racine_projet,
+)
 from .pipeline import ResultatPipeline
 
 DOSSIER_PAR_DEFAUT = "data/processed"
@@ -108,8 +116,65 @@ def materialiser(
         "date_materialisation": horodatage,
         "jeux": ecrits,
     }
+    manifeste["decoupage"] = descriptif_decoupage(resultat)
     ecrire_manifeste(manifeste, chemin_manifeste)
     return manifeste
+
+
+def _empreinte_comptes(identifiants: pd.Series) -> str:
+    """Fingerprint of a set of accounts, independent of their order."""
+    texte = "\n".join(sorted(identifiants.astype(str)))
+    return hashlib.sha256(texte.encode("utf-8")).hexdigest()
+
+
+def descriptif_decoupage(resultat: ResultatPipeline) -> dict[str, Any]:
+    """What the manifest records of the split: enough to prove the test part never moved.
+
+    The account list itself is not stored - 1,000 identifiers would drown the manifest - but
+    its fingerprint is: the split is deterministic, and any change of seed, share, data or
+    code that moves a single account changes it.
+    """
+    decoupage = decouper_entrainement_test(resultat.X, resultat.y.astype(int))
+    comptes = resultat.silver["client_id"]
+    return {
+        "graine": decoupage.graine,
+        "part_test": decoupage.part_test,
+        "stratifie_sur": "churn",
+        "comptes_entrainement": len(decoupage.y_entrainement),
+        "comptes_test": len(decoupage.y_test),
+        "taux_churn_entrainement": round(float(decoupage.y_entrainement.mean()), 4),
+        "taux_churn_test": round(float(decoupage.y_test.mean()), 4),
+        "empreinte_comptes_test": _empreinte_comptes(comptes.loc[decoupage.X_test.index]),
+        "empreinte_entrainement": empreinte_donnees(
+            decoupage.X_entrainement.assign(churn=decoupage.y_entrainement)
+        ),
+        "empreinte_test": empreinte_donnees(decoupage.X_test.assign(churn=decoupage.y_test)),
+    }
+
+
+def verifier_decoupage(resultat: ResultatPipeline, manifeste: dict[str, Any]) -> pd.DataFrame:
+    """Recompute the split and compare it with what the manifest recorded.
+
+    Run before any training and before the single evaluation on the test part. A mismatch
+    means the test part is no longer the one set aside: results would not be comparable.
+    """
+    attendu = manifeste.get("decoupage", {})
+    constate = descriptif_decoupage(resultat)
+    lignes = [
+        {
+            "élément": cle,
+            "enregistré": str(attendu.get(cle, "—"))[:20],
+            "recalculé": str(valeur)[:20],
+            "conforme": attendu.get(cle) == valeur,
+        }
+        for cle, valeur in constate.items()
+    ]
+    return pd.DataFrame(lignes)
+
+
+def parties_du_decoupage(resultat: ResultatPipeline) -> Decoupage:
+    """The training and test parts, as the manifest describes them."""
+    return decouper_entrainement_test(resultat.X, resultat.y.astype(int))
 
 
 def table_materialisation(manifeste: dict[str, Any]) -> pd.DataFrame:

@@ -1,5 +1,6 @@
 """Activity 2 - feature construction and control."""
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -153,6 +154,35 @@ def test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues():
         ),
         graphiques.tracer_risque_par_segment(df, ["secteur"]),
         graphiques.tracer_tendances({"x": tranches}, taux_global=28.0),
+        graphiques.tracer_psi(pd.DataFrame({"variable": ["a", "b"], "psi": [0.01, 0.2]}), 0.1),
+        graphiques.tracer_validation_adverse(np.array([0, 0.5, 1]), np.array([0, 0.5, 1]), 0.5),
+        graphiques.tracer_permutation(np.array([0.27, 0.28, 0.3]), 0.79, 0.28),
+        graphiques.tracer_valeur_vie_par_anciennete(
+            pd.DataFrame(
+                {
+                    "valeur_vie_client_eur": [1000.0, 1200, 1500, 1800, 2000, 1100, 1300, 1600],
+                    "revenu_mensuel_recurrent_eur": [100.0] * 8,
+                    "anciennete_mois": [1, 2, 5, 8, 12, 1, 3, 9],
+                    "churn": [1, 0, 1, 0, 1, 0, 1, 0],
+                }
+            ),
+            tranches=2,
+        ),
+        graphiques.tracer_charge_calcul(
+            pd.DataFrame({"étape": ["a", "b"], "secondes": [60.0, 30.0]})
+        ),
+        graphiques.tracer_courbes_apprentissage(
+            {
+                "m": pd.DataFrame(
+                    {
+                        "comptes d'entraînement": [100, 200],
+                        "PR-AUC entraînement": [0.9, 0.85],
+                        "PR-AUC validation": [0.7, 0.75],
+                        "écart-type validation": [0.02, 0.02],
+                    }
+                )
+            }
+        ),
     ]
     assert all(isinstance(f, Figure) for f in figures)
     assert all(f.axes and (f.axes[0].get_title() or f._suptitle) for f in figures)
