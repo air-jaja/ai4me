@@ -386,6 +386,9 @@ def rendre_markdown(contenu: dict | None = None) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # A Windows terminal hands a piped child process cp1252, whatever the document holds:
+    # the tool's output must not depend on who runs it (see test_conventions).
+    sys.stdout.reconfigure(encoding="utf-8")
     analyseur = argparse.ArgumentParser(description="Ressources du poste et empreinte du calcul.")
     analyseur.add_argument(
         "--mesurer",
