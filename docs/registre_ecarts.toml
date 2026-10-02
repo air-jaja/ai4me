@@ -555,16 +555,16 @@ condition = "Si plusieurs instantanés mensuels par compte deviennent disponible
 
 [[element]]
 id = "D-06"
-titre = "MLflow (traçabilité des entraînements et registre de modèles)"
+titre = "Serveur MLflow partagé et alias champion (production)"
 nature = "outil"
 statut = "différé"
 phase = "10 · Déploiement"
 date = "01/10/2026"
 competence = "C6"
 section = "10"
-motif = "Différé, pas écarté : en phase 5, les résultats de l'ablation tiennent dans les tableaux du notebook. Il servira à tracer le modèle final et son passage en production (action P3)."
+motif = "Le suivi MLflow est actif en local depuis le bloc 7.0 (SQLite, registre, alias challenger). Restent différés le serveur partagé du docker-compose — image 3.1.1 à aligner sur le client 3.16.1 — et l'alias champion, réservé au modèle retenu."
 source = "00.README_choix_methodologiques § 7 bis · arbitrage du porteur"
-condition = "Phase 10, avec le modèle final ; dépend de la pile Docker (A-05)."
+condition = "Phase 10 pour le serveur (A-05) ; fin de phase 7 pour l'alias champion."
 
 [[element]]
 id = "E-508"
@@ -635,3 +635,54 @@ motif = "Erreur de calibration de la régression logistique : 0,114, au-delà du
 preuve = "test_la_regression_doit_etre_calibree_en_phase_7"
 source = "00.README_choix_methodologiques § 7 ter"
 condition = "Phase 7, sur le modèle retenu, avant l'évaluation unique sur le jeu de test."
+
+# ═══ Phase 7 · Bloc 7.0 — suivi MLflow ═══════════════════════════════════════
+
+[[element]]
+id = "E-701"
+titre = "Paquet xgboost standard"
+nature = "outil"
+statut = "écarté"
+phase = "7 · Modélisation"
+date = "02/10/2026"
+competence = "C4"
+section = "9"
+motif = "Il tire les bibliothèques CUDA (nvidia-nccl), plusieurs centaines de Mo inutiles sans carte graphique, ni sur le poste ni en CI. xgboost-cpu fournit le même module."
+source = "bloc 7.0"
+
+[[element]]
+id = "E-702"
+titre = "Sérialisation skops (format par défaut de MLflow 3)"
+nature = "méthode"
+statut = "écarté"
+phase = "7 · Modélisation"
+date = "02/10/2026"
+competence = "C6"
+section = "10"
+motif = "Elle rejette les types numpy et xgboost des chaînes du projet sauf à déclarer chacun « de confiance ». cloudpickle retenu : modèle de confiance identique aux fichiers joblib déjà utilisés, modèles chargés depuis le seul magasin du projet."
+preuve = "test_le_modele_du_registre_predit_comme_le_modele_en_memoire"
+source = "bloc 7.0"
+
+[[element]]
+id = "E-703"
+titre = "Comparer les runs sur les métriques de l'autolog"
+nature = "méthode"
+statut = "écarté"
+phase = "7 · Modélisation"
+date = "02/10/2026"
+competence = "C5"
+section = "9"
+motif = "L'autolog mesure sur les lignes d'entraînement : la forêt affiche un recall d'entraînement de 0,919 pour un rappel hors pli de 0,318 au haut du classement. Les runs sont classés sur les métriques hors pli du protocole, sous des clés communes (décision D4)."
+source = "bloc 7.0"
+
+[[element]]
+id = "E-704"
+titre = "Évaluer le modèle chargé depuis le registre sur le jeu de test dès le bloc 7.0"
+nature = "méthode"
+statut = "écarté"
+phase = "7 · Modélisation"
+date = "02/10/2026"
+competence = "C5"
+section = "9"
+motif = "Le test ne sert qu'une fois, après réglage et calibration. Le modèle chargé score les 50 comptes de l'échantillon — tous déjà vus à l'entraînement ou au test — comme vérification de fonctionnement, sans métrique (décision D5)."
+source = "bloc 7.0"

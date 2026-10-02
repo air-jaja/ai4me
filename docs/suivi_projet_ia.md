@@ -589,7 +589,13 @@ séparation stratifiée · graine aléatoire fixée *(pour que les résultats so
 
 ---
 
-## 7 · Choix & entraînement du modèle *(à faire)*
+## 7 · Choix & entraînement du modèle *(🟡 en cours — bloc 7.0 fait)*
+
+**Bloc 7.0 — suivi des expériences (MLflow), 02/10.** Suivi local actif (SQLite, chemin absolu), XGBoost ajouté
+(`xgboost-cpu`), chaîne de quatre runs (forêt et XGBoost en autolog, régression logistique manuelle avec matrice
+de confusion, `GridSearchCV`), comparaison par `search_runs()` sur les métriques hors pli, régression logistique
+enregistrée en `challenger`, rechargée et utilisée pour scorer l'échantillon ; phases 5 et 6 retracées, run
+« données » à chaque matérialisation. Carnet `07_suivi_mlflow.ipynb`, choix § 7 quater.
 
 > **De quoi s'agit-il ?** « Entraîner » un modèle, c'est lui présenter des milliers d'exemples passés dont
 > on connaît l'issue, afin qu'il repère les régularités. La **validation croisée** consiste à répéter

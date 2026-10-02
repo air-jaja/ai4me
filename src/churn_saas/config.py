@@ -37,6 +37,19 @@ PART_HAUT_CLASSEMENT = 0.10  # top of the ranking read for recall and precision
 SEUIL_ERREUR_CALIBRATION = 0.05  # above it, phase 7 calibrates the retained model
 VARIABLE_REGLE_METIER = "derniere_connexion_jours"  # what a CSM would rank by, without a model
 
+# --- Experiment tracking (MLflow), phase 7 bloc 7.0 ----------------------------------------
+# A local SQLite store, built from the project root as an ABSOLUTE path: with a relative
+# `sqlite:///mlflow.db`, a notebook run from notebooks/ and a tool run from the root would
+# write to two different stores without any error. MLFLOW_TRACKING_URI overrides it (tests,
+# and the Docker server in phase 10). The registry needs a database: SQLite provides it.
+DOSSIER_SUIVI = RACINE / "mlruns"
+URI_SUIVI = f"sqlite:///{(DOSSIER_SUIVI / 'mlflow.db').as_posix()}"
+ARTEFACTS_SUIVI = (DOSSIER_SUIVI / "artefacts").as_uri()
+PREFIXE_EXPERIENCES = "churn-saas"
+MODELE_REGISTRE = "churn-saas"
+ALIAS_CANDIDAT = "challenger"  # best model so far, neither tuned nor calibrated
+ALIAS_RETENU = "champion"  # reserved to the model retained at the end of phase 7
+
 # --- Excluded columns, each with its own rationale (notebook sections 4 and 7) -------
 # The motives are distinct and not interchangeable: the grid separates ethics from
 # technical preparation, so one blanket justification would satisfy neither.

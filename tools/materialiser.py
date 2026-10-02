@@ -28,6 +28,9 @@ def main(argv: list[str] | None = None) -> int:
     analyseur = argparse.ArgumentParser(description="Re-matérialise les jeux dérivés.")
     analyseur.add_argument("--manifeste", help="chemin du manifeste (défaut : celui du dépôt)")
     analyseur.add_argument("--dossier", help="dossier des instantanés (défaut : data/processed)")
+    analyseur.add_argument(
+        "--sans-suivi", action="store_true", help="ne pas tracer la matérialisation dans MLflow"
+    )
     arguments = analyseur.parse_args(argv)
 
     sys.path.insert(0, str(RACINE / "src"))
@@ -57,6 +60,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     conforme = bool(jeux["conforme"].all() and decoupage["conforme"].all())
     print("Manifeste conforme au code." if conforme else "Manifeste NON conforme au code.")
+    if conforme and not arguments.sans_suivi:
+        from churn_saas.packaging import tracer_donnees
+
+        run = tracer_donnees(
+            resultat.gold,
+            resultat.journal,
+            manifeste,
+            profil=resultat.X.describe(include="all").T,
+        )
+        if run:
+            print(f"Run « données » MLflow : {run}")
     return 0 if conforme else 1
 
 

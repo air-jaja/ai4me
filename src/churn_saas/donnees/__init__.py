@@ -34,6 +34,7 @@ from .gold import (
     resume_decoupage,
     separer_cible,
     table_exclusions,
+    typer_pour_modele,
 )
 from .gouvernance import (
     comparer_stockage,
@@ -87,6 +88,7 @@ __all__ = [
     "decouper_entrainement_test",
     "resume_decoupage",
     "Decoupage",
+    "typer_pour_modele",
     "MOTIFS_EXCLUSION",
     # Cleaning primitives, reused at scoring time and shown in the notebooks
     "nettoyer_decimal_texte",

@@ -52,3 +52,8 @@ reports/figures/*
 .catalogue-tests-tmp.md
 .registre-tmp.md
 .sobriete-tmp.md
+
+# MLflow local tracking store (config.URI_SUIVI): regenerated, never versioned.
+# What is authoritative stays in resultats/ and data/manifeste_v1.0.json.
+mlruns/
+mlartifacts/

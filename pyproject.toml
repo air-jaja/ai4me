@@ -85,6 +85,14 @@ suivi = [
     "mlflow>=2.14",
 ]
 
+# C5 — Troisième famille candidate (phase 7, bloc 7.0) : gradient boosting, tracé par
+# mlflow.xgboost.autolog. Gardée hors du groupe dev : la CI n'en a pas besoin.
+boosting = [
+    # xgboost-cpu: same `xgboost` module, without the CUDA libraries (hundreds of MB the
+    # project never uses: no GPU on the development laptop, nor in the CI).
+    "xgboost-cpu>=2.1",
+]
+
 # C3/C7 — Stockage relationnel, conforme au modèle de stockage retenu au § 3.
 stockage = [
     "sqlalchemy>=2.0",
@@ -115,6 +123,7 @@ plateforme = [
     { include-group = "orchestration" },
     { include-group = "observabilite" },
     { include-group = "suivi" },
+    { include-group = "boosting" },
     { include-group = "explicabilite" },
     { include-group = "optimisation" },
 ]
@@ -147,6 +156,7 @@ addopts = ["--color=yes", "-ra", "--tb=short", "--strict-markers"]
 markers = [
     "phase5: tests des modules créés ou modifiés en phase 5 (feature engineering)",
     "phase6: tests des modules créés ou modifiés en phase 6 (baseline et protocole d'évaluation)",
+    "phase7: tests des modules créés ou modifiés en phase 7 (suivi MLflow, modélisation)",
 ]
 
 # Un carnet est un livrable narratif, pas du code de production. Les règles levées

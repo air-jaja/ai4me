@@ -27,7 +27,8 @@ make test-activite      # campagne de l'activité : tests courants + non-régres
 make lint               # style du code
 make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise
 make ressources         # mesure CE poste : ressources et temps de calcul (docs/06.SOBRIETE_calcul.md)
-make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter
+make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter (+ run « données » MLflow)
+make mlflow             # interface MLflow sur le magasin du projet (mlruns/mlflow.db)
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
@@ -75,7 +76,8 @@ churn-saas-cisia/
 ├── resultats/
 │   └── reference_baseline.json   Résultats de référence des baselines, que la phase 7 doit battre
 │
-├── tools/                  Outils de dépôt — catalogue, registre, ressources, matérialisation, campagnes, référence
+├── tools/                  Outils de dépôt — catalogue, registre, ressources, matérialisation, campagnes,
+│                           référence, chaîne MLflow et retraçage
 ├── docs/                   Documents méthodologiques et de suivi
 │                           (commencer par 00.REGLES_DE_TRAVAIL.md ; dépannage : DEPANNAGE.md)
 ├── tests/                  Tests par activité, plus les contrôles transverses
@@ -175,6 +177,7 @@ Détail complet et procédure de migration : `docs/ORGANISATION_CODE.md`.
 | **notebook** | jupyterlab, ipykernel, nbconvert, jinja2 | — | `--group notebook` |
 | **explicabilite** | shap | C4, C5 | `--group explicabilite` |
 | **suivi** | mlflow | C5, C6, C9 | `--group suivi` |
+| **boosting** | xgboost-cpu (sans les bibliothèques CUDA) | C5 | `--group boosting` |
 | **stockage** | sqlalchemy, psycopg | C3, C7 | `--group stockage` |
 | **orchestration** | prefect | C6, C7 | `--group orchestration` |
 | **observabilite** | prometheus-client, prometheus-fastapi-instrumentator | C8, C9 | `--group observabilite` |

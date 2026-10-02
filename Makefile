@@ -199,8 +199,10 @@ ps:
 smoke:
 	curl -fsS http://localhost:8000/ready && echo " OK"
 
+# The interface must read the project's store (config.URI_SUIVI), not a default one: without
+# --backend-store-uri it would open an empty store in the current directory.
 mlflow:
-	uv run mlflow ui --port 5000
+	uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db --port 5000
 
 lot-mensuel:
 	uv run python -m churn_saas.industrialisation.flux

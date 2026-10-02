@@ -482,3 +482,18 @@ def test_une_autre_graine_change_le_jeu_de_test():
     a = decouper_entrainement_test(X, y, graine=1)
     b = decouper_entrainement_test(X, y, graine=2)
     assert set(a.X_test.index) != set(b.X_test.index)
+
+
+@pytest.mark.phase7
+def test_les_entiers_nullables_deviennent_decimaux_a_l_entree_du_modele():
+    """A nullable integer column would make a model signature refuse missing values."""
+    from churn_saas.donnees import typer_pour_modele
+
+    X = pd.DataFrame(
+        {"n": pd.array([1, None, 3], dtype="Int64"), "i": [1, 2, 3], "t": ["a", "b", "c"]}
+    )
+    sortie = typer_pour_modele(X)
+    assert str(sortie["n"].dtype) == "float64" and sortie["n"].isna().sum() == 1
+    # A plain integer column too: complete in training, it may not be in a monthly batch.
+    assert str(sortie["i"].dtype) == "float64"
+    assert sortie["t"].tolist() == ["a", "b", "c"]

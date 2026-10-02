@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**535 cas de test** issus de 289 fonctions, répartis sur 21 fichiers.
+**554 cas de test** issus de 299 fonctions, répartis sur 22 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -28,7 +28,7 @@ soutenance.
 | Domaine | Fichier | Activité du cycle de vie | Compétences | Cas |
 |---|---|---|---|---|
 | [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 31 |
-| [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 45 |
+| [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 46 |
 | [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 26 |
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 15 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
@@ -37,17 +37,18 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 170 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 179 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 86 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 88 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 7 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 14 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 | [test_resultats_reference.py](#test_resultats_referencepy) | `test_resultats_reference.py` | — | — | 5 |
+| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 7 |
 
 ---
 
@@ -122,6 +123,7 @@ soutenance.
 | 37 | `test_le_decoupage_est_deterministe_disjoint_et_complet` | Same seed, same accounts in the test part; no account in both; none lost. | — |
 | 38 | `test_le_decoupage_est_stratifie_sur_la_cible` | Both parts keep the churn rate: the gap stays under the threshold fixed beforehand. | — |
 | 39 | `test_une_autre_graine_change_le_jeu_de_test` | The seed matters: a change of seed must show in the recorded fingerprint. | — |
+| 40 | `test_les_entiers_nullables_deviennent_decimaux_a_l_entree_du_modele` | A nullable integer column would make a model signature refuse missing values. | — |
 
 ### Schéma, gouvernance et versionnement des données
 
@@ -306,15 +308,15 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×76)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×76)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×79)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×79)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
-| 4 | `test_les_carnets_respectent_le_format_notebook` _(×6)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
+| 4 | `test_les_carnets_respectent_le_format_notebook` _(×7)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
 | 8 | `test_chaque_outil_est_couvert_par_le_controle_d_encodage` | A new tool must join the check below; a forgotten one would escape it silently. | — |
-| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×6)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
+| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×8)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
 | 10 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
 
 ### Stockage et cache des figures
@@ -430,6 +432,8 @@ soutenance.
 | 40 | `test_les_resultats_de_reference_sont_reproduits` | The code still yields, fold by fold, the baselines' results phase 7 must beat. | When it fails after a deliberate change to the data or the protocol: rerun `tools/resultats_reference.py`, then commit the file with the change. |
 | 41 | `test_le_modele_bat_la_regle_metier_qui_bat_le_hasard` | PR-AUC 0.793 > 0.530 > 0.280: the model is worth more than what a CSM would do alone. | — |
 | 42 | `test_la_regression_doit_etre_calibree_en_phase_7` | Calibration error 0.11, over the 0.05 threshold fixed beforehand: phase 7 calibrates. | The class weighting that helps ranking pushes the probabilities up. |
+| 43 | `test_le_jeu_vu_par_mlflow_est_celui_du_manifeste` | The data run attaches the gold with the manifest's own fingerprint as digest. | — |
+| 44 | `test_les_baselines_retracees_sont_les_references_figees` | Phase 6 replayed into MLflow gives back, to the digit, the recorded reference. | — |
 
 ### test_campagnes.py
 
@@ -530,3 +534,19 @@ soutenance.
 | 3 | `test_une_metrique_qui_cesse_de_s_appliquer_est_detectee` | _(sans description)_ | — |
 | 4 | `test_un_changement_de_donnees_est_detecte` | _(sans description)_ | — |
 | 5 | `test_une_valeur_manquante_s_ecrit_null` | _(sans description)_ | — |
+
+### test_suivi.py
+
+**Fichier :** `tests/test_suivi.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_chaque_metrique_du_protocole_a_une_cle_ascii` | MLflow refuses accents in metric keys: every protocol metric needs its ASCII key. | — |
+| 2 | `test_le_magasin_du_projet_est_un_chemin_absolu` | A relative store would differ between a notebook run in notebooks/ and a tool. | — |
+| 3 | `test_les_tests_n_ecrivent_jamais_dans_le_magasin_du_projet` | _(sans description)_ | — |
+| 4 | `test_sans_mlflow_le_suivi_ne_fait_rien_et_n_echoue_pas` | The CI has no MLflow: tracking must be a silent no-op, not an error. | — |
+| 5 | `test_chaque_pli_est_journalise_comme_une_etape` | _(sans description)_ | — |
+| 6 | `test_le_modele_du_registre_predit_comme_le_modele_en_memoire` | Registered, aliased, reloaded: same probabilities, on rows holding missing values. | the signature accepts them because nullable integers became floats. |
+| 7 | `test_un_run_porte_le_commit_et_les_empreintes` | _(sans description)_ | — |

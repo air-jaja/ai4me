@@ -221,6 +221,8 @@ OUTILS_ET_ARGUMENTS = {
     "materialiser.py": ["--manifeste", "{tmp}/manifeste.json", "--dossier", "{tmp}/processed"],
     "campagne_tests.py": ["--lister"],
     "resultats_reference.py": ["--sortie", "{tmp}/reference.json"],
+    "pipeline_mlflow.py": ["--help"],
+    "retracer_mlflow.py": ["--phase", "6"],
 }
 
 

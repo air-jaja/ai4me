@@ -26,6 +26,7 @@ rounding difference.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -1404,3 +1405,38 @@ def test_la_regression_doit_etre_calibree_en_phase_7():
     erreur = _reference()["baselines"]["régression logistique"]["moyenne"]["erreur de calibration"]
     assert erreur > SEUIL_ERREUR_CALIBRATION
     assert erreur == pytest.approx(0.114, abs=0.02)
+
+
+# --- Phase 7 · Bloc 7.0: MLflow agrees with the sources of truth -----------------------------
+@pytest.mark.skipif(
+    importlib.util.find_spec("mlflow") is None, reason="MLflow absent (groupe suivi)"
+)
+def test_le_jeu_vu_par_mlflow_est_celui_du_manifeste(chaine):
+    """The data run attaches the gold with the manifest's own fingerprint as digest."""
+    mlflow = pytest.importorskip("mlflow")
+
+    from churn_saas.packaging import tracer_donnees
+
+    manifeste = json.loads((RACINE / "data" / "manifeste_v1.0.json").read_text(encoding="utf-8"))
+    run_id = tracer_donnees(chaine.gold, chaine.journal, manifeste)
+    run = mlflow.get_run(run_id)
+    empreinte = manifeste["jeux_derives"]["jeux"]["gold"]["empreinte_contenu"]
+    assert run.inputs.dataset_inputs[0].dataset.digest == empreinte[:32]
+    assert run.data.tags["empreinte_gold"] == empreinte
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("mlflow") is None, reason="MLflow absent (groupe suivi)"
+)
+def test_les_baselines_retracees_sont_les_references_figees():
+    """Phase 6 replayed into MLflow gives back, to the digit, the recorded reference."""
+    from churn_saas.packaging import configurer_suivi
+
+    specification = importlib.util.spec_from_file_location(
+        "retracer_mlflow", RACINE / "tools" / "retracer_mlflow.py"
+    )
+    outil = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(outil)
+    retrace = outil.retracer_phase6(configurer_suivi(), {"phase": "6"})
+    for nom, baseline in _reference()["baselines"].items():
+        assert retrace[nom] == pytest.approx(baseline["moyenne"]["PR-AUC"], abs=1e-9)
