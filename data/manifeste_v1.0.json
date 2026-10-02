@@ -28,7 +28,7 @@
         "colonnes": 39,
         "octets": 282184,
         "empreinte_contenu": "835f0c2ece91740d1e377405167fa46381889fad04240a3b3c7eee37c9afce8d",
-        "version_code": "50a1791"
+        "version_code": "59af7ee"
       },
       "gold": {
         "chemin": "data/processed/gold_v1.0_20261002.parquet",
@@ -36,7 +36,7 @@
         "colonnes": 26,
         "octets": 170273,
         "empreinte_contenu": "2c6fa66eaf76ff7f37e070f472870efeae07b161400cca8fd580544fed268947",
-        "version_code": "50a1791"
+        "version_code": "59af7ee"
       }
     }
   },
