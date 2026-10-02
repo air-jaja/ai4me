@@ -57,3 +57,6 @@ reports/figures/*
 # What is authoritative stays in resultats/ and data/manifeste_v1.0.json.
 mlruns/
 mlartifacts/
+# Model files written outside models/ (legacy notebook sections 9-13, relative paths):
+# regenerated at each run, never versioned. models/ is already ignored above.
+*.joblib
