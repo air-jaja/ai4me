@@ -34,7 +34,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev \
         --group api --group stockage --group observabilite
 
+# README.md accompagne les sources : `readme = "README.md"` figure dans pyproject.toml,
+# et hatchling lit ce fichier pour construire les métadonnées de la roue. Sans lui, la
+# construction échoue sur « Readme file does not exist » — un message qui ne désigne
+# pas le Dockerfile, alors que c'est lui qui omettait le fichier.
 COPY src ./src
+COPY README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable \
         --group api --group stockage --group observabilite
@@ -59,7 +64,6 @@ ENV PATH="/app/.venv/bin:$PATH" \
     CHURN_MODEL_PATH=/app/models/churn_model.joblib
 
 COPY --from=build /app/.venv /app/.venv
-
 COPY models ./models
 
 USER appuser
