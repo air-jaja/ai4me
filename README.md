@@ -25,6 +25,7 @@ make notebook
 make test               # tests unitaires
 make lint               # style du code
 make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise
+make ressources         # mesure CE poste : ressources et temps de calcul (docs/06.SOBRIETE_calcul.md)
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
@@ -56,6 +57,9 @@ churn-saas-cisia/
 ├── .pre-commit-config.yaml Contrôles au commit, suite de tests au push
 ├── .github/workflows/      Chaîne CI — tests, linter, hooks, fraîcheur du catalogue
 │
+├── config/
+│   └── ressources_poste.toml     Ressources du poste et hypothèses d'énergie — entrée du projet
+│
 ├── data/
 │   ├── raw/                      CSV sources — **versionnés** (2 Mo, référence de tout)
 │   ├── processed/                Instantanés Parquet — non versionnés, recalculables
@@ -66,7 +70,7 @@ churn-saas-cisia/
 ├── models/                 Modèles sérialisés et fiches — non versionnés
 ├── reports/figures/        Figures en PNG et SVG — non versionnées, régénérables
 ├── monitoring/             Configuration Prometheus et Grafana
-├── tools/                  Outils de dépôt — catalogue des tests, registre des écarts
+├── tools/                  Outils de dépôt — catalogue des tests, registre, ressources du poste
 ├── docs/                   Documents méthodologiques et de suivi
 │                           (commencer par 00.REGLES_DE_TRAVAIL.md ; dépannage : DEPANNAGE.md)
 ├── tests/                  Tests par activité, plus les contrôles transverses
@@ -98,7 +102,8 @@ churn-saas-cisia/
     ├── modelisation/       3. MODÉLISATION
     │   ├── baseline.py           régression logistique et préprocesseur
     │   ├── selection.py          candidat, grille bornée, comparaison en CV
-    │   └── optimisation.py       Optuna, empreinte carbone — écartés le 01/10, retrait prévu (D-08)
+    │   ├── optimisation.py       Optuna, empreinte carbone — écartés le 01/10, retrait prévu (D-08)
+    │   └── sobriete.py           temps de calcul mesurés, charge déclarée, énergie et CO₂e
     │
     ├── evaluation/         4. ÉVALUATION DE LA PERFORMANCE
     │   ├── metriques.py          métriques et intervalle de confiance
@@ -183,7 +188,7 @@ registre et dans `docs/00.README_choix_methodologiques.md` § 7 bis.
 | Outil | 26/09 | 01/10 — décision et motif |
 |---|---|---|
 | Optuna | Retenu (TPE + élagage, 30 essais) | **Écarté.** L'espace compte 44 combinaisons : `GridSearchCV` est exhaustif en quelques minutes et donne les courbes de validation |
-| CodeCarbon | Retenu | **Écarté, chiffres à l'appui.** Toute la phase 5 représente ≈ 11 min de calcul, moins de 4 g CO₂e pour dix exécutions : la mesure ne changerait aucune décision. Le temps de calcul est mesuré et converti |
+| CodeCarbon | Retenu | **Écarté, chiffres à l'appui.** Les temps de calcul sont mesurés sur le poste de développement (`make ressources`) et convertis en énergie et en CO₂e : quelques minutes et quelques grammes pour toute la phase 5, une mesure qui ne changerait aucune décision. Chiffrage : `docs/06.SOBRIETE_calcul.md` |
 | MLflow | Retenu | **Différé** à la phase 10, pour tracer le modèle final |
 | SHAP | Retenu | **À arbitrer** après le choix du modèle : une régression logistique s'explique sans lui |
 

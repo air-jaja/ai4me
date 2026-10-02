@@ -9,8 +9,9 @@
 # comparison artefact, not a deliverable.
 CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
 REGISTRE_TEMPORAIRE := .registre-tmp.md
+SOBRIETE_TEMPORAIRE := .sobriete-tmp.md
 
-.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check registre-doc registre-doc-check lint format check \
+.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check registre-doc registre-doc-check ressources sobriete-doc sobriete-doc-check lint format check \
         notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
@@ -26,6 +27,9 @@ aide:
 	@echo "  test-doc-check      Vérifie que docs/TESTS.md correspond aux tests livrés"
 	@echo "  registre-doc        Régénère le registre des éléments écartés (règle 13)"
 	@echo "  registre-doc-check  Vérifie que le registre correspond à sa source"
+	@echo "  ressources          Mesure CE poste (à lancer sur le poste de développement)"
+	@echo "  sobriete-doc        Régénère docs/06.SOBRIETE_calcul.md depuis config/ressources_poste.toml"
+	@echo "  sobriete-doc-check  Vérifie que le document de sobriété correspond à son entrée"
 	@echo "  lint                Style du code"
 	@echo "  format              Reformate le code"
 	@echo "  check               Tous les contrôles, dans l'ordre où la CI les exécute"
@@ -110,6 +114,22 @@ registre-doc-check:
 	@rm -f $(REGISTRE_TEMPORAIRE)
 	@echo "Registre des éléments écartés à jour."
 
+# Compute resources: measured on the development laptop, rendered anywhere. The CI only
+# checks the rendering - re-measuring there would describe the CI machine, not the laptop.
+ressources:
+	uv run python tools/ressources_calcul.py --mesurer
+
+sobriete-doc:
+	uv run python tools/ressources_calcul.py
+
+sobriete-doc-check:
+	@uv run python tools/ressources_calcul.py --sortie $(SOBRIETE_TEMPORAIRE) > /dev/null
+	@diff -q $(SOBRIETE_TEMPORAIRE) docs/06.SOBRIETE_calcul.md > /dev/null \
+		|| (echo "docs/06.SOBRIETE_calcul.md est obsolète — lancer 'make sobriete-doc'"; \
+		    rm -f $(SOBRIETE_TEMPORAIRE); exit 1)
+	@rm -f $(SOBRIETE_TEMPORAIRE)
+	@echo "Document de sobriété à jour."
+
 lint:
 	uv run ruff check .
 
@@ -119,7 +139,7 @@ format:
 # Mirrors the CI, in the same order and in the same environment. Running `test` here
 # instead of `test-ci` would use the local environment, where every group is
 # installed - which is how a missing dependency reached the pipeline once.
-check: test-ci lint test-doc-check registre-doc-check
+check: test-ci lint test-doc-check registre-doc-check sobriete-doc-check
 	uv run ruff format --check src tests tools
 	@echo "Tous les contrôles sont passés."
 

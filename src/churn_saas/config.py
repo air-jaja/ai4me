@@ -16,6 +16,10 @@ FICHIER_COMPLET = DONNEES_BRUTES / "churn_saas_complet.csv"
 FICHIER_ECHANTILLON = DONNEES_BRUTES / "churn_saas_echantillon.csv"
 FICHIER_CATALOGUE = DONNEES_BRUTES / "catalogue_plans.csv"
 
+# Project inputs describing the machine that runs it, and the energy hypotheses applied to
+# its measured compute times (tools/ressources_calcul.py, `make ressources`).
+FICHIER_RESSOURCES = RACINE / "config" / "ressources_poste.toml"
+
 # Fixed seed: reproducibility is an acceptance criterion, not a nicety.
 GRAINE = 42
 PART_TEST = 0.20

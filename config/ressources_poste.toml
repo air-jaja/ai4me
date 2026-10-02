@@ -1,0 +1,35 @@
+# Ressources du poste qui exécute le projet — ENTRÉE DU PROJET.
+#
+# [poste] et [mesures] sont écrits par `make ressources` (tools/ressources_calcul.py
+# --mesurer), lancé sur le poste de développement. Ne pas les éditer à la main.
+# [hypotheses] est déclaré par une personne : à ajuster, en citant la source.
+# Le document docs/06.SOBRIETE_calcul.md est généré à partir de ce fichier.
+
+[source]
+origine = "poste de développement"
+date = "2026-10-02"
+
+[poste]
+systeme = "Windows 10"
+processeur = "Intel(R) Core(TM) i5-6300U CPU @ 2.40GHz"
+coeurs_logiques = 4
+memoire_go = 34.2
+python = "3.11.15"
+scikit_learn = "1.9.1"
+
+[mesures]
+entrainement_lr_s = 0.1289
+entrainement_foret_s = 1.2877
+scoring_portefeuille_s = 0.1985
+importance_lr_s = 8.3827
+importance_foret_s = 47.2008
+lignes_entrainement = 3200.0
+memoire_pic_processus_mo = 235.5
+
+[hypotheses]
+puissance_basse_w = 15
+puissance_haute_w = 65
+source_puissance = "fourchette générique : un cœur chargé sur un portable ; processeur de bureau entier. Remplacer la haute par la puissance nominale (TDP) du processeur du poste"
+intensite_carbone_g_kwh = 30.2
+source_intensite = "RTE, Bilan électrique 2024 : mix français sur le cycle de vie (21,7 g en émissions directes)"
+executions_developpement = 10

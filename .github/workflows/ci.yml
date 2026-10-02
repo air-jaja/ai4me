@@ -52,3 +52,12 @@ jobs:
           uv run python tools/registre_ecarts.py --sortie /tmp/REGISTRE.md
           diff -q /tmp/REGISTRE.md docs/05.REGISTRE_elements_ecartes.md \
             || (echo '::error::Registre obsolète — lancer make registre-doc' && exit 1)
+
+      # The footprint document is rendered from config/ressources_poste.toml, measured on the
+      # development laptop. Only the rendering is checked: measuring here would describe the
+      # CI machine instead.
+      - name: Document de sobriété à jour
+        run: |
+          uv run python tools/ressources_calcul.py --sortie /tmp/SOBRIETE.md
+          diff -q /tmp/SOBRIETE.md docs/06.SOBRIETE_calcul.md \
+            || (echo '::error::Document de sobriété obsolète — lancer make sobriete-doc' && exit 1)

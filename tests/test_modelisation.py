@@ -7,6 +7,7 @@ set shape the values the model trains on. These tests pin where it learns.
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from churn_saas.modelisation import construire_preprocesseur
 from churn_saas.modelisation.baseline import MODALITE_MANQUANTE
@@ -64,3 +65,57 @@ def test_le_candidat_partage_le_preprocesseur_de_la_baseline():
     baseline = construire_baseline(X).steps[0][1]
     candidat = construire_candidat(X).steps[0][1]
     assert repr(baseline) == repr(candidat)
+
+
+# --- Compute footprint, measured and converted openly ------------------------------------
+def test_la_conversion_en_energie_et_en_emissions_est_exacte():
+    """One hour at 10 W is 10 Wh; at 30.2 g/kWh, 0.302 g. Ten runs, ten times as much."""
+    from churn_saas.modelisation import convertir_empreinte
+
+    une = convertir_empreinte(3600, puissance_w=10, intensite_g_kwh=30.2)
+    assert une["énergie (Wh)"] == 10
+    assert une["émissions (g CO₂e)"] == pytest.approx(0.302)
+    dix = convertir_empreinte(3600, puissance_w=10, intensite_g_kwh=30.2, executions=10)
+    assert dix["énergie (Wh)"] == 100
+
+
+def test_la_charge_se_deduit_des_temps_elementaires():
+    """The workload is declared as data: each step costs its operations times their time."""
+    from churn_saas.modelisation import EtapeDeCalcul, estimer_charge
+
+    temps = {
+        "entrainement_lr_s": 0.1,
+        "entrainement_foret_s": 1.0,
+        "importance_lr_s": 2.0,
+        "importance_foret_s": 5.0,
+        "scoring_portefeuille_s": 0.5,
+    }
+    charge = (
+        EtapeDeCalcul("a", entrainements_lr=10, entrainements_foret=2),
+        EtapeDeCalcul("b", importances_foret=1, scorings=4),
+    )
+    resultat = estimer_charge(temps, charge)
+    assert resultat["secondes"].tolist() == [3.0, 7.0]
+    assert resultat["entraînements"].tolist() == [12, 0]
+
+
+def test_la_mesure_des_temps_renvoie_chaque_operation():
+    """Smoke test on a small frame: every elementary time the document needs is measured."""
+    from churn_saas.modelisation import mesurer_temps
+
+    generateur = np.random.default_rng(0)
+    X = pd.DataFrame(
+        {"a": generateur.normal(size=200), "b": generateur.choice(["x", "y"], size=200)}
+    )
+    y = pd.Series((X["a"] > 0).astype(int))
+    temps = mesurer_temps(X, y, repetitions=1)
+    attendus = {
+        "entrainement_lr_s",
+        "entrainement_foret_s",
+        "scoring_portefeuille_s",
+        "importance_lr_s",
+        "importance_foret_s",
+        "lignes_entrainement",
+    }
+    assert attendus <= set(temps)
+    assert all(v > 0 for v in temps.values())

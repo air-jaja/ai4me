@@ -505,7 +505,7 @@ retirerait précisément les clients les plus importants.)*
 | Colonnes du catalogue | `plan` seul : les cinq autres ne prennent qu'une valeur par formule |
 | Valeur vie client | Diagnostic avant toute évaluation : elle pourrait encoder la durée de vie réelle |
 | Hyperparamètres | `GridSearchCV` (44 combinaisons) ; Optuna écarté |
-| Empreinte carbone | Temps de calcul mesuré et converti ; CodeCarbon écarté (≈ 11 min, moins de 4 g CO₂e pour dix exécutions) |
+| Empreinte carbone | Temps de calcul mesurés sur le poste et convertis ; CodeCarbon écarté. Ressources du poste en entrée du projet (`config/ressources_poste.toml`), chiffrage généré (`docs/06.SOBRIETE_calcul.md`) |
 | MLflow | Différé à la phase 10, pour le modèle final |
 
 Les **règles de décision** — quand garder ou retirer une variable, quand juger le découpage représentatif,
@@ -625,8 +625,8 @@ consommation associée.
 🔧 **Outils** : `GridSearchCV` *(exploration systématique d'une grille de réglages)*
 *(Optuna, outil d'optimisation plus avancé, n'est pas retenu : l'espace compte 44 combinaisons, que la grille
 parcourt en quelques minutes. CodeCarbon, qui mesure l'empreinte carbone d'un calcul, est **écarté chiffres à
-l'appui** : 11 minutes de calcul pour toute la phase, moins de 4 g CO₂e pour dix exécutions ; le temps de
-calcul est mesuré et converti à la place — arbitrages du 01/10.)*
+l'appui** : les temps de calcul sont mesurés sur le poste de développement et convertis en énergie et en
+CO₂e — quelques minutes et quelques grammes pour toute la phase (`docs/06.SOBRIETE_calcul.md`) — arbitrages du 01/10.)*
 📦 **Artefacts** : section 9 du notebook · tableau des hyperparamètres
 **Statut** : **à faire**
 

@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**434 cas de test** issus de 221 fonctions, répartis sur 18 fichiers.
+**451 cas de test** issus de 232 fonctions, répartis sur 19 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,14 +37,15 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 139 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 145 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
 | [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 66 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
-| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 4 |
+| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 7 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
+| [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 
 ---
 
@@ -283,8 +284,8 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×65)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×65)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×68)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×68)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×4)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
@@ -415,6 +416,9 @@ soutenance.
 | 2 | `test_aucune_valeur_manquante_ne_sort_du_preprocesseur` | _(sans description)_ | — |
 | 3 | `test_les_categories_manquantes_deviennent_non_renseigne` | An explicit category, not the most frequent one. | The mode would have turned the unknown sector into "Retail" here, inflating the dominant segment and biasing the per-segment fairness analysis. |
 | 4 | `test_le_candidat_partage_le_preprocesseur_de_la_baseline` | One imputation strategy for both models: otherwise the comparison measures two. | — |
+| 5 | `test_la_conversion_en_energie_et_en_emissions_est_exacte` | One hour at 10 W is 10 Wh; at 30.2 g/kWh, 0.302 g. | Ten runs, ten times as much. |
+| 6 | `test_la_charge_se_deduit_des_temps_elementaires` | The workload is declared as data: each step costs its operations times their time. | — |
+| 7 | `test_la_mesure_des_temps_renvoie_chaque_operation` | Smoke test on a small frame: every elementary time the document needs is measured. | — |
 
 ### test_registre.py
 
@@ -432,3 +436,20 @@ soutenance.
 | 6 | `test_le_registre_reprend_chaque_exclusion_du_code` | The readable register lists every excluded column, read from the code. | — |
 | 7 | `test_le_registre_genere_est_a_jour` | The document matches its source. | otherwise it describes decisions no longer made. |
 | 8 | `test_le_document_s_ouvre_par_l_avertissement_de_generation` | A reader must know not to edit it, or the next generation erases the edit. | — |
+
+### test_ressources.py
+
+**Fichier :** `tests/test_ressources.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_l_entree_porte_toutes_les_sections` | _(sans description)_ | — |
+| 2 | `test_chaque_hypothese_cite_sa_source` | A power or a carbon intensity without its source is an assertion, not an input. | — |
+| 3 | `test_chaque_mesure_attendue_est_presente_et_positive` | _(sans description)_ | — |
+| 4 | `test_le_poste_est_decrit` | _(sans description)_ | — |
+| 5 | `test_la_description_du_poste_fonctionne_sur_ce_systeme` | Each system has its own source; on the one running the suite, none may come back empty. | — |
+| 6 | `test_le_document_de_sobriete_est_a_jour` | The document matches its input. | otherwise it states a footprint nobody measured. |
+| 7 | `test_des_mesures_provisoires_sont_signalees_comme_telles` | Measures not taken on the development laptop must say so at the top of the document. | — |
+| 8 | `test_l_ecriture_preserve_les_hypotheses_declarees` | Re-measuring the machine must never overwrite what a person declared. | — |
