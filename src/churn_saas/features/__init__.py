@@ -26,12 +26,15 @@ from .exploration import (
 )
 from .graphiques import (
     tracer_ablation,
+    tracer_baselines,
+    tracer_calibration,
     tracer_charge_calcul,
     tracer_completude,
     tracer_compte_abandonne,
     tracer_concentration,
     tracer_courbes_appariees,
     tracer_courbes_apprentissage,
+    tracer_courbes_pr_roc,
     tracer_demonstration_fuite,
     tracer_fragmentation,
     tracer_importances,
@@ -75,6 +78,7 @@ from .selection import (
     importances_par_permutation,
     parties_avant_selection,
     plancher_des_leurres,
+    plis_repetes,
     resumer_apport,
 )
 
@@ -97,6 +101,10 @@ __all__ = [
     "tracer_ablation",
     "tracer_importances",
     "tracer_demonstration_fuite",
+    # Phase 6: baselines and evaluation protocol
+    "tracer_courbes_pr_roc",
+    "tracer_calibration",
+    "tracer_baselines",
     # Variable selection, under rules fixed beforehand (phase 5, blocs B and C)
     "GROUPES_DE_VARIABLES",
     "LEURRES",
@@ -106,6 +114,7 @@ __all__ = [
     "ablation_par_groupe",
     "importances_par_permutation",
     "parties_avant_selection",
+    "plis_repetes",
     "plancher_des_leurres",
     "candidates_au_retrait",
     "confirmer_retraits",

@@ -14,8 +14,4 @@ dvc.yaml   		text eol=lf
 # DATAS
 *.zip
 *.parquet 		filter=lfs diff=lfs merge=lfs -text
-#*.csv 			filter=lfs diff=lfs merge=lfs -text
-#/data/**/*.csv  	filter=lfs diff=lfs merge=lfs -text
 /data/**/*.parquet  	filter=lfs diff=lfs merge=lfs -text
-
-# data/raw/*.csv 	!text !filter !merge !diff

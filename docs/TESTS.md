@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**510 cas de test** issus de 272 fonctions, répartis sur 20 fichiers.
+**535 cas de test** issus de 289 fonctions, répartis sur 21 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -33,20 +33,21 @@ soutenance.
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 15 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
-| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 8 |
+| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 13 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 162 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 170 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 83 |
-| [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 5 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 86 |
+| [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 7 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
-| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 12 |
+| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 14 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
+| [test_resultats_reference.py](#test_resultats_referencepy) | `test_resultats_reference.py` | — | — | 5 |
 
 ---
 
@@ -249,6 +250,11 @@ soutenance.
 | 6 | `test_intervalle_de_confiance_sur_le_rappel` | The stated uncertainty on recall must remain around five points. | Section 9 tells the jury that two operating points at 70% and 74% are statistically indistinguishable. That statement must stay true. |
 | 7 | `test_une_valeur_construite_sans_l_issue_n_est_pas_signalee` | Leavers are younger here, so their value is lower. | but the outcome adds nothing. |
 | 8 | `test_une_valeur_qui_encode_l_issue_est_signalee` | A value cut short by the actual departure is caught: the outcome explains it. | — |
+| 9 | `test_le_rappel_et_la_precision_du_haut_du_classement` | Top 20 % of ten accounts = two accounts; one of the two churners is among them. | — |
+| 10 | `test_l_erreur_de_calibration_distingue_une_probabilite_juste_d_une_biaisee` | _(sans description)_ | — |
+| 11 | `test_un_classement_n_a_ni_brier_ni_calibration` | A ranking rule is not a probability: its calibration is reported missing, not computed. | — |
+| 12 | `test_le_protocole_couvre_25_plis_et_chaque_compte_une_fois_hors_pli` | _(sans description)_ | — |
+| 13 | `test_le_protocole_et_la_selection_utilisent_les_memes_plis` | The baselines are measured on the very folds the phase 5 selection used. | — |
 
 ### Artefacts et fiche modèle
 
@@ -300,15 +306,15 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×73)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×73)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×76)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×76)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
-| 4 | `test_les_carnets_respectent_le_format_notebook` _(×5)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
+| 4 | `test_les_carnets_respectent_le_format_notebook` _(×6)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
 | 8 | `test_chaque_outil_est_couvert_par_le_controle_d_encodage` | A new tool must join the check below; a forgotten one would escape it silently. | — |
-| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×5)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
+| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×6)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
 | 10 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
 
 ### Stockage et cache des figures
@@ -421,6 +427,9 @@ soutenance.
 | 37 | `test_les_variables_construites_n_apportent_toujours_rien` | Bloc B, logistic regression: gain -0.001, under one std between folds (0.020). | — |
 | 38 | `test_les_retraits_combines_ne_coutent_rien` | Removals were confirmed one by one; together, the 18 variables lose nothing either (logistic regression: +0.003 over the 25 candidates, better on 23 folds out of 25). | — |
 | 39 | `test_la_fuite_de_la_sante_du_compte_reste_demontree` | Bloc D: the same logistic regression goes from 0.891 to 0.999 AUC with the end-of-period health score. | the leak the notebook narrates, now measured. |
+| 40 | `test_les_resultats_de_reference_sont_reproduits` | The code still yields, fold by fold, the baselines' results phase 7 must beat. | When it fails after a deliberate change to the data or the protocol: rerun `tools/resultats_reference.py`, then commit the file with the change. |
+| 41 | `test_le_modele_bat_la_regle_metier_qui_bat_le_hasard` | PR-AUC 0.793 > 0.530 > 0.280: the model is worth more than what a CSM would do alone. | — |
+| 42 | `test_la_regression_doit_etre_calibree_en_phase_7` | Calibration error 0.11, over the 0.05 threshold fixed beforehand: phase 7 calibrates. | The class weighting that helps ranking pushes the probabilities up. |
 
 ### test_campagnes.py
 
@@ -435,6 +444,8 @@ soutenance.
 | 3 | `test_chaque_fichier_de_non_regression_existe` | _(sans description)_ | — |
 | 4 | `test_aucun_test_ne_tourne_deux_fois_dans_une_campagne` | A file listed for non-regression carries no activity marker, or it would run twice. | — |
 | 5 | `test_les_tests_courants_selectionnent_des_tests` | A campaign whose current level selects nothing would pass without testing anything. | — |
+| 6 | `test_un_test_ne_porte_qu_un_marqueur_d_activite` | Two activity markers on one test would run it in both the current and the earlier level of the same campaign. | — |
+| 7 | `test_les_marqueurs_precedents_sont_declares` | _(sans description)_ | — |
 
 ### test_industrialisation.py
 
@@ -469,6 +480,8 @@ soutenance.
 | 10 | `test_le_test_de_permutation_separe_signal_et_bruit` | Real signal beats every shuffle; pure noise does not. | — |
 | 11 | `test_la_courbe_d_apprentissage_couvre_chaque_taille` | _(sans description)_ | — |
 | 12 | `test_une_variable_connue_apres_l_issue_est_demontree_comme_fuite` | A variable built from the outcome lifts the AUC to near perfection: the symptom. | — |
+| 13 | `test_la_regle_metier_classe_par_la_variable_choisie` | The longer since the last login, the higher the score; a gap gets the median. | — |
+| 14 | `test_la_baseline_naive_annonce_le_taux_de_base` | _(sans description)_ | — |
 
 ### test_registre.py
 
@@ -503,3 +516,17 @@ soutenance.
 | 6 | `test_le_document_de_sobriete_est_a_jour` | The document matches its input. | otherwise it states a footprint nobody measured. |
 | 7 | `test_des_mesures_provisoires_sont_signalees_comme_telles` | Measures not taken on the development laptop must say so at the top of the document. | — |
 | 8 | `test_l_ecriture_preserve_les_hypotheses_declarees` | Re-measuring the machine must never overwrite what a person declared. | — |
+
+### test_resultats_reference.py
+
+**Fichier :** `tests/test_resultats_reference.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_un_ecart_sur_un_pli_est_detecte` | _(sans description)_ | — |
+| 2 | `test_le_bruit_numerique_est_ignore` | _(sans description)_ | — |
+| 3 | `test_une_metrique_qui_cesse_de_s_appliquer_est_detectee` | _(sans description)_ | — |
+| 4 | `test_un_changement_de_donnees_est_detecte` | _(sans description)_ | — |
+| 5 | `test_une_valeur_manquante_s_ecrit_null` | _(sans description)_ | — |

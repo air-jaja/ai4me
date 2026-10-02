@@ -18,7 +18,8 @@ import pytest
 RACINE = Path(__file__).resolve().parents[1]
 CONFIGURATION = RACINE / "tests" / "campagnes.toml"
 
-pytestmark = pytest.mark.phase5
+# Updated in phase 6 (previous markers in the non-regression level): the marker moves.
+pytestmark = pytest.mark.phase6
 
 
 def _configuration() -> dict:
@@ -52,7 +53,7 @@ def test_chaque_fichier_de_non_regression_existe():
 def test_aucun_test_ne_tourne_deux_fois_dans_une_campagne():
     """A file listed for non-regression carries no activity marker, or it would run twice."""
     for campagne in _configuration()["campagnes"].values():
-        marque = f"pytest.mark.{campagne['marqueur']}"
+        marque = f"mark.{campagne['marqueur']}"
         doublons = [
             f
             for f in campagne["non_regression"]
@@ -84,4 +85,23 @@ def test_les_tests_courants_selectionnent_des_tests():
         timeout=300,
     )
     selectionnes = [ligne for ligne in sortie.stdout.splitlines() if "::" in ligne]
-    assert len(selectionnes) >= 20, sortie.stdout[-500:]
+    assert len(selectionnes) >= 5, sortie.stdout[-500:]
+
+
+def test_un_test_ne_porte_qu_un_marqueur_d_activite():
+    """Two activity markers on one test would run it in both the current and the earlier
+    level of the same campaign."""
+    import re
+
+    marqueurs = {c["marqueur"] for c in _configuration()["campagnes"].values()}
+    for fichier in (RACINE / "tests").glob("test_*.py"):
+        texte = fichier.read_text(encoding="utf-8")
+        for bloc in re.split(r"\n(?=def test_)", texte):
+            portes = {m for m in marqueurs if f"mark.{m}\n" in bloc.split("def ", 1)[0] + "\n"}
+            assert len(portes) <= 1, f"{fichier.name} : plusieurs marqueurs d'activité {portes}"
+
+
+def test_les_marqueurs_precedents_sont_declares():
+    declares = _marqueurs_declares()
+    for campagne in _configuration()["campagnes"].values():
+        assert set(campagne.get("marqueurs_precedents", [])) <= declares

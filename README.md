@@ -72,7 +72,10 @@ churn-saas-cisia/
 ├── models/                 Modèles sérialisés et fiches — non versionnés
 ├── reports/figures/        Figures en PNG et SVG — non versionnées, régénérables
 ├── monitoring/             Configuration Prometheus et Grafana
-├── tools/                  Outils de dépôt — catalogue, registre, ressources, matérialisation, campagnes de tests
+├── resultats/
+│   └── reference_baseline.json   Résultats de référence des baselines, que la phase 7 doit battre
+│
+├── tools/                  Outils de dépôt — catalogue, registre, ressources, matérialisation, campagnes, référence
 ├── docs/                   Documents méthodologiques et de suivi
 │                           (commencer par 00.REGLES_DE_TRAVAIL.md ; dépannage : DEPANNAGE.md)
 ├── tests/                  Tests par activité, plus les contrôles transverses
@@ -113,6 +116,7 @@ churn-saas-cisia/
     │   ├── decision.py           priorisation par valeur espérée, sensibilité
     │   ├── impact.py             MRR exposé / couvert / préservé
     │   ├── valeur_vie.py         la valeur vie client encode-t-elle l'issue ? (diagnostic)
+    │   ├── protocole.py          protocole d'évaluation : plis, métriques, calibration (phase 6)
     │   └── explicabilite.py      valeurs de Shapley, motif lisible par un CSM
     │
     ├── packaging/          5. PACKAGING DU MODÈLE

@@ -9,16 +9,34 @@
 #   posé sur chaque test d'un module créé ou modifié pendant l'activité.
 # « non_regression » : les fichiers qui vérifient que l'activité s'intègre sans rien
 #   casser — chiffres publiés et garanties des phases précédentes, structure,
-#   conventions, documents générés.
+#   conventions, documents générés — et les tests marqués par les activités
+#   précédentes (« marqueurs_precedents »).
+#
+# Un test modifié pendant une activité change de marqueur : il prend celui de l'activité
+# en cours. Un test ne porte jamais deux marqueurs d'activité, sinon il tournerait deux fois.
 #
 # Changer d'activité : ajouter une section [campagnes.<activite>], déclarer son marqueur
 # dans pyproject.toml ([tool.pytest.ini_options] markers), puis mettre à jour `activite`.
 
-activite = "phase5"
+activite = "phase6"
 
 [campagnes.phase5]
 titre = "Phase 5 · Feature engineering"
 marqueur = "phase5"
+non_regression = [
+    "tests/test_non_regression.py",
+    "tests/test_materialisation.py",
+    "tests/test_industrialisation.py",
+    "tests/test_regression_casse_modalites.py",
+    "tests/test_structure.py",
+    "tests/test_conventions.py",
+    "tests/test_registre.py",
+]
+
+[campagnes.phase6]
+titre = "Phase 6 · Baseline et protocole d'évaluation"
+marqueur = "phase6"
+marqueurs_precedents = ["phase5"]
 non_regression = [
     "tests/test_non_regression.py",
     "tests/test_materialisation.py",

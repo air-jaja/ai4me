@@ -107,3 +107,67 @@ def test_une_valeur_qui_encode_l_issue_est_signalee():
     from churn_saas.evaluation import diagnostiquer_valeur_vie, valeur_encode_l_issue
 
     assert valeur_encode_l_issue(diagnostiquer_valeur_vie(*_comptes_synthetiques(True)))
+
+
+# --- Phase 6 · Evaluation protocol ------------------------------------------------------------
+@pytest.mark.phase6
+def test_le_rappel_et_la_precision_du_haut_du_classement():
+    """Top 20 % of ten accounts = two accounts; one of the two churners is among them."""
+    from churn_saas.evaluation import rappel_precision_haut
+
+    y = pd.Series([1, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    score = [0.9, 0.8, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]
+    assert rappel_precision_haut(y, score, part=0.2) == (0.5, 0.5)
+
+
+@pytest.mark.phase6
+def test_l_erreur_de_calibration_distingue_une_probabilite_juste_d_une_biaisee():
+    import numpy as np
+
+    from churn_saas.evaluation import erreur_calibration
+
+    generateur = np.random.default_rng(0)
+    proba = generateur.uniform(size=20_000)
+    y = (generateur.uniform(size=20_000) < proba).astype(int)
+    assert erreur_calibration(y, proba) < 0.02
+    assert erreur_calibration(y, np.clip(proba + 0.2, 0, 1)) > 0.15
+
+
+@pytest.mark.phase6
+def test_un_classement_n_a_ni_brier_ni_calibration():
+    """A ranking rule is not a probability: its calibration is reported missing, not computed."""
+    from churn_saas.evaluation import mesurer
+
+    mesures = mesurer(pd.Series([0, 1, 0, 1]), [0.1, 0.9, 0.2, 0.7], probabiliste=False)
+    assert pd.isna(mesures["Brier"]) and pd.isna(mesures["erreur de calibration"])
+    assert mesures["PR-AUC"] == 1.0
+
+
+@pytest.mark.phase6
+def test_le_protocole_couvre_25_plis_et_chaque_compte_une_fois_hors_pli():
+    import numpy as np
+    from sklearn.dummy import DummyClassifier
+
+    from churn_saas.evaluation import evaluer_selon_protocole
+
+    generateur = np.random.default_rng(1)
+    X = pd.DataFrame({"a": generateur.normal(size=200)})
+    y = pd.Series((generateur.random(200) < 0.3).astype(int))
+    resultat = evaluer_selon_protocole(lambda X: DummyClassifier(strategy="prior"), X, y)
+    assert len(resultat.par_pli) == 25
+    assert resultat.hors_pli.notna().all()
+
+
+@pytest.mark.phase6
+def test_le_protocole_et_la_selection_utilisent_les_memes_plis():
+    """The baselines are measured on the very folds the phase 5 selection used."""
+    import numpy as np
+
+    from churn_saas.evaluation import plis_du_protocole
+    from churn_saas.features.selection import plis_repetes
+
+    X = np.zeros((100, 1))
+    y = np.r_[np.zeros(70), np.ones(30)]
+    a = [tuple(v) for _, v in plis_du_protocole().split(X, y)]
+    b = [tuple(v) for _, v in plis_repetes().split(X, y)]
+    assert a == b
