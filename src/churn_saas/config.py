@@ -40,6 +40,15 @@ EXCLUES_DOUBLON = {
     "taux_activation": "taux_adoption_pct",  # same ratio, scaled by 100 (phase 4)
 }
 EXCLUES_DATE_BRUTE = ["date_souscription"]  # one category per day; anciennete_mois carries it
+# Phase 5, arbitrage 2: each takes a single value per subscription plan, so `plan` already
+# carries all of it. Kept, they gave the model the same four-valued information six times.
+EXCLUES_ATTRIBUT_FORMULE = [
+    "prix_mensuel_par_siege_eur",
+    "sla_reponse_h",
+    "quota_stockage_go",
+    "support_dedie",
+    "fonctionnalites_total",
+]
 
 CIBLE = "churn"
 CIBLE_SECONDAIRE = "valeur_vie_client_eur"

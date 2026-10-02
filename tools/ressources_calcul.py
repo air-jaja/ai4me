@@ -261,7 +261,10 @@ def _section_poste(source: dict, poste: dict) -> list[str]:
         f"| Système | {poste['systeme']} |",
         f"| Processeur | {poste['processeur']} |",
         f"| Cœurs logiques | {poste['coeurs_logiques']} |",
-        f"| Mémoire installée | {_fr(poste['memoire_go'])} Go |",
+        # Measured in decimal gigabytes; vendors sell memory in binary units (32 GiB is
+        # 34.4 GB), so both are shown to avoid a puzzling "34 GB" next to a 32 GB machine.
+        f"| Mémoire installée | {_fr(poste['memoire_go'])} Go "
+        f"({_fr(poste['memoire_go'] * 1e9 / 2**30)} Gio) |",
         f"| Python · scikit-learn | {poste['python']} · {poste['scikit_learn']} |",
     ]
 

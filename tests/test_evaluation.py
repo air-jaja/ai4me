@@ -67,3 +67,40 @@ def test_intervalle_de_confiance_sur_le_rappel():
     indistinguishable. That statement must stay true."""
     # ~280 positives, recall 0.70 -> about +/- 5.4 points (notebook section 9)
     assert intervalle_confiance_rappel(0.70, 280) == __import__("pytest").approx(0.054, abs=0.002)
+
+
+# --- Phase 5 · Does the lifetime value carry the outcome? ------------------------------
+def _comptes_synthetiques(encoder_l_issue: bool):
+    import numpy as np
+
+    generateur = np.random.default_rng(0)
+    n = 2000
+    anciennete = generateur.integers(1, 48, n).astype(float)
+    revenu = generateur.lognormal(7, 0.8, n)
+    issue = (generateur.random(n) < 1 / (1 + np.exp(0.08 * (anciennete - 10)))).astype(int)
+    mois = 10 + 0.3 * anciennete + generateur.normal(0, 1.5, n)
+    if encoder_l_issue:
+        # The value shortened by the actual departure: knowledge of the outcome.
+        mois = mois * np.where(issue == 1, 0.6, 1.0)
+    explicatives = pd.DataFrame({"anciennete": anciennete})
+    return (
+        explicatives,
+        pd.Series(revenu * mois),
+        pd.Series(revenu),
+        pd.Series(issue),
+        pd.Series(anciennete),
+    )
+
+
+def test_une_valeur_construite_sans_l_issue_n_est_pas_signalee():
+    """Leavers are younger here, so their value is lower - but the outcome adds nothing."""
+    from churn_saas.evaluation import diagnostiquer_valeur_vie, valeur_encode_l_issue
+
+    assert not valeur_encode_l_issue(diagnostiquer_valeur_vie(*_comptes_synthetiques(False)))
+
+
+def test_une_valeur_qui_encode_l_issue_est_signalee():
+    """A value cut short by the actual departure is caught: the outcome explains it."""
+    from churn_saas.evaluation import diagnostiquer_valeur_vie, valeur_encode_l_issue
+
+    assert valeur_encode_l_issue(diagnostiquer_valeur_vie(*_comptes_synthetiques(True)))

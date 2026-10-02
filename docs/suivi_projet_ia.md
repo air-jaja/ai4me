@@ -497,6 +497,12 @@ retirerait précisément les clients les plus importants.)*
 - [ ] Séparer le jeu gold en entraînement et test, valider la séparation
 - [ ] Valider le jeu de données préparé (test de permutation, courbe d'apprentissage)
 
+**Préalables faits le 02/10 (bloc 0).** Catalogue réduit à `plan` (gold : 26 colonnes, 25 variables
+explicatives) ; valeur vie client diagnostiquée — elle n'encode pas l'issue, la valeur observée évaluera la
+règle ; module `optimisation.py` et groupe de dépendances retirés ; source de la puissance du poste citée
+(i5-6300U : 15 W nominal, 25 W configurable) ; règle des leurres validée : retirés du modèle final après la
+sélection.
+
 ### Arbitrages du 01/10/2026, fixés avant tout résultat
 
 | Question | Décision |

@@ -204,6 +204,23 @@ def _part_tukey(silver: pd.DataFrame) -> tuple[float, float]:
     return float(au_dela.mean() * 100), float(mrr[au_dela].sum() / mrr.sum() * 100)
 
 
+def _diagnostic_valeur_vie(silver: pd.DataFrame) -> dict[str, float]:
+    """Diagnostic of arbitrage 3, on the gold variables of the reference data."""
+    from churn_saas.evaluation import diagnostiquer_valeur_vie
+    from churn_saas.features import preparer_gold
+
+    gold = preparer_gold(silver).gold
+    explicatives = gold.drop(columns=["churn"]).select_dtypes("number")
+    diagnostic = diagnostiquer_valeur_vie(
+        explicatives,
+        silver["valeur_vie_client_eur"],
+        silver["revenu_mensuel_recurrent_eur"],
+        silver["churn"],
+        silver["anciennete_mois"],
+    )
+    return dict(zip(diagnostic["indicateur"], diagnostic["valeur"], strict=True))
+
+
 # --- Published figures, declared once -------------------------------------------------
 @dataclass(frozen=True)
 class ChiffrePublie:
@@ -471,17 +488,17 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
     ChiffrePublie(
         phase="3 · Exploration",
         libelle="Colonnes du jeu gold livré au modèle",
-        # 34 until phase 4, which excluded the raw date and two duplicates.
+        # 34 until phase 4 (raw date, two duplicates), 31 until phase 5 (catalogue -> plan).
         cite_dans="03_exploration § 3.6 (34 avant la phase 4) · notebook § 7 · fiche modèle",
-        attendu=31,
+        attendu=26,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver).shape[1]),
     ),
     ChiffrePublie(
         phase="3 · Exploration",
         libelle="Variables explicatives après séparation de la cible",
-        cite_dans="03_exploration § 3.6 (33 avant la phase 4) · notebook § 7 · suivi_projet_ia",
-        attendu=30,
+        cite_dans="03_exploration § 3.6 (33 avant la phase 4) · notebook § 1, 5, 7 · suivi",
+        attendu=25,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver).shape[1] - 1),
     ),
@@ -642,6 +659,47 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
         attendu=76.0,
         tolerance=0.5,
         calcul=lambda brut, silver: _part_tukey(silver)[1],
+    ),
+    # --- Phase 5 · Feature engineering --------------------------------------------------
+    ChiffrePublie(
+        phase="5 · Features",
+        libelle="Variance de la valeur vie client expliquée sans l'issue (R²)",
+        cite_dans="00.README_choix_methodologiques § 7 bis · registre E-508 · notebook § 12",
+        attendu=0.895,
+        tolerance=0.01,
+        calcul=lambda brut, silver: _diagnostic_valeur_vie(silver)[
+            "Variance expliquée sans l'issue (R², validation croisée)"
+        ],
+    ),
+    ChiffrePublie(
+        phase="5 · Features",
+        libelle="Gain de R² apporté par l'issue",
+        cite_dans="00.README_choix_methodologiques § 7 bis · registre E-508",
+        attendu=0.0,
+        tolerance=0.005,
+        calcul=lambda brut, silver: _diagnostic_valeur_vie(silver)[
+            "Gain de R² apporté par l'issue"
+        ],
+    ),
+    ChiffrePublie(
+        phase="5 · Features",
+        libelle="Ancienneté médiane des comptes qui partent (mois)",
+        cite_dans="00.README_choix_methodologiques § 7 bis",
+        attendu=6,
+        tolerance=0,
+        calcul=lambda brut, silver: _diagnostic_valeur_vie(silver)[
+            "Ancienneté, comptes qui partent (mois, médiane)"
+        ],
+    ),
+    ChiffrePublie(
+        phase="5 · Features",
+        libelle="Ancienneté médiane des comptes qui restent (mois)",
+        cite_dans="00.README_choix_methodologiques § 7 bis",
+        attendu=12,
+        tolerance=0,
+        calcul=lambda brut, silver: _diagnostic_valeur_vie(silver)[
+            "Ancienneté, comptes qui restent (mois, médiane)"
+        ],
     ),
     ChiffrePublie(
         phase="3 · Exploration",
@@ -1095,3 +1153,32 @@ def test_le_contrat_mesure_les_manquants_de_la_source(chaine):
     """
     assert chaine.silver["revenu_mensuel_recurrent_eur"].isna().sum() == 150
     assert chaine.gold["revenu_mensuel_recurrent_eur"].isna().sum() == 0
+
+
+def test_la_valeur_vie_client_n_encode_pas_l_issue(silver: pd.DataFrame):
+    """Arbitrage 3 settled by measurement: the observed value may evaluate the rule.
+
+    The 18.9 against 15.6 months gap is a composition effect - leavers are younger accounts.
+    Were the value to start encoding the outcome, the impact measured in phase 9 would be
+    inflated, and this test would say so before the jury does.
+    """
+    from churn_saas.evaluation import diagnostiquer_valeur_vie, valeur_encode_l_issue
+    from churn_saas.features import preparer_gold
+
+    gold = preparer_gold(silver).gold
+    diagnostic = diagnostiquer_valeur_vie(
+        gold.drop(columns=["churn"]).select_dtypes("number"),
+        silver["valeur_vie_client_eur"],
+        silver["revenu_mensuel_recurrent_eur"],
+        silver["churn"],
+        silver["anciennete_mois"],
+    )
+    assert not valeur_encode_l_issue(diagnostic), diagnostic.to_string()
+
+
+def test_les_attributs_de_formule_ne_prennent_qu_une_valeur_par_plan(silver: pd.DataFrame):
+    """The premise of arbitrage 2: if a plan ever had two prices, `plan` alone would lose it."""
+    from churn_saas.config import EXCLUES_ATTRIBUT_FORMULE
+
+    valeurs = silver.groupby("plan")[EXCLUES_ATTRIBUT_FORMULE].nunique()
+    assert (valeurs <= 1).all().all(), valeurs.to_string()

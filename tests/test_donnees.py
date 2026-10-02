@@ -249,7 +249,8 @@ def test_gold_retire_la_date_brute_et_le_doublon_du_catalogue():
         }
     )
     gold = construire_gold(silver)
-    assert set(gold.columns) == {"fonctionnalites_total", "anciennete_mois", "churn"}
+    # fonctionnalites_total itself goes in phase 5: one value per plan (arbitrage 2).
+    assert set(gold.columns) == {"anciennete_mois", "churn"}
     assert MOTIFS_EXCLUSION["date_souscription"].startswith("date brute")
     assert MOTIFS_EXCLUSION["fonctionnalites_incluses"].startswith("doublon")
 

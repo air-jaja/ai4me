@@ -12,6 +12,7 @@ import pandas as pd
 from ..config import (
     CIBLE,
     EXCLUES_ARTEFACT,
+    EXCLUES_ATTRIBUT_FORMULE,
     EXCLUES_CIBLE_SECONDAIRE,
     EXCLUES_DATE_BRUTE,
     EXCLUES_DOUBLON,
@@ -43,6 +44,10 @@ MOTIFS_EXCLUSION: dict[str, str] = {
         c: "date brute — encodée telle quelle, une catégorie par jour ; "
         "anciennete_mois porte déjà l'information"
         for c in EXCLUES_DATE_BRUTE
+    },
+    **{
+        c: "attribut de la formule — une seule valeur par plan, information portée par `plan`"
+        for c in EXCLUES_ATTRIBUT_FORMULE
     },
 }
 

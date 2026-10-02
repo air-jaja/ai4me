@@ -102,13 +102,13 @@ churn-saas-cisia/
     ├── modelisation/       3. MODÉLISATION
     │   ├── baseline.py           régression logistique et préprocesseur
     │   ├── selection.py          candidat, grille bornée, comparaison en CV
-    │   ├── optimisation.py       Optuna, empreinte carbone — écartés le 01/10, retrait prévu (D-08)
     │   └── sobriete.py           temps de calcul mesurés, charge déclarée, énergie et CO₂e
     │
     ├── evaluation/         4. ÉVALUATION DE LA PERFORMANCE
     │   ├── metriques.py          métriques et intervalle de confiance
     │   ├── decision.py           priorisation par valeur espérée, sensibilité
     │   ├── impact.py             MRR exposé / couvert / préservé
+    │   ├── valeur_vie.py         la valeur vie client encode-t-elle l'issue ? (diagnostic)
     │   └── explicabilite.py      valeurs de Shapley, motif lisible par un CSM
     │
     ├── packaging/          5. PACKAGING DU MODÈLE
@@ -166,7 +166,6 @@ Détail complet et procédure de migration : `docs/ORGANISATION_CODE.md`.
 | **dev** | pytest, ruff, pre-commit | C6 | inclus par défaut |
 | **notebook** | jupyterlab, ipykernel, nbconvert, jinja2 | — | `--group notebook` |
 | **explicabilite** | shap | C4, C5 | `--group explicabilite` |
-| **optimisation** | optuna, codecarbon — *écartés le 01/10, retrait prévu* | C4 | `--group optimisation` |
 | **suivi** | mlflow | C5, C6, C9 | `--group suivi` |
 | **stockage** | sqlalchemy, psycopg | C3, C7 | `--group stockage` |
 | **orchestration** | prefect | C6, C7 | `--group orchestration` |
@@ -187,7 +186,7 @@ registre et dans `docs/00.README_choix_methodologiques.md` § 7 bis.
 
 | Outil | 26/09 | 01/10 — décision et motif |
 |---|---|---|
-| Optuna | Retenu (TPE + élagage, 30 essais) | **Écarté.** L'espace compte 44 combinaisons : `GridSearchCV` est exhaustif en quelques minutes et donne les courbes de validation |
+| Optuna | Retenu (TPE + élagage, 30 essais) | **Écarté.** L'espace compte 44 combinaisons : `GridSearchCV` est exhaustif en quelques minutes et donne les courbes de validation. Le module et le groupe de dépendances sont retirés le 02/10 |
 | CodeCarbon | Retenu | **Écarté, chiffres à l'appui.** Les temps de calcul sont mesurés sur le poste de développement (`make ressources`) et convertis en énergie et en CO₂e : quelques minutes et quelques grammes pour toute la phase 5, une mesure qui ne changerait aucune décision. Chiffrage : `docs/06.SOBRIETE_calcul.md` |
 | MLflow | Retenu | **Différé** à la phase 10, pour tracer le modèle final |
 | SHAP | Retenu | **À arbitrer** après le choix du modèle : une régression logistique s'explique sans lui |

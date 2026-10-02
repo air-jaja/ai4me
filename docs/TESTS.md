@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**451 cas de test** issus de 232 fonctions, répartis sur 19 fichiers.
+**459 cas de test** issus de 236 fonctions, répartis sur 19 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -33,7 +33,7 @@ soutenance.
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 9 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 14 |
-| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 6 |
+| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 8 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
@@ -41,7 +41,7 @@ soutenance.
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 66 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 72 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 7 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
@@ -236,6 +236,8 @@ soutenance.
 | 4 | `test_la_capacite_borne_le_nombre_de_comptes_traites` | The shortlist must never exceed team capacity. | A model flagging more accounts than the team can handle produces no additional action: the constraint is operational, not statistical. |
 | 5 | `test_les_trois_niveaux_d_impact_sont_decroissants` | Exposed, covered and preserved revenue must decrease in that order. | An inversion would mean claiming to save more than what is at risk - the kind of figure that discredits an entire presentation. |
 | 6 | `test_intervalle_de_confiance_sur_le_rappel` | The stated uncertainty on recall must remain around five points. | Section 9 tells the jury that two operating points at 70% and 74% are statistically indistinguishable. That statement must stay true. |
+| 7 | `test_une_valeur_construite_sans_l_issue_n_est_pas_signalee` | Leavers are younger here, so their value is lower. | but the outcome adds nothing. |
+| 8 | `test_une_valeur_qui_encode_l_issue_est_signalee` | A value cut short by the actual departure is caught: the outcome explains it. | — |
 
 ### Artefacts et fiche modèle
 
@@ -364,7 +366,7 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_chiffres_publies_sont_inchanges` _(×41)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
+| 1 | `test_les_chiffres_publies_sont_inchanges` _(×45)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
 | 2 | `test_l_ecart_de_seuil_entre_deciles_reste_superieur_a_cent` | The "factor over 100" argument justifies rejecting a single global threshold. | It is the central argument of the decision rule, quoted in the framing notebook, in the explanatory document and in the oral pitch. If the spread narrowed, a global threshold would become defensible and the whole design would need rethinking. |
 | 3 | `test_le_seuil_du_dernier_decile_reste_tres_bas` | Acting on a top-decile account stays rational below 1% risk. | The 0.3% figure is the striking end of the argument presented to the jury. |
 | 4 | `test_les_hypotheses_de_cadrage_sont_inchangees` | These values are quoted verbatim in the documents and in the oral pitch. | — |
@@ -390,6 +392,8 @@ soutenance.
 | 24 | `test_l_absence_d_une_valeur_source_n_est_toujours_pas_un_signal` | Phase 2 published a 4.5-point maximum churn gap on raw data; it holds after cleaning. | Measured on silver now, since the cleaning is what phase 4 changed. A gap growing past the published figure plus its tolerance would mean the cleaning creates a signal. |
 | 25 | `test_le_manifeste_decrit_les_jeux_produits_par_le_code` | The derived datasets recorded in the manifest are the ones the code produces today. | Changing a cleaning rule changes silver and gold. Without this test the manifest kept describing the phase 3 gold - 34 columns, misread dates - while the code produced another one, and a model card would have cited a fingerprint nobody can reproduce. When it fails after a deliberate change: re-run the materialisation (README of the phase 4 delivery), then commit the manifest with the code. |
 | 26 | `test_le_contrat_mesure_les_manquants_de_la_source` | The reconstruction runs after the contract, so the contract still sees real gaps. | Placed before, it would report 0 % missing revenue where the source has 3 %, and the monthly monitoring of incoming data quality would go blind. |
+| 27 | `test_la_valeur_vie_client_n_encode_pas_l_issue` | Arbitrage 3 settled by measurement: the observed value may evaluate the rule. | The 18.9 against 15.6 months gap is a composition effect - leavers are younger accounts. Were the value to start encoding the outcome, the impact measured in phase 9 would be inflated, and this test would say so before the jury does. |
+| 28 | `test_les_attributs_de_formule_ne_prennent_qu_une_valeur_par_plan` | The premise of arbitrage 2: if a plan ever had two prices, `plan` alone would lose it. | — |
 
 ### test_industrialisation.py
 
