@@ -98,7 +98,7 @@ churn-saas-cisia/
     ├── modelisation/       3. MODÉLISATION
     │   ├── baseline.py           régression logistique et préprocesseur
     │   ├── selection.py          candidat, grille bornée, comparaison en CV
-    │   └── optimisation.py       Optuna avec élagage, empreinte carbone
+    │   └── optimisation.py       Optuna, empreinte carbone — écartés le 01/10, retrait prévu (D-08)
     │
     ├── evaluation/         4. ÉVALUATION DE LA PERFORMANCE
     │   ├── metriques.py          métriques et intervalle de confiance
@@ -161,7 +161,7 @@ Détail complet et procédure de migration : `docs/ORGANISATION_CODE.md`.
 | **dev** | pytest, ruff, pre-commit | C6 | inclus par défaut |
 | **notebook** | jupyterlab, ipykernel, nbconvert, jinja2 | — | `--group notebook` |
 | **explicabilite** | shap | C4, C5 | `--group explicabilite` |
-| **optimisation** | optuna, codecarbon | C4 | `--group optimisation` |
+| **optimisation** | optuna, codecarbon — *écartés le 01/10, retrait prévu* | C4 | `--group optimisation` |
 | **suivi** | mlflow | C5, C6, C9 | `--group suivi` |
 | **stockage** | sqlalchemy, psycopg | C3, C7 | `--group stockage` |
 | **orchestration** | prefect | C6, C7 | `--group orchestration` |
@@ -175,14 +175,17 @@ installer la stack.
 
 ### Décisions révisées
 
-Trois outils écartés au cadrage initial sont finalement retenus. Le revirement est
-documenté plutôt que dissimulé — c'est une itération, et le notebook la consigne.
+Trois outils écartés au cadrage initial avaient été retenus le 26/09 ; les arbitrages du
+01/10, pris avant tout résultat de modélisation, en ont révisé deux à nouveau et différé un.
+Les revirements sont documentés plutôt que dissimulés — c'est une itération, consignée au
+registre et dans `docs/00.README_choix_methodologiques.md` § 7 bis.
 
-| Outil | Position initiale | Ce qui a changé |
+| Outil | 26/09 | 01/10 — décision et motif |
 |---|---|---|
-| Optuna | Écarté au nom de l'éco-conception | L'argument portait sur l'**étendue** de la recherche, pas sur l'outil. L'échantillonnage TPE avec élagage consomme moins qu'une grille exhaustive à couverture égale. Le budget reste borné à 30 essais. |
-| MLflow | Écarté, « surdimensionné pour un notebook » | La convention de nommage ne survit ni à plusieurs réentraînements ni à plusieurs personnes. MLflow outille la convention sans la changer. |
-| SHAP, CodeCarbon | Options ouvertes | Retenus : l'un rend le signalement actionnable compte par compte, l'autre transforme un argument déclaratif en mesure. |
+| Optuna | Retenu (TPE + élagage, 30 essais) | **Écarté.** L'espace compte 44 combinaisons : `GridSearchCV` est exhaustif en quelques minutes et donne les courbes de validation |
+| CodeCarbon | Retenu | **Écarté, chiffres à l'appui.** Toute la phase 5 représente ≈ 11 min de calcul, moins de 4 g CO₂e pour dix exécutions : la mesure ne changerait aucune décision. Le temps de calcul est mesuré et converti |
+| MLflow | Retenu | **Différé** à la phase 10, pour tracer le modèle final |
+| SHAP | Retenu | **À arbitrer** après le choix du modèle : une régression logistique s'explique sans lui |
 
 **Toujours écartés**, et défendables comme tels :
 

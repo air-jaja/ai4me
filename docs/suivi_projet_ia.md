@@ -494,6 +494,23 @@ retirerait précisément les clients les plus importants.)*
 - [x] Vérifier l'absence de **fuite de données**
 - [~] Sélectionner les variables à conserver
 - [ ] Mesurer l'apport réel des variables construites
+- [ ] Séparer le jeu gold en entraînement et test, valider la séparation
+- [ ] Valider le jeu de données préparé (test de permutation, courbe d'apprentissage)
+
+### Arbitrages du 01/10/2026, fixés avant tout résultat
+
+| Question | Décision |
+|---|---|
+| Découpage | Test de 20 % sous scellés, validation croisée stratifiée 5 plis répétée 5 fois |
+| Colonnes du catalogue | `plan` seul : les cinq autres ne prennent qu'une valeur par formule |
+| Valeur vie client | Diagnostic avant toute évaluation : elle pourrait encoder la durée de vie réelle |
+| Hyperparamètres | `GridSearchCV` (44 combinaisons) ; Optuna écarté |
+| Empreinte carbone | Temps de calcul mesuré et converti ; CodeCarbon écarté (≈ 11 min, moins de 4 g CO₂e pour dix exécutions) |
+| MLflow | Différé à la phase 10, pour le modèle final |
+
+Les **règles de décision** — quand garder ou retirer une variable, quand juger le découpage représentatif,
+quel réglage retenir — sont écrites **avant** les résultats, dans `00.README_choix_methodologiques.md`
+§ 7 bis. Les options écartées sont au registre (E-501 à E-507, D-06 à D-08).
 
 **La fuite de données, point central de cet exercice.** Une *fuite* survient lorsqu'une information donnée
 au modèle n'était en réalité pas disponible au moment où la prédiction aurait dû être faite. Le modèle
@@ -577,8 +594,8 @@ données bien supérieurs ; sur 5 000 lignes, leur coût de calcul serait engag�
 outils de vision par ordinateur (CNN, YOLO) sont sans objet : il n'y a pas d'images ici.
 
 🔧 **Outils** : scikit-learn · validation croisée stratifiée
-*(MLflow, outil de traçabilité des expérimentations, n'est pas utilisé : le projet tient dans un notebook
-unique, et les paramètres sont consignés directement dans le document.)*
+*(MLflow, outil de traçabilité des expérimentations, est **différé à la phase 10** : il tracera le modèle
+final ; en phase 5, les résultats tiennent dans les tableaux du notebook — arbitrage du 01/10.)*
 📦 **Artefacts** : sections 8 et 9 du notebook · modèle entraîné
 **Statut** : **à faire** — prévu les 24 et 25 septembre
 
@@ -606,9 +623,10 @@ ré-entraînement est prévu tous les trois mois plutôt que tous les mois, ce q
 consommation associée.
 
 🔧 **Outils** : `GridSearchCV` *(exploration systématique d'une grille de réglages)*
-*(Optuna, outil d'optimisation plus avancé, n'est pas retenu : son intérêt apparaît sur de grands espaces de
-recherche, ce qui contredirait la démarche de sobriété adoptée. CodeCarbon, qui mesure l'empreinte carbone
-d'un calcul, serait un ajout pertinent et peu coûteux — **option ouverte**, non tranchée.)*
+*(Optuna, outil d'optimisation plus avancé, n'est pas retenu : l'espace compte 44 combinaisons, que la grille
+parcourt en quelques minutes. CodeCarbon, qui mesure l'empreinte carbone d'un calcul, est **écarté chiffres à
+l'appui** : 11 minutes de calcul pour toute la phase, moins de 4 g CO₂e pour dix exécutions ; le temps de
+calcul est mesuré et converti à la place — arbitrages du 01/10.)*
 📦 **Artefacts** : section 9 du notebook · tableau des hyperparamètres
 **Statut** : **à faire**
 
@@ -737,7 +755,7 @@ test de Kolmogorov-Smirnov · tableau de bord de suivi
 | Feature engineering | ratios d'usage, `train_test_split`, mise à l'échelle | SMOTE/ADASYN *(fabriquent de faux clients)*, PCA *(détruit l'explicabilité)*, TimeSeriesSplit *(pas de série chronologique)* |
 | Baseline | scikit-learn, séparation stratifiée | — |
 | Entraînement | régression logistique, forêt aléatoire, validation croisée | CNN, YOLO, autoencodeur *(pas d'images)*, réseaux profonds *(trop peu de données)*, MLflow *(surdimensionné pour un notebook)* |
-| Optimisation | `GridSearchCV`, grille restreinte | Optuna *(contraire à la démarche de sobriété)* · CodeCarbon *(option ouverte)* |
+| Optimisation | `GridSearchCV`, grille restreinte (44 combinaisons) · temps de calcul mesuré | Optuna *(espace trop petit pour en bénéficier)* · CodeCarbon *(mesure sans effet sur aucune décision, chiffrée)* |
 | Validation | matrice de confusion, ROC, précision-rappel, importance par permutation | SHAP *(option ouverte)* · exactitude *(trompeuse ici)* |
 | Déploiement | joblib, esquisse d'API, CI/CD décrite | MLflow Model Registry *(pas d'environnement réel)* |
 | Suivi | PSI, Kolmogorov-Smirnov | — |
