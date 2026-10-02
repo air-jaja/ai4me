@@ -28,8 +28,8 @@ memoire_pic_processus_mo = 235.5
 
 [hypotheses]
 puissance_basse_w = 15
-puissance_haute_w = 65
-source_puissance = "fourchette générique : un cœur chargé sur un portable ; processeur de bureau entier. Remplacer la haute par la puissance nominale (TDP) du processeur du poste"
+puissance_haute_w = 25
+source_puissance = "La puissance nominale (TDP) du processeur du poste"
 intensite_carbone_g_kwh = 30.2
 source_intensite = "RTE, Bilan électrique 2024 : mix français sur le cycle de vie (21,7 g en émissions directes)"
 executions_developpement = 10
