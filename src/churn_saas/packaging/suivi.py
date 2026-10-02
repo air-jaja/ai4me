@@ -25,7 +25,9 @@ import pandas as pd
 
 from ..config import (
     ALIAS_CANDIDAT,
+    FICHIER_RESSOURCES,
     MODELE_REGISTRE,
+    N_JOBS,
     PREFIXE_EXPERIENCES,
     RACINE,
     URI_SUIVI,
@@ -69,6 +71,74 @@ def nom_experience(sujet: str) -> str:
     return f"{PREFIXE_EXPERIENCES}/{sujet}"
 
 
+def emplacement_artefacts(uri: str | None = None) -> str | None:
+    """Where artefacts go: beside the store in use, as an absolute location.
+
+    Left to MLflow, artefacts land in a `mlruns/` folder relative to the CURRENT directory:
+    a notebook run from notebooks/ and a tool run from the root would scatter models in
+    two places, and tests would write theirs into the project. Placing them beside the
+    SQLite file keeps one store per database - the project's, or a test's temporary one.
+    """
+    uri = uri or uri_suivi()
+    if not uri.startswith("sqlite:///"):
+        return None  # a tracking server (phase 10) decides for itself
+    from pathlib import Path
+
+    return (Path(uri.removeprefix("sqlite:///")).parent / "artefacts").as_uri()
+
+
+def activer_experience(nom: str) -> str | None:
+    """Make `nom` the active experiment, creating it with the absolute artefact location."""
+    mlflow = configurer_suivi()
+    if mlflow is None:
+        return None
+    existante = mlflow.get_experiment_by_name(nom)
+    identifiant = (
+        existante.experiment_id
+        if existante
+        else mlflow.create_experiment(nom, artifact_location=emplacement_artefacts())
+    )
+    mlflow.set_experiment(experiment_id=identifiant)
+    return identifiant
+
+
+def run_existant(nom: str, etiquettes: dict[str, str], nom_run: str | None = None) -> str | None:
+    """The id of a finished run of experiment `nom` carrying these tags, if any.
+
+    What makes a replay idempotent: the same result, on the same data, under the same
+    protocol, is recorded once.
+    """
+    mlflow = configurer_suivi()
+    if mlflow is None or mlflow.get_experiment_by_name(nom) is None:
+        return None
+    filtre = ["attributes.status = 'FINISHED'"]
+    filtre += [f"tags.`{cle}` = '{valeur}'" for cle, valeur in etiquettes.items()]
+    if nom_run:
+        filtre.append(f"attributes.run_name = '{nom_run}'")
+    trouves = mlflow.search_runs(experiment_names=[nom], filter_string=" and ".join(filtre))
+    return None if trouves.empty else str(trouves.iloc[0]["run_id"])
+
+
+def empreinte_code() -> str:
+    """Fingerprint of the code that produces models: the package and the tools.
+
+    A commit identifies committed code only; this fingerprint also tells two runs apart
+    when the working tree holds uncommitted changes.
+    """
+    import hashlib
+
+    condense = hashlib.sha256()
+    for fichier in sorted(
+        [
+            *RACINE.joinpath("src", "churn_saas").rglob("*.py"),
+            *RACINE.joinpath("tools").glob("*.py"),
+        ]
+    ):
+        condense.update(fichier.relative_to(RACINE).as_posix().encode())
+        condense.update(fichier.read_bytes().replace(b"\r\n", b"\n"))
+    return condense.hexdigest()[:16]
+
+
 def etiquettes_tracabilite(
     phase: str, origine: str, manifeste: dict | None = None, **autres: str
 ) -> dict[str, str]:
@@ -92,6 +162,19 @@ def etiquettes_tracabilite(
         etiquettes |= {"commit": commit, "modifications_non_committees": str(bool(modifie))}
     except (OSError, subprocess.CalledProcessError):
         etiquettes["commit"] = "inconnu"
+    etiquettes["n_jobs"] = str(N_JOBS)
+    etiquettes["empreinte_code"] = empreinte_code()
+    try:
+        import tomllib
+
+        with open(FICHIER_RESSOURCES, "rb") as flux:
+            poste = tomllib.load(flux)["poste"]
+        etiquettes |= {
+            "poste_processeur": poste["processeur"],
+            "poste_coeurs_logiques": str(poste["coeurs_logiques"]),
+        }
+    except (OSError, KeyError):
+        pass
     if manifeste:
         jeux = manifeste.get("jeux_derives", {}).get("jeux", {})
         if "gold" in jeux:
@@ -132,7 +215,7 @@ def experience(nom: str, uri: str | None = None, run: str | None = None) -> Iter
     if mlflow is None:
         yield None
         return
-    mlflow.set_experiment(nom)
+    activer_experience(nom)
     with mlflow.start_run(run_name=run) as execution:
         yield execution
 
@@ -215,7 +298,11 @@ def tracer_donnees(
     if mlflow is None:
         return None
     empreinte = manifeste["jeux_derives"]["jeux"]["gold"]["empreinte_contenu"]
-    mlflow.set_experiment(nom_experience("donnees"))
+    # One run per version of the data: a re-materialisation of the same gold adds nothing.
+    deja = run_existant(nom_experience("donnees"), {"empreinte_gold": empreinte})
+    if deja:
+        return deja
+    activer_experience(nom_experience("donnees"))
     with mlflow.start_run(run_name=f"materialisation {empreinte[:12]}") as run:
         mlflow.set_tags(etiquettes_tracabilite("donnees", "tools/materialiser.py", manifeste))
         mlflow.log_param("version_donnees", manifeste.get("version", "v1.0"))
@@ -244,6 +331,49 @@ def enregistrer(
     version = mlflow.register_model(f"runs:/{run_id}/{artefact}", nom_modele).version
     mlflow.MlflowClient().set_registered_model_alias(nom_modele, alias, version)
     return str(version)
+
+
+# What makes two models "the same": the code that built them (fingerprint of the sources,
+# valid with or without uncommitted changes), the data, and the configuration.
+CLES_IDENTITE_MODELE = ("empreinte_code", "empreinte_gold", "configuration")
+
+
+def enregistrer_si_nouveau(
+    run_id: str, alias: str = ALIAS_CANDIDAT, nom_modele: str = MODELE_REGISTRE
+) -> tuple[str, bool]:
+    """Register the run's model unless the alias already points at the same model.
+
+    "The same" means: same code (commit, no uncommitted change), same data (gold
+    fingerprint), same configuration. A rerun that changed nothing then creates no new
+    version. Returns the version the alias points at, and whether it is new.
+    """
+    mlflow = configurer_suivi()
+    client = mlflow.MlflowClient()
+    candidat = client.get_run(run_id).data.tags
+    try:
+        actuelle = client.get_model_version_by_alias(nom_modele, alias)
+        retenu = client.get_run(actuelle.run_id).data.tags
+        if all(candidat.get(c) and candidat.get(c) == retenu.get(c) for c in CLES_IDENTITE_MODELE):
+            return str(actuelle.version), False
+    except Exception:  # noqa: BLE001 - no model, or no alias yet: register
+        pass
+    return enregistrer(run_id, alias, nom_modele), True
+
+
+def durees_des_runs(nom: str) -> pd.DataFrame:
+    """Measured duration of each finished run of an experiment, from MLflow's own clock."""
+    mlflow = configurer_suivi()
+    if mlflow is None or mlflow.get_experiment_by_name(nom) is None:
+        return pd.DataFrame(columns=["run", "secondes"])
+    runs = mlflow.search_runs(
+        experiment_names=[nom], filter_string="attributes.status = 'FINISHED'"
+    )
+    return pd.DataFrame(
+        {
+            "run": runs["tags.mlflow.runName"],
+            "secondes": (runs["end_time"] - runs["start_time"]).dt.total_seconds().round(1),
+        }
+    )
 
 
 def charger(alias: str = ALIAS_CANDIDAT, nom_modele: str = MODELE_REGISTRE) -> Any:

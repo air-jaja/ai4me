@@ -29,6 +29,7 @@ make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant
 make ressources         # mesure CE poste : ressources et temps de calcul (docs/06.SOBRIETE_calcul.md)
 make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter (+ run « données » MLflow)
 make mlflow             # interface MLflow sur le magasin du projet (mlruns/mlflow.db)
+make mlflow-nettoyer    # vide le magasin MLflow local (il se reconstruit : MLflow n'est qu'un journal)
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données

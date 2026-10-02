@@ -50,6 +50,31 @@ MODELE_REGISTRE = "churn-saas"
 ALIAS_CANDIDAT = "challenger"  # best model so far, neither tuned nor calibrated
 ALIAS_RETENU = "champion"  # reserved to the model retained at the end of phase 7
 
+
+def _coeurs_paralleles() -> int:
+    """Workers for parallel computations: the measured logical cores minus one.
+
+    Read from the project input `config/ressources_poste.toml` (the development laptop),
+    one core left free so the machine stays usable; CHURN_N_JOBS overrides it. Results do
+    not depend on it - every model has a fixed seed - only durations do.
+    """
+    import os
+    import tomllib
+
+    if os.environ.get("CHURN_N_JOBS"):
+        return max(1, int(os.environ["CHURN_N_JOBS"]))
+    try:
+        with open(RACINE / "config" / "ressources_poste.toml", "rb") as flux:
+            coeurs = int(tomllib.load(flux)["poste"]["coeurs_logiques"])
+    except (OSError, KeyError, ValueError):
+        coeurs = os.cpu_count() or 2
+    return max(1, coeurs - 1)
+
+
+# One parallel layer only: a parallel search over parallel forests would run up to
+# N_JOBS x N_JOBS tasks on N_JOBS cores (and, on Windows, trips joblib's memmapping cleanup).
+N_JOBS = _coeurs_paralleles()
+
 # --- Excluded columns, each with its own rationale (notebook sections 4 and 7) -------
 # The motives are distinct and not interchangeable: the grid separates ethics from
 # technical preparation, so one blanket justification would satisfy neither.

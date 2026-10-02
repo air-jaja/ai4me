@@ -8,10 +8,15 @@ the artefact, from the same metadata - never hand-written afterwards.
 from .artefacts import FicheModele, charger_modele, sauvegarder_modele
 from .model_card import generer_model_card
 from .suivi import (
+    CLES_IDENTITE_MODELE,
     CLES_MLFLOW,
+    activer_experience,
     charger,
     configurer_suivi,
+    durees_des_runs,
+    emplacement_artefacts,
     enregistrer,
+    enregistrer_si_nouveau,
     etiquettes_tracabilite,
     experience,
     journaliser,
@@ -19,6 +24,7 @@ from .suivi import (
     journaliser_protocole,
     nom_experience,
     promouvoir,
+    run_existant,
     tracer_donnees,
     uri_suivi,
 )
@@ -42,4 +48,11 @@ __all__ = [
     "charger",
     "promouvoir",
     "tracer_donnees",
+    # Bloc 7.0 bis: one artefact location, idempotent runs, measured durations
+    "emplacement_artefacts",
+    "activer_experience",
+    "run_existant",
+    "enregistrer_si_nouveau",
+    "CLES_IDENTITE_MODELE",
+    "durees_des_runs",
 ]

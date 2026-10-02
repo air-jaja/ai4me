@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 
-from ..config import GRAINE
+from ..config import GRAINE, N_JOBS
 from .baseline import construire_preprocesseur
 
 
@@ -27,7 +27,7 @@ def construire_candidat(X: pd.DataFrame, equilibrer: bool = True) -> Pipeline:
                     min_samples_leaf=5,
                     class_weight="balanced" if equilibrer else None,
                     random_state=GRAINE,
-                    n_jobs=-1,
+                    n_jobs=N_JOBS,
                 ),
             ),
         ]
@@ -70,7 +70,7 @@ def comparer(
     lignes = []
     for nom, modele in modeles.items():
         scores = cross_validate(
-            modele, X, y, cv=plis, scoring=["average_precision", "roc_auc"], n_jobs=-1
+            modele, X, y, cv=plis, scoring=["average_precision", "roc_auc"], n_jobs=1
         )
         lignes.append(
             {

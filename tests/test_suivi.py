@@ -109,3 +109,111 @@ def test_un_run_porte_le_commit_et_les_empreintes():
     etiquettes = etiquettes_tracabilite("7", "essai", manifeste)
     assert etiquettes["empreinte_gold"] == "abc" and etiquettes["empreinte_comptes_test"] == "def"
     assert etiquettes["commit"] and "modifications_non_committees" in etiquettes
+
+
+# --- Bloc 7.0 bis: one artefact location, reruns that add nothing --------------------------
+@exige_mlflow
+def test_les_artefacts_vont_a_cote_du_magasin_en_usage(tmp_path):
+    """Never in a `mlruns/` relative to the current directory: beside the store in use -
+    here the test's temporary one, so no test writes into the project."""
+    from churn_saas.packaging import emplacement_artefacts, experience, uri_suivi
+
+    attendu = emplacement_artefacts(uri_suivi())
+    assert attendu.startswith("file://") and str(tmp_path.as_posix()) in attendu
+    with experience("churn-saas/emplacement") as run:
+        pass
+    assert run.info.artifact_uri.startswith(attendu)
+
+
+def test_le_parallelisme_se_regle_par_la_configuration(monkeypatch):
+    from churn_saas import config
+
+    monkeypatch.setenv("CHURN_N_JOBS", "2")
+    assert config._coeurs_paralleles() == 2
+    monkeypatch.delenv("CHURN_N_JOBS")
+    assert config._coeurs_paralleles() >= 1
+
+
+def test_la_duree_est_estimee_a_partir_des_temps_mesures():
+    from churn_saas.modelisation import annoncer_duree, estimer_duree
+
+    temps = {"entrainement_lr_s": 0.1, "entrainement_foret_s": 1.0}
+    assert estimer_duree(temps, entrainements_lr=10, entrainements_foret=5) == pytest.approx(6.0)
+    assert annoncer_duree(10, 5).startswith("Durée estimée")
+
+
+@exige_mlflow
+def test_relancer_la_chaine_ne_cree_pas_de_nouvelle_version():
+    """Same code, same data, same configuration: the second execution registers nothing."""
+    import json
+    import subprocess
+
+    from churn_saas.config import RACINE
+
+    bilans = []
+    for _ in range(2):
+        sortie = subprocess.run(
+            [sys.executable, str(RACINE / "tools" / "pipeline_mlflow.py"), "--rapide"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            cwd=RACINE,
+            timeout=300,
+        )
+        assert sortie.returncode == 0, sortie.stderr[-800:]
+        bilans.append(json.loads(sortie.stdout[sortie.stdout.index("{") :]))
+    assert bilans[0]["nouvelle_version"] and not bilans[1]["nouvelle_version"]
+    assert bilans[0]["version_registre"] == bilans[1]["version_registre"]
+    assert bilans[0]["execution"] != bilans[1]["execution"]
+
+
+@exige_mlflow
+def test_relancer_le_retracage_ne_cree_pas_de_doublon():
+    mlflow = pytest.importorskip("mlflow")
+
+    from churn_saas.config import RACINE
+    from churn_saas.packaging import configurer_suivi
+
+    specification = importlib.util.spec_from_file_location(
+        "retracer_mlflow", RACINE / "tools" / "retracer_mlflow.py"
+    )
+    outil = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(outil)
+    etiquettes = {"phase": "6", "empreinte_gold": "essai"}
+    premier = outil.retracer_phase6(configurer_suivi(), etiquettes)
+    second = outil.retracer_phase6(configurer_suivi(), etiquettes)
+    assert premier == second
+    runs = mlflow.search_runs(experiment_names=["churn-saas/phase6-baselines"])
+    assert len(runs) == 3
+
+
+@exige_mlflow
+def test_une_meme_version_des_donnees_n_a_qu_un_run():
+    from churn_saas.packaging import tracer_donnees
+
+    gold = pd.DataFrame({"a": [1, 2], "churn": [0, 1]})
+    journal = pd.DataFrame({"niveau": ["gold"], "lignes": [2], "colonnes": [2]})
+    manifeste = {"jeux_derives": {"jeux": {"gold": {"empreinte_contenu": "f" * 64}}}}
+    assert tracer_donnees(gold, journal, manifeste) == tracer_donnees(gold, journal, manifeste)
+
+
+def test_la_matrice_de_confusion_ne_change_pas_le_moteur_graphique():
+    """Built without pyplot: in a notebook it must not switch the inline backend, and in a
+    script it must not open Tk - whose figures, destroyed by another thread at exit, made
+    pipeline_mlflow.py print "main thread is not in main loop" on Windows."""
+    import matplotlib
+    from matplotlib.figure import Figure
+
+    from churn_saas.config import RACINE
+
+    specification = importlib.util.spec_from_file_location(
+        "pipeline_mlflow", RACINE / "tools" / "pipeline_mlflow.py"
+    )
+    outil = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(outil)
+    avant = matplotlib.get_backend()
+    figure, seuil = outil._matrice_confusion(
+        pd.Series([0, 1, 0, 1, 1, 0, 0, 0, 1, 0]), np.linspace(0.1, 0.9, 10), part=0.2
+    )
+    assert isinstance(figure, Figure) and 0 < seuil < 1
+    assert matplotlib.get_backend() == avant
