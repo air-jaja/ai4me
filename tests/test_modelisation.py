@@ -177,3 +177,15 @@ def test_la_courbe_d_apprentissage_couvre_chaque_taille():
     courbe = courbe_apprentissage(construire_baseline(X), X, y, tailles=(0.5, 1.0))
     assert len(courbe) == 2
     assert {"PR-AUC entraînement", "PR-AUC validation", "écart-type validation"} <= set(courbe)
+
+
+@pytest.mark.phase5
+def test_une_variable_connue_apres_l_issue_est_demontree_comme_fuite():
+    """A variable built from the outcome lifts the AUC to near perfection: the symptom."""
+    from churn_saas.modelisation import construire_baseline, demontrer_fuite
+
+    X, y = _donnees_informatives()
+    fuite = pd.Series(y + np.random.default_rng(4).normal(scale=0.05, size=len(y)), name="apres")
+    table = demontrer_fuite(construire_baseline, X, y, fuite).set_index("jeu")
+    assert table.loc["avec `apres`", "AUC"] > 0.98
+    assert table.loc["sans la variable", "AUC"] < table.loc["avec `apres`", "AUC"]

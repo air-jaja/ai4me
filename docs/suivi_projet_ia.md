@@ -497,8 +497,13 @@ retirerait précisément les clients les plus importants.)*
 - [x] Séparer le jeu gold en entraînement et test, valider la séparation — *80/20 stratifié, enregistré au manifeste ; stratification, PSI et validation adverse conformes (bloc A, 02/10)*
 - [x] Valider le jeu de données préparé (test de permutation, courbe d'apprentissage) — *p = 0,01 ; la régression logistique converge, la forêt sur-apprend (à régulariser en phase 7)*
 
-**Carnet de travail** : `notebooks/05_feature_engineering.ipynb` (blocs 0 et A, exécuté) ; conclusions
-reportées au notebook de certification, § 7.7 et § 8.A.
+**Carnet de travail** : `notebooks/05_feature_engineering.ipynb` (blocs 0, A, B, C, exécuté) ; conclusions
+reportées au notebook de certification, § 7.5, § 7.7 et § 8.A à 8.C.
+
+**Clôture (bloc D, 02/10).** Fuite démontrée (même régression logistique : AUC 0,891 sans
+`sante_compte_fin_periode`, 0,999 avec) ; § 7.5 et § 8 réalignés sur les résultats (variables construites
+retirées, outillage réarbitré) ; ancien code du § 8 marqué « illustratif » jusqu'à la phase 6 ; Annexe D
+complétée (9 itérations, dont 4 défauts silencieux) ; chiffres figés en non-régression.
 
 **Préalables faits le 02/10 (bloc 0).** Catalogue réduit à `plan` (gold : 26 colonnes, 25 variables
 explicatives) ; valeur vie client diagnostiquée — elle n'encode pas l'issue, la valeur observée évaluera la

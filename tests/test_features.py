@@ -176,6 +176,13 @@ def test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues():
         graphiques.tracer_charge_calcul(
             pd.DataFrame({"étape": ["a", "b"], "secondes": [60.0, 30.0]})
         ),
+        graphiques.tracer_demonstration_fuite(
+            {
+                "m": pd.DataFrame(
+                    {"jeu": ["sans", "avec"], "AUC": [0.89, 0.99], "PR-AUC": [0.79, 0.99]}
+                )
+            }
+        ),
         graphiques.tracer_courbes_appariees(
             {"m": pd.DataFrame({"a": [0.7, 0.72], "b": [0.71, 0.70]})}, "a", "b"
         ),

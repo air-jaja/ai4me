@@ -24,6 +24,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.model_selection import (
     StratifiedKFold,
     cross_val_predict,
+    cross_validate,
     learning_curve,
     permutation_test_score,
 )
@@ -114,3 +115,36 @@ def courbe_apprentissage(
             "écart entraînement - validation": entrainement.mean(axis=1) - test.mean(axis=1),
         }
     )
+
+
+def demontrer_fuite(
+    construire_modele, X: pd.DataFrame, y: pd.Series, fuite: pd.Series, plis: int = 5
+) -> pd.DataFrame:
+    """Same model, same folds: without, then with, a variable known only after the decision.
+
+    The demonstration the leak deserves. A variable computed after the outcome lifts the
+    scores to near perfection - which is the symptom, not a success. `construire_modele`
+    is a factory: the preprocessing is rebuilt for each column set.
+    """
+    validation = StratifiedKFold(plis, shuffle=True, random_state=GRAINE)
+    y = pd.Series(y).astype(int)
+    lignes = []
+    for libelle, donnees in (
+        ("sans la variable", X),
+        (f"avec `{fuite.name}`", X.assign(**{str(fuite.name): fuite.loc[X.index]})),
+    ):
+        scores = cross_validate(
+            construire_modele(donnees),
+            donnees,
+            y,
+            cv=validation,
+            scoring={"auc": "roc_auc", "pr_auc": "average_precision"},
+        )
+        lignes.append(
+            {
+                "jeu": libelle,
+                "AUC": round(float(scores["test_auc"].mean()), 4),
+                "PR-AUC": round(float(scores["test_pr_auc"].mean()), 4),
+            }
+        )
+    return pd.DataFrame(lignes)

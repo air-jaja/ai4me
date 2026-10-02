@@ -16,7 +16,12 @@ from .sobriete import (
     mesurer_temps,
     table_empreinte,
 )
-from .validation import courbe_apprentissage, tester_permutation, validation_adverse
+from .validation import (
+    courbe_apprentissage,
+    demontrer_fuite,
+    tester_permutation,
+    validation_adverse,
+)
 
 __all__ = [
     "construire_preprocesseur",
@@ -28,6 +33,7 @@ __all__ = [
     "validation_adverse",
     "tester_permutation",
     "courbe_apprentissage",
+    "demontrer_fuite",
     # Compute footprint, measured and converted openly (CodeCarbon not used, 01/10/2026)
     "mesurer_temps",
     "estimer_charge",

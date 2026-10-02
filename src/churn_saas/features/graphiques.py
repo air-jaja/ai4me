@@ -411,3 +411,36 @@ def tracer_importances(importances: pd.DataFrame, leurres: list[str], titre: str
     ax.set_title(titre)
     fig.tight_layout()
     return fig
+
+
+def tracer_demonstration_fuite(tables: dict[str, pd.DataFrame]) -> Figure:
+    """AUC and PR-AUC without, then with, the leaking variable, one panel per model.
+
+    `tables` maps a model to the output of `modelisation.demontrer_fuite`.
+    """
+    fig, axes = plt.subplots(1, len(tables), figsize=(4.6 * len(tables), 3.8), sharey=True)
+    for ax, (nom, table) in zip(np.atleast_1d(axes), tables.items(), strict=True):
+        x = np.arange(len(table))
+        for decalage, metrique, couleur in (
+            (-0.2, "AUC", PALETTE["principal"]),
+            (0.2, "PR-AUC", PALETTE["attention"]),
+        ):
+            barres = ax.bar(x + decalage, table[metrique], 0.4, color=couleur, label=metrique)
+            for barre, valeur in zip(barres, table[metrique], strict=True):
+                ax.text(
+                    barre.get_x() + barre.get_width() / 2,
+                    valeur + 0.01,
+                    f"{valeur:.3f}",
+                    ha="center",
+                    fontsize=8,
+                )
+        ax.set_xticks(x)
+        ax.set_xticklabels(table["jeu"], fontsize=8)
+        ax.set_ylim(0.5, 1.08)
+        ax.set_title(nom, fontsize=10)
+        ax.legend(fontsize=8, loc="lower right")
+    fig.suptitle(
+        "Avec une variable connue après la décision, le modèle « devine » l'issue", fontsize=11
+    )
+    fig.tight_layout()
+    return fig

@@ -1347,3 +1347,18 @@ def test_les_retraits_combines_ne_coutent_rien(chaine):
     apport = resumer_apport(scores, "candidats", "retenues")
     assert apport["gain moyen"] > -apport["écart-type entre plis"]
     assert apport["PR-AUC candidat"] == pytest.approx(0.793, abs=0.01)
+
+
+def test_la_fuite_de_la_sante_du_compte_reste_demontree(chaine):
+    """Bloc D: the same logistic regression goes from 0.891 to 0.999 AUC with the
+    end-of-period health score - the leak the notebook narrates, now measured."""
+    from churn_saas.features import parties_du_decoupage
+    from churn_saas.modelisation import construire_baseline, demontrer_fuite
+
+    parties = parties_du_decoupage(chaine)
+    sante = pd.to_numeric(chaine.silver["sante_compte_fin_periode"], errors="coerce")
+    table = demontrer_fuite(
+        construire_baseline, parties.X_entrainement, parties.y_entrainement, sante
+    ).set_index("jeu")
+    assert table.loc["sans la variable", "AUC"] == pytest.approx(0.891, abs=0.01)
+    assert table.loc["avec `sante_compte_fin_periode`", "AUC"] > 0.99

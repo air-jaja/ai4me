@@ -441,10 +441,10 @@ phase = "5 · Features"
 date = "01/10/2026"
 competence = "C5"
 section = "8"
-motif = "Les sections 0 à 7 sont réalignées sur les phases 1 à 4. Les sections 8 à 13 gardent leur code d'origine (seuil de précision, forêt aléatoire codée en dur, API renvoyant une décision) ; une cellule-pont en fin de § 7 leur fournit les noms attendus."
+motif = "Sections 0 à 8 réalignées (phases 1 à 5, dont § 8.A à 8.C et la démonstration de la fuite). Reste l'ancien code de la section 8, marqué « illustratif », et les sections 9 à 13, avec la cellule-pont qui leur fournit les noms attendus."
 preuve = "notebooks/cas_usage_churn_saas.ipynb"
 source = "livraison du réalignement des sections 0 à 7"
-condition = "Livraison de la phase 5 ; la cellule-pont est alors retirée."
+condition = "Phase 6 : la cellule illustrative et la cellule-pont sont retirées quand la section 9 est réécrite."
 
 [[element]]
 id = "D-05"

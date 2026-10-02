@@ -32,6 +32,7 @@ from .graphiques import (
     tracer_concentration,
     tracer_courbes_appariees,
     tracer_courbes_apprentissage,
+    tracer_demonstration_fuite,
     tracer_fragmentation,
     tracer_importances,
     tracer_permutation,
@@ -95,6 +96,7 @@ __all__ = [
     "tracer_courbes_appariees",
     "tracer_ablation",
     "tracer_importances",
+    "tracer_demonstration_fuite",
     # Variable selection, under rules fixed beforehand (phase 5, blocs B and C)
     "GROUPES_DE_VARIABLES",
     "LEURRES",

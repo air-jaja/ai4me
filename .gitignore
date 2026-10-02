@@ -50,5 +50,3 @@ reports/figures/*
 .venv-ci/
 .registre-tmp.md
 .sobriete-tmp.md
-
-.dockerignore

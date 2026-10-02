@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**508 cas de test** issus de 270 fonctions, répartis sur 20 fichiers.
+**510 cas de test** issus de 272 fonctions, répartis sur 20 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -41,10 +41,10 @@ soutenance.
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 82 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 83 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 5 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
-| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 11 |
+| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 12 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 
@@ -420,6 +420,7 @@ soutenance.
 | 36 | `test_les_familles_couvrent_exactement_le_jeu_candidat` | Every candidate variable belongs to one family, so the ablation misses none. | — |
 | 37 | `test_les_variables_construites_n_apportent_toujours_rien` | Bloc B, logistic regression: gain -0.001, under one std between folds (0.020). | — |
 | 38 | `test_les_retraits_combines_ne_coutent_rien` | Removals were confirmed one by one; together, the 18 variables lose nothing either (logistic regression: +0.003 over the 25 candidates, better on 23 folds out of 25). | — |
+| 39 | `test_la_fuite_de_la_sante_du_compte_reste_demontree` | Bloc D: the same logistic regression goes from 0.891 to 0.999 AUC with the end-of-period health score. | the leak the notebook narrates, now measured. |
 
 ### test_campagnes.py
 
@@ -467,6 +468,7 @@ soutenance.
 | 9 | `test_la_validation_adverse_detecte_un_decalage` | A test part drawn elsewhere is told apart. | The check can fail, which is what gives its passing a meaning. |
 | 10 | `test_le_test_de_permutation_separe_signal_et_bruit` | Real signal beats every shuffle; pure noise does not. | — |
 | 11 | `test_la_courbe_d_apprentissage_couvre_chaque_taille` | _(sans description)_ | — |
+| 12 | `test_une_variable_connue_apres_l_issue_est_demontree_comme_fuite` | A variable built from the outcome lifts the AUC to near perfection: the symptom. | — |
 
 ### test_registre.py
 
