@@ -55,6 +55,20 @@ EXCLUES_ATTRIBUT_FORMULE = [
     "support_dedie",
     "fonctionnalites_total",
 ]
+# Phase 5, blocs B and C: removed by the rules fixed on 01/10, measured on the training part.
+# Constructed variables: no significant gain as a family (bloc B), the raw variables
+# already carry what they say.
+EXCLUES_SANS_APPORT = [
+    "compte_sans_utilisateur_actif",
+    "taux_couverture_fonc",
+    "usage_par_actif",
+    "tickets_par_actif",
+]
+# Under the decoys' floor for both models, removable without loss (bloc C).
+EXCLUES_SOUS_LE_PLANCHER = ["pays"]
+# The decoys measure the noise during selection, then leave the final model.
+EXCLUES_LEURRES = ["couleur_theme_interface", "code_datacenter"]
+EXCLUES_PAR_SELECTION = EXCLUES_SANS_APPORT + EXCLUES_SOUS_LE_PLANCHER + EXCLUES_LEURRES
 
 CIBLE = "churn"
 CIBLE_SECONDAIRE = "valeur_vie_client_eur"

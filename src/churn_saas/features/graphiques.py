@@ -323,3 +323,91 @@ def tracer_charge_calcul(charge: pd.DataFrame) -> Figure:
     ax.set_title("Charge de calcul de la phase 5, étape par étape")
     fig.tight_layout()
     return fig
+
+
+# --- Phase 5 · Blocs B and C: what the variables bring ---------------------------------------
+def tracer_courbes_appariees(
+    scores: dict[str, pd.DataFrame], reference: str, candidat: str
+) -> Figure:
+    """One line per fold, from the reference set to the candidate set, one panel per model.
+
+    Lines going up everywhere mean a systematic gain; lines crossing mean the difference is
+    the split's, not the variables'. `scores` maps a model to `selection.comparer_jeux`.
+    """
+    fig, axes = plt.subplots(1, len(scores), figsize=(4.6 * len(scores), 4.0), sharey=True)
+    for ax, (nom, table) in zip(np.atleast_1d(axes), scores.items(), strict=True):
+        for _, ligne in table.iterrows():
+            couleur = (
+                PALETTE["principal"] if ligne[candidat] > ligne[reference] else PALETTE["accent"]
+            )
+            ax.plot([0, 1], [ligne[reference], ligne[candidat]], color=couleur, alpha=0.5, lw=1)
+        ax.plot(
+            [0, 1],
+            [table[reference].mean(), table[candidat].mean()],
+            color="black",
+            lw=2.5,
+            marker="o",
+            label="Moyenne",
+        )
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels([reference, candidat], fontsize=8.5)
+        ax.set_xlim(-0.2, 1.2)
+        ax.set_title(nom, fontsize=10)
+        ax.legend(fontsize=8)
+    np.atleast_1d(axes)[0].set_ylabel("PR-AUC du pli")
+    fig.suptitle("Comparaison appariée, pli par pli (bleu : le candidat gagne)", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_ablation(tables: dict[str, pd.DataFrame]) -> Figure:
+    """PR-AUC lost when each family is removed, with its spread, one panel per model."""
+    fig, axes = plt.subplots(1, len(tables), figsize=(4.8 * len(tables), 3.8), sharey=True)
+    for ax, (nom, table) in zip(np.atleast_1d(axes), tables.items(), strict=True):
+        donnees = table.sort_values("perte moyenne")
+        couleurs = [
+            PALETTE["accent"] if s else PALETTE["neutre"] for s in donnees["perte significative"]
+        ]
+        ax.barh(
+            donnees["groupe"],
+            donnees["perte moyenne"],
+            xerr=donnees["écart-type de la perte"],
+            color=couleurs,
+            capsize=3,
+        )
+        ax.axvline(0, color="black", lw=0.8)
+        ax.set_title(nom, fontsize=10)
+        ax.set_xlabel("PR-AUC perdue sans la famille")
+    fig.suptitle("Ablation par famille de variables (rouge : perte significative)", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_importances(importances: pd.DataFrame, leurres: list[str], titre: str) -> Figure:
+    """Permutation importance per variable across folds, decoys and their floor highlighted.
+
+    `importances` is the long table of `selection.importances_par_permutation`.
+    """
+    ordre = importances.groupby("variable")["importance"].mean().sort_values().index
+    plancher = (
+        importances[importances["variable"].isin(leurres)]
+        .groupby("variable")["importance"]
+        .mean()
+        .max()
+    )
+    fig, ax = plt.subplots(figsize=(7.6, 0.3 * len(ordre) + 1.4))
+    donnees = [importances.loc[importances["variable"] == v, "importance"] for v in ordre]
+    boites = ax.boxplot(donnees, orientation="horizontal", patch_artist=True, showfliers=False)
+    for boite, variable in zip(boites["boxes"], ordre, strict=True):
+        boite.set_facecolor(PALETTE["accent"] if variable in leurres else PALETTE["principal"])
+        boite.set_alpha(0.7)
+    ax.set_yticks(range(1, len(ordre) + 1))
+    ax.set_yticklabels(ordre, fontsize=8)
+    ax.axvline(plancher, color=PALETTE["accent"], ls="--", lw=1)
+    ax.text(
+        plancher, len(ordre) + 0.3, " plancher des leurres", color=PALETTE["accent"], fontsize=8
+    )
+    ax.set_xlabel("Perte de PR-AUC quand la variable est mélangée")
+    ax.set_title(titre)
+    fig.tight_layout()
+    return fig

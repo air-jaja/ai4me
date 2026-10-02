@@ -14,10 +14,15 @@ import sys
 import tomllib
 from pathlib import Path
 
+import pytest
+
 RACINE = Path(__file__).resolve().parents[1]
 ENTREE = RACINE / "config" / "ressources_poste.toml"
 DOCUMENT = RACINE / "docs" / "06.SOBRIETE_calcul.md"
 OUTIL = RACINE / "tools" / "ressources_calcul.py"
+
+# Every test here covers a module created during phase 5.
+pytestmark = pytest.mark.phase5
 
 
 def _entree() -> dict:

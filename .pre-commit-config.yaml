@@ -1,7 +1,8 @@
 # Contrôles automatiques, répartis sur deux moments.
 #
 #   avant chaque COMMIT : contrôles courts — style, catalogue, secrets, fichiers.
-#   avant chaque PUSH   : la suite de tests complète.
+#   avant chaque PUSH   : la campagne de l'activité (tests courants + non-régression) ;
+#                         la CI lance toujours la suite complète.
 #
 # Pourquoi cette séparation. Un commit doit rester rapide, sinon on cesse d'en
 # faire. Les 288 tests prennent une dizaine de secondes : c'est trop pour chaque
@@ -72,8 +73,10 @@ repos:
   - repo: local
     hooks:
       - id: tests
-        name: suite de tests (avant push)
-        entry: uv run pytest -q
+        name: campagne de l'activité (avant push)
+        # Since phase 5: the current activity's tests, then its integration tests
+        # (tests/campagnes.toml). The CI still runs the whole suite on every push.
+        entry: uv run python tools/campagne_tests.py
         language: system
         pass_filenames: false
         always_run: true

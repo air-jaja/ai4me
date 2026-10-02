@@ -163,7 +163,9 @@ def test_le_pipeline_peut_se_passer_des_variables_derivees(resultat):
         racine / "data" / "raw" / "catalogue_plans.csv",
         enrichir=False,
     )
-    assert sans.X.shape[1] < resultat.X.shape[1]
+    # Compared on silver: since phase 5 the final gold excludes the derived variables
+    # anyway (bloc B measured no gain), so the two runs give the same X.
+    assert sans.silver.shape[1] < resultat.silver.shape[1]
     assert "silver+" not in set(sans.journal["niveau"])
 
 
@@ -289,8 +291,10 @@ def test_l_indicateur_de_compte_abandonne_rend_le_signal_explicite(resultat):
     A NaN survives no imputation; a declared indicator does. It is also readable by a CSM,
     which a missing value is not.
     """
-    assert "compte_sans_utilisateur_actif" in resultat.X.columns
-    indicateur = pd.to_numeric(resultat.X["compte_sans_utilisateur_actif"], errors="coerce")
+    # Read on silver: since phase 5 (bloc B) the model no longer takes the indicator - the
+    # raw variables carry the same signal - but the indicator remains for the reader.
+    assert "compte_sans_utilisateur_actif" in resultat.silver.columns
+    indicateur = pd.to_numeric(resultat.silver["compte_sans_utilisateur_actif"], errors="coerce")
     cible = resultat.y.astype(float)
     assert float(cible[indicateur == 1].mean()) > 0.80
     assert float(cible[indicateur == 0].mean()) < 0.30

@@ -219,6 +219,7 @@ OUTILS_ET_ARGUMENTS = {
     "registre_ecarts.py": ["--sortie", "{tmp}/REGISTRE.md"],
     "ressources_calcul.py": ["--sortie", "{tmp}/SOBRIETE.md"],
     "materialiser.py": ["--manifeste", "{tmp}/manifeste.json", "--dossier", "{tmp}/processed"],
+    "campagne_tests.py": ["--lister"],
 }
 
 

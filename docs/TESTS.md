@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**486 cas de test** issus de 255 fonctions, répartis sur 19 fichiers.
+**508 cas de test** issus de 270 fonctions, répartis sur 20 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -30,18 +30,19 @@ soutenance.
 | [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 31 |
 | [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 45 |
 | [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 26 |
-| [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 9 |
+| [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 15 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 8 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 155 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 162 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 78 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 82 |
+| [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 5 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 11 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
@@ -171,6 +172,12 @@ soutenance.
 | 7 | `test_la_chaine_partagee_produit_le_meme_gold_que_le_pipeline` | Training and monthly batch go through `preparer_gold`; it must match the pipeline. | The batch used to rebuild silver without the column lists and to skip what the pipeline did. This compares on a small frame; the non-regression suite compares on the full dataset. |
 | 8 | `test_le_silver_garde_les_nan_que_l_exploration_lit` | The zeros apply on the way to gold; silver keeps the phase 3 NaN as they were. | — |
 | 9 | `test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues` | Each drawing function works on its arguments alone: no global, no file written. | They were inline closures in the phase notebooks, reading notebook variables. Moved here so the certification notebook calls them instead of holding a second copy. |
+| 10 | `test_les_jeux_sont_compares_sur_les_memes_plis` | Paired comparison: same folds for every set, so a difference is the variables'. | — |
+| 11 | `test_un_apport_nul_n_est_pas_declare_significatif` | A redundant copy of a variable adds nothing: the one-std rule must say so. | — |
+| 12 | `test_l_ablation_distingue_un_groupe_utile_d_un_groupe_inutile` | _(sans description)_ | — |
+| 13 | `test_le_plancher_des_leurres_designe_les_variables_sans_information` | A variable carrying nothing falls under the decoy's floor; the signal stands above. | — |
+| 14 | `test_une_variable_utile_a_un_seul_modele_est_gardee` | Removal needs the floor for every model: one model finding it useful is enough to keep. | — |
+| 15 | `test_le_facteur_d_inflation_signale_une_quasi_copie` | _(sans description)_ | — |
 
 ### Profilage et exploration
 
@@ -293,15 +300,15 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×70)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×70)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×73)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×73)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×5)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
 | 8 | `test_chaque_outil_est_couvert_par_le_controle_d_encodage` | A new tool must join the check below; a forgotten one would escape it silently. | — |
-| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×4)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
+| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×5)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
 | 10 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
 
 ### Stockage et cache des figures
@@ -409,6 +416,24 @@ soutenance.
 | 32 | `test_le_modele_bat_les_etiquettes_melangees` | Published with 100 shuffles: 0.789 against 0.285, p = 0.01. | Twenty shuffles here, the fewest that can reach p < 0.05, to keep the suite fast. |
 | 33 | `test_la_regression_logistique_a_converge` | Learning curve: validation PR-AUC 0.789 at full size, 0.016 from the training score. | — |
 | 34 | `test_le_manifeste_decrit_le_decoupage_produit_par_le_code` | The test part recorded is the one the code sets aside today. | When it fails after a deliberate change: re-run the materialisation (carnet 03), then commit the manifest with the code. Until then, no result on the test part is comparable. |
+| 35 | `test_les_variables_retenues_sont_celles_de_la_selection` | The 18 variables the selection kept, and only them; no decoy reaches the model. | — |
+| 36 | `test_les_familles_couvrent_exactement_le_jeu_candidat` | Every candidate variable belongs to one family, so the ablation misses none. | — |
+| 37 | `test_les_variables_construites_n_apportent_toujours_rien` | Bloc B, logistic regression: gain -0.001, under one std between folds (0.020). | — |
+| 38 | `test_les_retraits_combines_ne_coutent_rien` | Removals were confirmed one by one; together, the 18 variables lose nothing either (logistic regression: +0.003 over the 25 candidates, better on 23 folds out of 25). | — |
+
+### test_campagnes.py
+
+**Fichier :** `tests/test_campagnes.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_l_activite_courante_a_une_campagne` | _(sans description)_ | — |
+| 2 | `test_chaque_marqueur_de_campagne_est_declare` | With --strict-markers, an undeclared marker fails loudly instead of selecting nothing. | — |
+| 3 | `test_chaque_fichier_de_non_regression_existe` | _(sans description)_ | — |
+| 4 | `test_aucun_test_ne_tourne_deux_fois_dans_une_campagne` | A file listed for non-regression carries no activity marker, or it would run twice. | — |
+| 5 | `test_les_tests_courants_selectionnent_des_tests` | A campaign whose current level selects nothing would pass without testing anything. | — |
 
 ### test_industrialisation.py
 

@@ -22,7 +22,8 @@ make install            # ou : uv sync --frozen --group dev --group notebook
 make notebook
 
 # Contrôles
-make test               # tests unitaires
+make test               # toute la suite de tests
+make test-activite      # campagne de l'activité : tests courants + non-régression
 make lint               # style du code
 make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise
 make ressources         # mesure CE poste : ressources et temps de calcul (docs/06.SOBRIETE_calcul.md)
@@ -71,7 +72,7 @@ churn-saas-cisia/
 ├── models/                 Modèles sérialisés et fiches — non versionnés
 ├── reports/figures/        Figures en PNG et SVG — non versionnées, régénérables
 ├── monitoring/             Configuration Prometheus et Grafana
-├── tools/                  Outils de dépôt — catalogue, registre, ressources du poste, matérialisation
+├── tools/                  Outils de dépôt — catalogue, registre, ressources, matérialisation, campagnes de tests
 ├── docs/                   Documents méthodologiques et de suivi
 │                           (commencer par 00.REGLES_DE_TRAVAIL.md ; dépannage : DEPANNAGE.md)
 ├── tests/                  Tests par activité, plus les contrôles transverses
@@ -97,6 +98,7 @@ churn-saas-cisia/
     │   ├── controle.py           schéma, détection générique de fuite, leurres
     │   ├── exploration.py        déséquilibre, corrélations, tendances
     │   ├── graphiques.py         figures du notebook de certification, source unique
+    │   ├── selection.py          apport des variables construites, ablation, plancher des leurres
     │   ├── pipeline.py           chaîne bronze → silver → gold, avec journal
     │   └── materialisation.py    écriture des instantanés et de leurs empreintes
     │

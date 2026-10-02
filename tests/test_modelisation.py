@@ -68,6 +68,7 @@ def test_le_candidat_partage_le_preprocesseur_de_la_baseline():
 
 
 # --- Compute footprint, measured and converted openly ------------------------------------
+@pytest.mark.phase5
 def test_la_conversion_en_energie_et_en_emissions_est_exacte():
     """One hour at 10 W is 10 Wh; at 30.2 g/kWh, 0.302 g. Ten runs, ten times as much."""
     from churn_saas.modelisation import convertir_empreinte
@@ -79,6 +80,7 @@ def test_la_conversion_en_energie_et_en_emissions_est_exacte():
     assert dix["énergie (Wh)"] == 100
 
 
+@pytest.mark.phase5
 def test_la_charge_se_deduit_des_temps_elementaires():
     """The workload is declared as data: each step costs its operations times their time."""
     from churn_saas.modelisation import EtapeDeCalcul, estimer_charge
@@ -99,6 +101,7 @@ def test_la_charge_se_deduit_des_temps_elementaires():
     assert resultat["entraînements"].tolist() == [12, 0]
 
 
+@pytest.mark.phase5
 def test_la_mesure_des_temps_renvoie_chaque_operation():
     """Smoke test on a small frame: every elementary time the document needs is measured."""
     from churn_saas.modelisation import mesurer_temps
@@ -130,6 +133,7 @@ def _donnees_informatives(n: int = 400, signal: bool = True):
     return X, y
 
 
+@pytest.mark.phase5
 def test_la_validation_adverse_ne_distingue_pas_deux_tirages_de_la_meme_source():
     from churn_saas.modelisation import construire_baseline, validation_adverse
 
@@ -138,6 +142,7 @@ def test_la_validation_adverse_ne_distingue_pas_deux_tirages_de_la_meme_source()
     assert resultat["auc"] < 0.6 and resultat["conforme"]
 
 
+@pytest.mark.phase5
 def test_la_validation_adverse_detecte_un_decalage():
     """A test part drawn elsewhere is told apart.
 
@@ -151,6 +156,7 @@ def test_la_validation_adverse_detecte_un_decalage():
     assert resultat["auc"] > 0.8 and not resultat["conforme"]
 
 
+@pytest.mark.phase5
 def test_le_test_de_permutation_separe_signal_et_bruit():
     """Real signal beats every shuffle; pure noise does not."""
     from churn_saas.modelisation import construire_baseline, tester_permutation
@@ -163,6 +169,7 @@ def test_le_test_de_permutation_separe_signal_et_bruit():
     assert not sans["conforme"]
 
 
+@pytest.mark.phase5
 def test_la_courbe_d_apprentissage_couvre_chaque_taille():
     from churn_saas.modelisation import construire_baseline, courbe_apprentissage
 

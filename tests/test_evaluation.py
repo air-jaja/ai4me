@@ -1,6 +1,7 @@
 """Activity 4 - metrics, decision rule and business impact."""
 
 import pandas as pd
+import pytest
 
 from churn_saas.evaluation.decision import prioriser, sensibilite_classement, seuil_par_compte
 from churn_saas.evaluation.impact import resume_impact
@@ -92,6 +93,7 @@ def _comptes_synthetiques(encoder_l_issue: bool):
     )
 
 
+@pytest.mark.phase5
 def test_une_valeur_construite_sans_l_issue_n_est_pas_signalee():
     """Leavers are younger here, so their value is lower - but the outcome adds nothing."""
     from churn_saas.evaluation import diagnostiquer_valeur_vie, valeur_encode_l_issue
@@ -99,6 +101,7 @@ def test_une_valeur_construite_sans_l_issue_n_est_pas_signalee():
     assert not valeur_encode_l_issue(diagnostiquer_valeur_vie(*_comptes_synthetiques(False)))
 
 
+@pytest.mark.phase5
 def test_une_valeur_qui_encode_l_issue_est_signalee():
     """A value cut short by the actual departure is caught: the outcome explains it."""
     from churn_saas.evaluation import diagnostiquer_valeur_vie, valeur_encode_l_issue

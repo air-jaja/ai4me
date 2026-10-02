@@ -52,7 +52,7 @@ argumentée. C'est pourquoi ce document insiste autant sur les *pourquoi*.
 | **Client / commanditaire** | Direction Customer Success de l'éditeur *(cas d'usage pédagogique)* |
 | **Date de début** | 08/08/2026 |
 | **Échéance cible** | **30/09/2026** (gel des livrables) — remise 01/10/2026 |
-| **Statut global** | 🟡 En cours — phases 1 à 4 terminées (notebook de certification aligné jusqu'à la section 7), 5 à 11 à exécuter |
+| **Statut global** | 🟡 En cours — phases 1 à 5 terminées (notebook de certification aligné jusqu'au § 8.C), 6 à 11 à exécuter |
 | **Nature** | Exercice de certification. **Aucun déploiement réel** : les phases 10 et 11 sont conçues et documentées, pas mises en service. |
 
 **Légende statut** : `[ ]` à faire · `[~]` en cours · `[x]` terminé · `[—]` sans objet ici
@@ -482,7 +482,7 @@ retirerait précisément les clients les plus importants.)*
 
 ---
 
-## 5 · Feature engineering *(🟡 en cours)*
+## 5 · Feature engineering *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Une *feature*, ou **variable explicative**, est une information fournie au modèle
 > pour l'aider à prédire. Le *feature engineering* consiste à en construire de nouvelles à partir des
@@ -492,8 +492,8 @@ retirerait précisément les clients les plus importants.)*
 
 - [x] Construire des ratios d'usage
 - [x] Vérifier l'absence de **fuite de données**
-- [~] Sélectionner les variables à conserver
-- [ ] Mesurer l'apport réel des variables construites
+- [x] Sélectionner les variables à conserver — *18 variables : 4 construites sans apport, `pays` et 2 leurres retirés (bloc C, 02/10)*
+- [x] Mesurer l'apport réel des variables construites — *aucun gain (−0,001 et −0,002, sous un écart-type) ; le support est la famille la plus porteuse (bloc B, 02/10)*
 - [x] Séparer le jeu gold en entraînement et test, valider la séparation — *80/20 stratifié, enregistré au manifeste ; stratification, PSI et validation adverse conformes (bloc A, 02/10)*
 - [x] Valider le jeu de données préparé (test de permutation, courbe d'apprentissage) — *p = 0,01 ; la régression logistique converge, la forêt sur-apprend (à régulariser en phase 7)*
 
@@ -824,7 +824,7 @@ argument défendable devant un jury.
 | 2 · Données | 🟢 Terminé | — |
 | 3 · Exploration | 🟢 Terminé | — |
 | 4 · Préparation | 🟢 Terminé | 01/10 |
-| 5 · Feature engineering | 🟡 En cours | 24/09 |
+| 5 · Feature engineering | 🟢 Terminé | 02/10 |
 | 6 · Baseline | 🟡 En cours | 25/09 |
 | 7 · Entraînement | 🔴 À faire | 25/09 |
 | 8 · Optimisation | 🔴 À faire | 25/09 |

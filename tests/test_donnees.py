@@ -235,6 +235,7 @@ def test_la_cle_de_compte_peut_etre_desactivee():
     assert len(construire_silver(brut, cle_compte=None)) == 2
 
 
+@pytest.mark.phase5
 def test_gold_retire_la_date_brute_et_le_doublon_du_catalogue():
     """Each phase 4 exclusion is applied, and carries its own motive."""
     from churn_saas.donnees import MOTIFS_EXCLUSION
@@ -447,6 +448,7 @@ def _jeu_a_decouper(n: int = 500) -> tuple[pd.DataFrame, pd.Series]:
     return X, y
 
 
+@pytest.mark.phase5
 def test_le_decoupage_est_deterministe_disjoint_et_complet():
     """Same seed, same accounts in the test part; no account in both; none lost."""
     from churn_saas.donnees import decouper_entrainement_test
@@ -459,6 +461,7 @@ def test_le_decoupage_est_deterministe_disjoint_et_complet():
     assert len(premier.X_test) == round(len(X) * premier.part_test)
 
 
+@pytest.mark.phase5
 def test_le_decoupage_est_stratifie_sur_la_cible():
     """Both parts keep the churn rate: the gap stays under the threshold fixed beforehand."""
     from churn_saas.config import ECART_STRATIFICATION_MAX_PTS
@@ -470,6 +473,7 @@ def test_le_decoupage_est_stratifie_sur_la_cible():
     assert ecart < ECART_STRATIFICATION_MAX_PTS
 
 
+@pytest.mark.phase5
 def test_une_autre_graine_change_le_jeu_de_test():
     """The seed matters: a change of seed must show in the recorded fingerprint."""
     from churn_saas.donnees import decouper_entrainement_test

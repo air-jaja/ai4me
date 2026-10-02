@@ -11,7 +11,7 @@ CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
 REGISTRE_TEMPORAIRE := .registre-tmp.md
 SOBRIETE_TEMPORAIRE := .sobriete-tmp.md
 
-.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check registre-doc registre-doc-check ressources sobriete-doc sobriete-doc-check materialiser lint format check \
+.PHONY: aide install install-plateforme kernel hooks test test-activite test-courants test-non-regression test-ci test-doc test-doc-check registre-doc registre-doc-check ressources sobriete-doc sobriete-doc-check materialiser lint format check \
         notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
@@ -21,7 +21,10 @@ aide:
 	@echo "  install-plateforme  Ajoute MLflow, Optuna, SHAP, SQLAlchemy, Prefect, Prometheus"
 	@echo "  kernel              Enregistre le noyau Jupyter du projet (VS Code, Jupyter)"
 	@echo "  hooks               Installe les hooks : contrôles au commit, tests au push"
-	@echo "  test                Suite de tests"
+	@echo "  test                Suite de tests complète"
+	@echo "  test-activite       Campagne de l'activité : tests courants + non-régression"
+	@echo "  test-courants       Tests des modules créés ou modifiés par l'activité"
+	@echo "  test-non-regression Intégration : les activités précédentes tiennent toujours"
 	@echo "  test-ci             Suite de tests dans un environnement identique à la CI"
 	@echo "  test-doc            Régénère docs/TESTS.md depuis les fichiers de tests"
 	@echo "  test-doc-check      Vérifie que docs/TESTS.md correspond aux tests livrés"
@@ -73,6 +76,17 @@ kernel:
 
 test:
 	uv run pytest -q
+
+# Campaigns (tests/campagnes.toml): the current activity's tests, then the integration
+# tests. The CI always runs the whole suite.
+test-activite:
+	uv run python tools/campagne_tests.py
+
+test-courants:
+	uv run python tools/campagne_tests.py --niveau courants
+
+test-non-regression:
+	uv run python tools/campagne_tests.py --niveau non-regression
 
 # The local environment holds every group; the CI installs only `dev`. A dependency
 # inherited transitively therefore passes here and fails there. This target runs the

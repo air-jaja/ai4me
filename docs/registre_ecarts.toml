@@ -579,3 +579,17 @@ motif = "Diagnostic de l'arbitrage 3 : sans l'issue, les variables connues avant
 preuve = "test_la_valeur_vie_client_n_encode_pas_l_issue · test_une_valeur_qui_encode_l_issue_est_signalee"
 source = "00.README_choix_methodologiques § 7 bis"
 condition = "Si le diagnostic, rejoué à chaque nouveau jeu, signale un encodage de l'issue."
+
+[[element]]
+id = "E-509"
+titre = "Garder l'indicateur « compte sans utilisateur actif » dans le modèle, par exception métier"
+nature = "variable"
+statut = "écarté"
+phase = "5 · Features"
+date = "02/10/2026"
+competence = "C3"
+section = "8"
+motif = "Signal le plus fort de l'exploration (86,5 % de churn), mais sans apport mesuré au modèle : les variables brutes (utilisateurs actifs, heures, connexions) le portent déjà. Le garder par exception aurait contredit la règle fixée d'avance ; il reste lisible dans le jeu silver."
+preuve = "test_les_variables_construites_n_apportent_toujours_rien"
+source = "00.README_choix_methodologiques § 7 bis"
+condition = "Si un modèle réglé (phase 6) ou un nouveau jeu montre un gain supérieur à un écart-type."

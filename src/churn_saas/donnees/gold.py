@@ -22,7 +22,10 @@ from ..config import (
     EXCLUES_DOUBLON,
     EXCLUES_FUITE,
     EXCLUES_IDENTIFIANT,
+    EXCLUES_LEURRES,
     EXCLUES_RGPD,
+    EXCLUES_SANS_APPORT,
+    EXCLUES_SOUS_LE_PLANCHER,
     GRAINE,
     PART_TEST,
 )
@@ -55,6 +58,18 @@ MOTIFS_EXCLUSION: dict[str, str] = {
         c: "attribut de la formule — une seule valeur par plan, information portée par `plan`"
         for c in EXCLUES_ATTRIBUT_FORMULE
     },
+    **{
+        c: "variable construite — apport non significatif mesuré (phase 5, bloc B)"
+        for c in EXCLUES_SANS_APPORT
+    },
+    **{
+        c: "sous le plancher des leurres (deux modèles), retrait sans perte (phase 5, bloc C)"
+        for c in EXCLUES_SOUS_LE_PLANCHER
+    },
+    **{
+        c: "leurre — étalon du bruit pendant la sélection, retiré du modèle final (phase 5)"
+        for c in EXCLUES_LEURRES
+    },
 }
 
 
@@ -64,10 +79,17 @@ def table_exclusions() -> pd.DataFrame:
 
 
 def construire_gold(
-    silver: pd.DataFrame, colonnes_supplementaires: list[str] | None = None
+    silver: pd.DataFrame,
+    colonnes_supplementaires: list[str] | None = None,
+    garder: list[str] | None = None,
 ) -> pd.DataFrame:
-    """Drop forbidden columns and return the modellable dataset, target included."""
-    a_retirer = [c for c in MOTIFS_EXCLUSION if c in silver.columns]
+    """Drop forbidden columns and return the modellable dataset, target included.
+
+    `garder` exempts excluded columns from removal: the selection notebook rebuilds the
+    candidate set it decided on, with the variables it later removed.
+    """
+    exemptees = set(garder or [])
+    a_retirer = [c for c in MOTIFS_EXCLUSION if c in silver.columns and c not in exemptees]
     a_retirer += [c for c in (colonnes_supplementaires or []) if c in silver.columns]
     return silver.drop(columns=sorted(set(a_retirer)))
 

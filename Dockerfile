@@ -60,6 +60,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 COPY --from=build /app/.venv /app/.venv
 
+COPY models ./models
+
 USER appuser
 EXPOSE 8000
 

@@ -65,6 +65,7 @@ def test_alerte_declenchee_expose_son_action():
 
 
 # --- Phase 5 · Categorical stability ------------------------------------------------------
+@pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():
     from churn_saas.monitoring import psi_categoriel
 
@@ -73,6 +74,7 @@ def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():
     assert psi_categoriel(reference, pd.Series(["a"] * 90 + ["b"] * 10)) > 0.25
 
 
+@pytest.mark.phase5
 def test_une_hausse_des_manquants_categoriels_est_une_derive():
     """Missing values form their own category: more of them is a drift."""
     from churn_saas.monitoring import psi_categoriel
@@ -82,6 +84,7 @@ def test_une_hausse_des_manquants_categoriels_est_une_derive():
     assert psi_categoriel(reference, courant) > 0.25
 
 
+@pytest.mark.phase5
 def test_une_derive_categorielle_declenche_une_alerte():
     """A sector mix moving from 50/50 to 95/5 must raise an alert.
 
