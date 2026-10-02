@@ -9,8 +9,9 @@
 # comparison artefact, not a deliverable.
 CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
 REGISTRE_TEMPORAIRE := .registre-tmp.md
+SOBRIETE_TEMPORAIRE := .sobriete-tmp.md
 
-.PHONY: aide install install-plateforme kernel hooks test test-ci test-doc test-doc-check registre-doc registre-doc-check lint format check \
+.PHONY: aide install install-plateforme kernel hooks test test-activite test-courants test-non-regression test-ci test-doc test-doc-check registre-doc registre-doc-check ressources sobriete-doc sobriete-doc-check materialiser lint format check \
         notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
@@ -20,12 +21,19 @@ aide:
 	@echo "  install-plateforme  Ajoute MLflow, Optuna, SHAP, SQLAlchemy, Prefect, Prometheus"
 	@echo "  kernel              Enregistre le noyau Jupyter du projet (VS Code, Jupyter)"
 	@echo "  hooks               Installe les hooks : contrôles au commit, tests au push"
-	@echo "  test                Suite de tests"
+	@echo "  test                Suite de tests complète"
+	@echo "  test-activite       Campagne de l'activité : tests courants + non-régression"
+	@echo "  test-courants       Tests des modules créés ou modifiés par l'activité"
+	@echo "  test-non-regression Intégration : les activités précédentes tiennent toujours"
 	@echo "  test-ci             Suite de tests dans un environnement identique à la CI"
 	@echo "  test-doc            Régénère docs/TESTS.md depuis les fichiers de tests"
 	@echo "  test-doc-check      Vérifie que docs/TESTS.md correspond aux tests livrés"
 	@echo "  registre-doc        Régénère le registre des éléments écartés (règle 13)"
 	@echo "  registre-doc-check  Vérifie que le registre correspond à sa source"
+	@echo "  ressources          Mesure CE poste (à lancer sur le poste de développement)"
+	@echo "  materialiser        Réécrit silver, gold et découpage au manifeste (sans Jupyter)"
+	@echo "  sobriete-doc        Régénère docs/06.SOBRIETE_calcul.md depuis config/ressources_poste.toml"
+	@echo "  sobriete-doc-check  Vérifie que le document de sobriété correspond à son entrée"
 	@echo "  lint                Style du code"
 	@echo "  format              Reformate le code"
 	@echo "  check               Tous les contrôles, dans l'ordre où la CI les exécute"
@@ -69,6 +77,17 @@ kernel:
 test:
 	uv run pytest -q
 
+# Campaigns (tests/campagnes.toml): the current activity's tests, then the integration
+# tests. The CI always runs the whole suite.
+test-activite:
+	uv run python tools/campagne_tests.py
+
+test-courants:
+	uv run python tools/campagne_tests.py --niveau courants
+
+test-non-regression:
+	uv run python tools/campagne_tests.py --niveau non-regression
+
 # The local environment holds every group; the CI installs only `dev`. A dependency
 # inherited transitively therefore passes here and fails there. This target runs the
 # suite in a throwaway environment built exactly like the pipeline's.
@@ -110,6 +129,27 @@ registre-doc-check:
 	@rm -f $(REGISTRE_TEMPORAIRE)
 	@echo "Registre des éléments écartés à jour."
 
+# Derived datasets and split, recorded in the manifest. Run after any change to the
+# preparation, then commit data/manifeste_v1.0.json with the code.
+materialiser:
+	uv run python tools/materialiser.py
+
+# Compute resources: measured on the development laptop, rendered anywhere. The CI only
+# checks the rendering - re-measuring there would describe the CI machine, not the laptop.
+ressources:
+	uv run python tools/ressources_calcul.py --mesurer
+
+sobriete-doc:
+	uv run python tools/ressources_calcul.py
+
+sobriete-doc-check:
+	@uv run python tools/ressources_calcul.py --sortie $(SOBRIETE_TEMPORAIRE) > /dev/null
+	@diff -q $(SOBRIETE_TEMPORAIRE) docs/06.SOBRIETE_calcul.md > /dev/null \
+		|| (echo "docs/06.SOBRIETE_calcul.md est obsolète — lancer 'make sobriete-doc'"; \
+		    rm -f $(SOBRIETE_TEMPORAIRE); exit 1)
+	@rm -f $(SOBRIETE_TEMPORAIRE)
+	@echo "Document de sobriété à jour."
+
 lint:
 	uv run ruff check .
 
@@ -119,7 +159,7 @@ format:
 # Mirrors the CI, in the same order and in the same environment. Running `test` here
 # instead of `test-ci` would use the local environment, where every group is
 # installed - which is how a missing dependency reached the pipeline once.
-check: test-ci lint test-doc-check registre-doc-check
+check: test-ci lint test-doc-check registre-doc-check sobriete-doc-check
 	uv run ruff format --check src tests tools
 	@echo "Tous les contrôles sont passés."
 

@@ -1,5 +1,6 @@
 """Activity 2 - feature construction and control."""
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -109,7 +110,11 @@ def test_la_chaine_partagee_produit_le_meme_gold_que_le_pipeline():
             "churn": ["1", "0"],
         }
     )
-    gold = preparer_gold(construire_silver_standard(brut)).gold
+    from churn_saas.config import EXCLUES_PAR_SELECTION
+
+    # The ratios are checked with the selection exclusions lifted: since phase 5 the final
+    # gold no longer holds them, but the chain must still compute them identically.
+    gold = preparer_gold(construire_silver_standard(brut), garder=EXCLUES_PAR_SELECTION).gold
     assert gold["usage_par_actif"].tolist() == [0.0, pytest.approx(2.125)]
     assert "taux_activation" not in gold.columns
 
@@ -121,6 +126,7 @@ def test_le_silver_garde_les_nan_que_l_exploration_lit():
 
 
 # --- Phase 4 · Figures of the certification notebook ------------------------------------
+@pytest.mark.phase5
 def test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues():
     """Each drawing function works on its arguments alone: no global, no file written.
 
@@ -153,6 +159,164 @@ def test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues():
         ),
         graphiques.tracer_risque_par_segment(df, ["secteur"]),
         graphiques.tracer_tendances({"x": tranches}, taux_global=28.0),
+        graphiques.tracer_psi(pd.DataFrame({"variable": ["a", "b"], "psi": [0.01, 0.2]}), 0.1),
+        graphiques.tracer_validation_adverse(np.array([0, 0.5, 1]), np.array([0, 0.5, 1]), 0.5),
+        graphiques.tracer_permutation(np.array([0.27, 0.28, 0.3]), 0.79, 0.28),
+        graphiques.tracer_valeur_vie_par_anciennete(
+            pd.DataFrame(
+                {
+                    "valeur_vie_client_eur": [1000.0, 1200, 1500, 1800, 2000, 1100, 1300, 1600],
+                    "revenu_mensuel_recurrent_eur": [100.0] * 8,
+                    "anciennete_mois": [1, 2, 5, 8, 12, 1, 3, 9],
+                    "churn": [1, 0, 1, 0, 1, 0, 1, 0],
+                }
+            ),
+            tranches=2,
+        ),
+        graphiques.tracer_charge_calcul(
+            pd.DataFrame({"étape": ["a", "b"], "secondes": [60.0, 30.0]})
+        ),
+        graphiques.tracer_demonstration_fuite(
+            {
+                "m": pd.DataFrame(
+                    {"jeu": ["sans", "avec"], "AUC": [0.89, 0.99], "PR-AUC": [0.79, 0.99]}
+                )
+            }
+        ),
+        graphiques.tracer_courbes_appariees(
+            {"m": pd.DataFrame({"a": [0.7, 0.72], "b": [0.71, 0.70]})}, "a", "b"
+        ),
+        graphiques.tracer_ablation(
+            {
+                "m": pd.DataFrame(
+                    {
+                        "groupe": ["g1", "g2"],
+                        "perte moyenne": [0.05, 0.0],
+                        "écart-type de la perte": [0.01, 0.01],
+                        "perte significative": [True, False],
+                    }
+                )
+            }
+        ),
+        graphiques.tracer_importances(
+            pd.DataFrame({"variable": ["a", "a", "l", "l"], "importance": [0.1, 0.12, 0.0, 0.001]}),
+            ["l"],
+            "importances",
+        ),
+        graphiques.tracer_courbes_apprentissage(
+            {
+                "m": pd.DataFrame(
+                    {
+                        "comptes d'entraînement": [100, 200],
+                        "PR-AUC entraînement": [0.9, 0.85],
+                        "PR-AUC validation": [0.7, 0.75],
+                        "écart-type validation": [0.02, 0.02],
+                    }
+                )
+            }
+        ),
     ]
     assert all(isinstance(f, Figure) for f in figures)
     assert all(f.axes and (f.axes[0].get_title() or f._suptitle) for f in figures)
+
+
+# --- Phase 5 · Blocs B and C: measuring what variables bring ------------------------------
+def _jeu_selection(n: int = 600):
+    generateur = np.random.default_rng(3)
+    X = pd.DataFrame(
+        {
+            "signal": generateur.normal(size=n),
+            "copie_du_signal": generateur.normal(size=n),
+            "leurre": generateur.normal(size=n),
+        }
+    )
+    X["copie_du_signal"] = X["signal"] * 2 + generateur.normal(scale=0.01, size=n)
+    y = pd.Series((X["signal"] + generateur.normal(scale=0.7, size=n) > 0.6).astype(int))
+    return X, y
+
+
+def _regression(X):
+    from churn_saas.modelisation import construire_baseline
+
+    return construire_baseline(X)
+
+
+@pytest.mark.phase5
+def test_les_jeux_sont_compares_sur_les_memes_plis():
+    """Paired comparison: same folds for every set, so a difference is the variables'."""
+    from churn_saas.features import comparer_jeux
+
+    X, y = _jeu_selection()
+    scores = comparer_jeux(_regression, X, y, {"a": ["signal"], "b": ["signal"]}, repetitions=2)
+    assert len(scores) == 10
+    assert scores["a"].tolist() == scores["b"].tolist()
+
+
+@pytest.mark.phase5
+def test_un_apport_nul_n_est_pas_declare_significatif():
+    """A redundant copy of a variable adds nothing: the one-std rule must say so."""
+    from churn_saas.features import comparer_jeux, resumer_apport
+
+    X, y = _jeu_selection()
+    scores = comparer_jeux(
+        _regression, X, y, {"brut": ["signal"], "avec copie": ["signal", "copie_du_signal"]}
+    )
+    assert not resumer_apport(scores, "brut", "avec copie")["gain significatif"]
+
+
+@pytest.mark.phase5
+def test_l_ablation_distingue_un_groupe_utile_d_un_groupe_inutile():
+    from churn_saas.features import ablation_par_groupe
+
+    X, y = _jeu_selection()
+    table = ablation_par_groupe(
+        _regression,
+        X[["signal", "leurre"]],
+        y,
+        {"utile": ["signal"], "inutile": ["leurre"]},
+        repetitions=2,
+    ).set_index("groupe")
+    assert table.loc["utile", "perte significative"]
+    assert not table.loc["inutile", "perte significative"]
+
+
+@pytest.mark.phase5
+def test_le_plancher_des_leurres_designe_les_variables_sans_information():
+    """A variable carrying nothing falls under the decoy's floor; the signal stands above."""
+    from churn_saas.features import candidates_au_retrait, importances_par_permutation
+
+    X, y = _jeu_selection()
+    X = X.assign(bruit=np.random.default_rng(9).normal(size=len(X)))[["signal", "bruit", "leurre"]]
+    importances = importances_par_permutation(_regression, X, y, repetitions=3)
+    table = candidates_au_retrait({"régression": importances}, leurres=["leurre"])
+    assert not table.loc["signal", "sous le plancher pour tous les modèles"]
+    assert table.loc["leurre", "leurre"]
+
+
+@pytest.mark.phase5
+def test_une_variable_utile_a_un_seul_modele_est_gardee():
+    """Removal needs the floor for every model: one model finding it useful is enough to keep."""
+    from churn_saas.features import candidates_au_retrait
+
+    def importances(valeurs):
+        return pd.DataFrame(
+            [{"pli": 0, "variable": v, "importance": i} for v, i in valeurs.items()]
+        )
+
+    table = candidates_au_retrait(
+        {
+            "a": importances({"x": 0.0, "leurre": 0.01}),
+            "b": importances({"x": 0.05, "leurre": 0.01}),
+        },
+        leurres=["leurre"],
+    )
+    assert not table.loc["x", "sous le plancher pour tous les modèles"]
+
+
+@pytest.mark.phase5
+def test_le_facteur_d_inflation_signale_une_quasi_copie():
+    from churn_saas.features import facteurs_inflation_variance
+
+    X, _ = _jeu_selection()
+    facteurs = facteurs_inflation_variance(X)
+    assert facteurs["copie_du_signal"] > 10 and facteurs["leurre"] < 2

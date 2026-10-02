@@ -186,3 +186,261 @@ def tracer_tendances(profils: dict[str, pd.DataFrame], taux_global: float) -> Fi
     ax.legend(fontsize=8)
     fig.tight_layout()
     return fig
+
+
+# --- Phase 5 · Validating the split and the dataset ---------------------------------------
+def tracer_psi(rapport: pd.DataFrame, seuil: float) -> Figure:
+    """Per-variable stability index between training and test parts, against its threshold.
+
+    Titles here describe, they do not conclude: the reading belongs to the notebook text,
+    which states it against the rule fixed beforehand.
+
+    `rapport` is the output of `monitoring.rapport_derive`.
+    """
+    donnees = rapport.sort_values("psi")
+    couleurs = [PALETTE["accent"] if v > seuil else PALETTE["principal"] for v in donnees["psi"]]
+    fig, ax = plt.subplots(figsize=(7.6, 0.28 * len(donnees) + 1.4))
+    ax.barh(donnees["variable"], donnees["psi"], color=couleurs)
+    ax.axvline(seuil, color=PALETTE["accent"], ls="--", lw=1)
+    ax.text(seuil, len(donnees) - 0.5, f" seuil {seuil:.2f}", color=PALETTE["accent"], fontsize=8)
+    ax.set_xlim(0, max(seuil * 1.4, float(donnees["psi"].max()) * 1.2))
+    ax.set_xlabel("Indice de stabilité (PSI) entre entraînement et test")
+    ax.tick_params(axis="y", labelsize=8)
+    ax.set_title("Stabilité de chaque variable entre entraînement et test")
+    fig.tight_layout()
+    return fig
+
+
+def tracer_validation_adverse(taux_faux: np.ndarray, taux_vrais: np.ndarray, auc: float) -> Figure:
+    """ROC curve of a classifier asked to tell training rows from test rows."""
+    fig, ax = plt.subplots(figsize=(5.0, 4.4))
+    ax.plot(taux_faux, taux_vrais, color=PALETTE["principal"], lw=2, label=f"AUC = {auc:.3f}")
+    ax.plot([0, 1], [0, 1], color=PALETTE["neutre"], ls=":", lw=1, label="Hasard (0,5)")
+    ax.set_xlabel("Taux de faux positifs")
+    ax.set_ylabel("Taux de vrais positifs")
+    ax.set_title("Validation adverse : distinguer l'entraînement du test")
+    ax.legend(loc="lower right", fontsize=8.5)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_permutation(scores_permutes: np.ndarray, score: float, taux_base: float) -> Figure:
+    """Scores obtained on shuffled labels, against the score on the real labels."""
+    fig, ax = plt.subplots(figsize=(7.0, 3.8))
+    ax.hist(
+        scores_permutes, bins=20, color=PALETTE["neutre"], alpha=0.8, label="Étiquettes mélangées"
+    )
+    ax.axvline(score, color=PALETTE["accent"], lw=2, label=f"Étiquettes réelles : {score:.3f}")
+    ax.axvline(
+        taux_base,
+        color=PALETTE["principal"],
+        ls=":",
+        lw=1.2,
+        label=f"Taux de base : {taux_base:.2f}",
+    )
+    ax.set_xlabel("PR-AUC en validation croisée")
+    ax.set_ylabel("Nombre de mélanges")
+    ax.set_title("Test de permutation des étiquettes")
+    ax.legend(fontsize=8.5)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_courbes_apprentissage(courbes: dict[str, pd.DataFrame]) -> Figure:
+    """Training and validation PR-AUC by training size, one panel per model.
+
+    `courbes` maps a model name to the output of `modelisation.courbe_apprentissage`.
+    """
+    fig, axes = plt.subplots(1, len(courbes), figsize=(5.2 * len(courbes), 3.9), sharey=True)
+    for ax, (nom, courbe) in zip(np.atleast_1d(axes), courbes.items(), strict=True):
+        effectifs = courbe["comptes d'entraînement"]
+        ax.plot(
+            effectifs,
+            courbe["PR-AUC entraînement"],
+            marker="o",
+            color=PALETTE["neutre"],
+            label="Entraînement",
+        )
+        ax.plot(
+            effectifs,
+            courbe["PR-AUC validation"],
+            marker="o",
+            color=PALETTE["principal"],
+            label="Validation",
+        )
+        ax.fill_between(
+            effectifs,
+            courbe["PR-AUC validation"] - courbe["écart-type validation"],
+            courbe["PR-AUC validation"] + courbe["écart-type validation"],
+            color=PALETTE["principal"],
+            alpha=0.15,
+        )
+        ax.set_title(nom, fontsize=10)
+        ax.set_xlabel("Comptes d'entraînement")
+        ax.legend(fontsize=8)
+    np.atleast_1d(axes)[0].set_ylabel("PR-AUC")
+    fig.suptitle("Courbes d'apprentissage (PR-AUC, validation croisée à 5 plis)", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_valeur_vie_par_anciennete(
+    df: pd.DataFrame, tranches: int = 5, cible: str = "churn"
+) -> Figure:
+    """Lifetime value in months of revenue, by seniority bucket, leavers against stayers.
+
+    If the value encoded the outcome, leavers would sit below stayers within every bucket.
+    If the overall gap is a composition effect, the two lines merge once seniority is fixed.
+    """
+    mois = pd.to_numeric(df["valeur_vie_client_eur"], errors="coerce") / pd.to_numeric(
+        df["revenu_mensuel_recurrent_eur"], errors="coerce"
+    )
+    anciennete = pd.to_numeric(df["anciennete_mois"], errors="coerce")
+    tranche = pd.qcut(anciennete, tranches, labels=False, duplicates="drop") + 1
+    issue = pd.to_numeric(df[cible], errors="coerce")
+    medianes = mois.groupby([tranche, issue]).median().unstack()
+    fig, ax = plt.subplots(figsize=(7.0, 4.0))
+    ax.plot(medianes.index, medianes[0], marker="o", color=PALETTE["principal"], label="Restent")
+    ax.plot(medianes.index, medianes[1], marker="o", color=PALETTE["accent"], label="Partent")
+    ax.set_xticks(list(medianes.index))
+    ax.set_xlabel("Tranche d'ancienneté (1 = comptes les plus récents)")
+    ax.set_ylabel("Valeur vie client, en mois de revenu (médiane)")
+    ax.set_title("Valeur vie client par ancienneté, selon l'issue")
+    ax.legend(fontsize=8.5)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_charge_calcul(charge: pd.DataFrame) -> Figure:
+    """Seconds of computation per planned step, from `modelisation.estimer_charge`."""
+    donnees = charge.sort_values("secondes")
+    fig, ax = plt.subplots(figsize=(7.6, 0.42 * len(donnees) + 1.4))
+    ax.barh(donnees["étape"], donnees["secondes"] / 60, color=PALETTE["principal"])
+    for i, v in enumerate(donnees["secondes"] / 60):
+        ax.text(v, i, f" {v:.1f}", va="center", fontsize=8)
+    ax.set_xlabel("Minutes de calcul sur le poste de développement")
+    ax.tick_params(axis="y", labelsize=8)
+    ax.set_title("Charge de calcul de la phase 5, étape par étape")
+    fig.tight_layout()
+    return fig
+
+
+# --- Phase 5 · Blocs B and C: what the variables bring ---------------------------------------
+def tracer_courbes_appariees(
+    scores: dict[str, pd.DataFrame], reference: str, candidat: str
+) -> Figure:
+    """One line per fold, from the reference set to the candidate set, one panel per model.
+
+    Lines going up everywhere mean a systematic gain; lines crossing mean the difference is
+    the split's, not the variables'. `scores` maps a model to `selection.comparer_jeux`.
+    """
+    fig, axes = plt.subplots(1, len(scores), figsize=(4.6 * len(scores), 4.0), sharey=True)
+    for ax, (nom, table) in zip(np.atleast_1d(axes), scores.items(), strict=True):
+        for _, ligne in table.iterrows():
+            couleur = (
+                PALETTE["principal"] if ligne[candidat] > ligne[reference] else PALETTE["accent"]
+            )
+            ax.plot([0, 1], [ligne[reference], ligne[candidat]], color=couleur, alpha=0.5, lw=1)
+        ax.plot(
+            [0, 1],
+            [table[reference].mean(), table[candidat].mean()],
+            color="black",
+            lw=2.5,
+            marker="o",
+            label="Moyenne",
+        )
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels([reference, candidat], fontsize=8.5)
+        ax.set_xlim(-0.2, 1.2)
+        ax.set_title(nom, fontsize=10)
+        ax.legend(fontsize=8)
+    np.atleast_1d(axes)[0].set_ylabel("PR-AUC du pli")
+    fig.suptitle("Comparaison appariée, pli par pli (bleu : le candidat gagne)", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_ablation(tables: dict[str, pd.DataFrame]) -> Figure:
+    """PR-AUC lost when each family is removed, with its spread, one panel per model."""
+    fig, axes = plt.subplots(1, len(tables), figsize=(4.8 * len(tables), 3.8), sharey=True)
+    for ax, (nom, table) in zip(np.atleast_1d(axes), tables.items(), strict=True):
+        donnees = table.sort_values("perte moyenne")
+        couleurs = [
+            PALETTE["accent"] if s else PALETTE["neutre"] for s in donnees["perte significative"]
+        ]
+        ax.barh(
+            donnees["groupe"],
+            donnees["perte moyenne"],
+            xerr=donnees["écart-type de la perte"],
+            color=couleurs,
+            capsize=3,
+        )
+        ax.axvline(0, color="black", lw=0.8)
+        ax.set_title(nom, fontsize=10)
+        ax.set_xlabel("PR-AUC perdue sans la famille")
+    fig.suptitle("Ablation par famille de variables (rouge : perte significative)", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_importances(importances: pd.DataFrame, leurres: list[str], titre: str) -> Figure:
+    """Permutation importance per variable across folds, decoys and their floor highlighted.
+
+    `importances` is the long table of `selection.importances_par_permutation`.
+    """
+    ordre = importances.groupby("variable")["importance"].mean().sort_values().index
+    plancher = (
+        importances[importances["variable"].isin(leurres)]
+        .groupby("variable")["importance"]
+        .mean()
+        .max()
+    )
+    fig, ax = plt.subplots(figsize=(7.6, 0.3 * len(ordre) + 1.4))
+    donnees = [importances.loc[importances["variable"] == v, "importance"] for v in ordre]
+    boites = ax.boxplot(donnees, orientation="horizontal", patch_artist=True, showfliers=False)
+    for boite, variable in zip(boites["boxes"], ordre, strict=True):
+        boite.set_facecolor(PALETTE["accent"] if variable in leurres else PALETTE["principal"])
+        boite.set_alpha(0.7)
+    ax.set_yticks(range(1, len(ordre) + 1))
+    ax.set_yticklabels(ordre, fontsize=8)
+    ax.axvline(plancher, color=PALETTE["accent"], ls="--", lw=1)
+    ax.text(
+        plancher, len(ordre) + 0.3, " plancher des leurres", color=PALETTE["accent"], fontsize=8
+    )
+    ax.set_xlabel("Perte de PR-AUC quand la variable est mélangée")
+    ax.set_title(titre)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_demonstration_fuite(tables: dict[str, pd.DataFrame]) -> Figure:
+    """AUC and PR-AUC without, then with, the leaking variable, one panel per model.
+
+    `tables` maps a model to the output of `modelisation.demontrer_fuite`.
+    """
+    fig, axes = plt.subplots(1, len(tables), figsize=(4.6 * len(tables), 3.8), sharey=True)
+    for ax, (nom, table) in zip(np.atleast_1d(axes), tables.items(), strict=True):
+        x = np.arange(len(table))
+        for decalage, metrique, couleur in (
+            (-0.2, "AUC", PALETTE["principal"]),
+            (0.2, "PR-AUC", PALETTE["attention"]),
+        ):
+            barres = ax.bar(x + decalage, table[metrique], 0.4, color=couleur, label=metrique)
+            for barre, valeur in zip(barres, table[metrique], strict=True):
+                ax.text(
+                    barre.get_x() + barre.get_width() / 2,
+                    valeur + 0.01,
+                    f"{valeur:.3f}",
+                    ha="center",
+                    fontsize=8,
+                )
+        ax.set_xticks(x)
+        ax.set_xticklabels(table["jeu"], fontsize=8)
+        ax.set_ylim(0.5, 1.08)
+        ax.set_title(nom, fontsize=10)
+        ax.legend(fontsize=8, loc="lower right")
+    fig.suptitle(
+        "Avec une variable connue après la décision, le modèle « devine » l'issue", fontsize=11
+    )
+    fig.tight_layout()
+    return fig

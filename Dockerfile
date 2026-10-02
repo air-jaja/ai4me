@@ -35,6 +35,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
         --group api --group stockage --group observabilite
 
 COPY src ./src
+COPY README.md ./
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable \
         --group api --group stockage --group observabilite
@@ -59,6 +61,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
     CHURN_MODEL_PATH=/app/models/churn_model.joblib
 
 COPY --from=build /app/.venv /app/.venv
+
+# COPY models ./models
 
 USER appuser
 EXPOSE 8000

@@ -22,9 +22,12 @@ make install            # ou : uv sync --frozen --group dev --group notebook
 make notebook
 
 # Contrôles
-make test               # tests unitaires
+make test               # toute la suite de tests
+make test-activite      # campagne de l'activité : tests courants + non-régression
 make lint               # style du code
 make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise
+make ressources         # mesure CE poste : ressources et temps de calcul (docs/06.SOBRIETE_calcul.md)
+make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
@@ -56,6 +59,9 @@ churn-saas-cisia/
 ├── .pre-commit-config.yaml Contrôles au commit, suite de tests au push
 ├── .github/workflows/      Chaîne CI — tests, linter, hooks, fraîcheur du catalogue
 │
+├── config/
+│   └── ressources_poste.toml     Ressources du poste et hypothèses d'énergie — entrée du projet
+│
 ├── data/
 │   ├── raw/                      CSV sources — **versionnés** (2 Mo, référence de tout)
 │   ├── processed/                Instantanés Parquet — non versionnés, recalculables
@@ -66,7 +72,7 @@ churn-saas-cisia/
 ├── models/                 Modèles sérialisés et fiches — non versionnés
 ├── reports/figures/        Figures en PNG et SVG — non versionnées, régénérables
 ├── monitoring/             Configuration Prometheus et Grafana
-├── tools/                  Outils de dépôt — catalogue des tests, registre des écarts
+├── tools/                  Outils de dépôt — catalogue, registre, ressources, matérialisation, campagnes de tests
 ├── docs/                   Documents méthodologiques et de suivi
 │                           (commencer par 00.REGLES_DE_TRAVAIL.md ; dépannage : DEPANNAGE.md)
 ├── tests/                  Tests par activité, plus les contrôles transverses
@@ -92,18 +98,21 @@ churn-saas-cisia/
     │   ├── controle.py           schéma, détection générique de fuite, leurres
     │   ├── exploration.py        déséquilibre, corrélations, tendances
     │   ├── graphiques.py         figures du notebook de certification, source unique
+    │   ├── selection.py          apport des variables construites, ablation, plancher des leurres
     │   ├── pipeline.py           chaîne bronze → silver → gold, avec journal
     │   └── materialisation.py    écriture des instantanés et de leurs empreintes
     │
     ├── modelisation/       3. MODÉLISATION
     │   ├── baseline.py           régression logistique et préprocesseur
     │   ├── selection.py          candidat, grille bornée, comparaison en CV
-    │   └── optimisation.py       Optuna avec élagage, empreinte carbone
+    │   ├── sobriete.py           temps de calcul mesurés, charge déclarée, énergie et CO₂e
+    │   └── validation.py         validation adverse, test de permutation, courbe d'apprentissage
     │
     ├── evaluation/         4. ÉVALUATION DE LA PERFORMANCE
     │   ├── metriques.py          métriques et intervalle de confiance
     │   ├── decision.py           priorisation par valeur espérée, sensibilité
     │   ├── impact.py             MRR exposé / couvert / préservé
+    │   ├── valeur_vie.py         la valeur vie client encode-t-elle l'issue ? (diagnostic)
     │   └── explicabilite.py      valeurs de Shapley, motif lisible par un CSM
     │
     ├── packaging/          5. PACKAGING DU MODÈLE
@@ -161,7 +170,6 @@ Détail complet et procédure de migration : `docs/ORGANISATION_CODE.md`.
 | **dev** | pytest, ruff, pre-commit | C6 | inclus par défaut |
 | **notebook** | jupyterlab, ipykernel, nbconvert, jinja2 | — | `--group notebook` |
 | **explicabilite** | shap | C4, C5 | `--group explicabilite` |
-| **optimisation** | optuna, codecarbon | C4 | `--group optimisation` |
 | **suivi** | mlflow | C5, C6, C9 | `--group suivi` |
 | **stockage** | sqlalchemy, psycopg | C3, C7 | `--group stockage` |
 | **orchestration** | prefect | C6, C7 | `--group orchestration` |
@@ -175,14 +183,17 @@ installer la stack.
 
 ### Décisions révisées
 
-Trois outils écartés au cadrage initial sont finalement retenus. Le revirement est
-documenté plutôt que dissimulé — c'est une itération, et le notebook la consigne.
+Trois outils écartés au cadrage initial avaient été retenus le 26/09 ; les arbitrages du
+01/10, pris avant tout résultat de modélisation, en ont révisé deux à nouveau et différé un.
+Les revirements sont documentés plutôt que dissimulés — c'est une itération, consignée au
+registre et dans `docs/00.README_choix_methodologiques.md` § 7 bis.
 
-| Outil | Position initiale | Ce qui a changé |
+| Outil | 26/09 | 01/10 — décision et motif |
 |---|---|---|
-| Optuna | Écarté au nom de l'éco-conception | L'argument portait sur l'**étendue** de la recherche, pas sur l'outil. L'échantillonnage TPE avec élagage consomme moins qu'une grille exhaustive à couverture égale. Le budget reste borné à 30 essais. |
-| MLflow | Écarté, « surdimensionné pour un notebook » | La convention de nommage ne survit ni à plusieurs réentraînements ni à plusieurs personnes. MLflow outille la convention sans la changer. |
-| SHAP, CodeCarbon | Options ouvertes | Retenus : l'un rend le signalement actionnable compte par compte, l'autre transforme un argument déclaratif en mesure. |
+| Optuna | Retenu (TPE + élagage, 30 essais) | **Écarté.** L'espace compte 44 combinaisons : `GridSearchCV` est exhaustif en quelques minutes et donne les courbes de validation. Le module et le groupe de dépendances sont retirés le 02/10 |
+| CodeCarbon | Retenu | **Écarté, chiffres à l'appui.** Les temps de calcul sont mesurés sur le poste de développement (`make ressources`) et convertis en énergie et en CO₂e : quelques minutes et quelques grammes pour toute la phase 5, une mesure qui ne changerait aucune décision. Chiffrage : `docs/06.SOBRIETE_calcul.md` |
+| MLflow | Retenu | **Différé** à la phase 10, pour tracer le modèle final |
+| SHAP | Retenu | **À arbitrer** après le choix du modèle : une régression logistique s'explique sans lui |
 
 **Toujours écartés**, et défendables comme tels :
 

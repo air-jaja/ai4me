@@ -49,3 +49,4 @@ reports/figures/*
 .catalogue-tests-tmp.md
 .venv-ci/
 .registre-tmp.md
+.sobriete-tmp.md

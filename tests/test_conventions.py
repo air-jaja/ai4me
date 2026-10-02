@@ -214,6 +214,50 @@ def test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal(tmp_path):
     assert contenu.startswith("# Catalogue des tests")
 
 
+OUTILS_ET_ARGUMENTS = {
+    "catalogue_tests.py": ["--sortie", "{tmp}/TESTS.md"],
+    "registre_ecarts.py": ["--sortie", "{tmp}/REGISTRE.md"],
+    "ressources_calcul.py": ["--sortie", "{tmp}/SOBRIETE.md"],
+    "materialiser.py": ["--manifeste", "{tmp}/manifeste.json", "--dossier", "{tmp}/processed"],
+    "campagne_tests.py": ["--lister"],
+}
+
+
+def test_chaque_outil_est_couvert_par_le_controle_d_encodage():
+    """A new tool must join the check below; a forgotten one would escape it silently."""
+    outils = {f.name for f in (RACINE / "tools").glob("*.py")}
+    ecart = outils ^ set(OUTILS_ET_ARGUMENTS)
+    assert not ecart, f"Outils non couverts par le contrôle d'encodage : {ecart}"
+
+
+@pytest.mark.parametrize("outil", sorted(OUTILS_ET_ARGUMENTS))
+def test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal(outil, tmp_path):
+    """Every tool prints UTF-8, even when the terminal announces cp1252.
+
+    A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a
+    UTF-8 reader cannot decode. That is how the materialisation test failed on the
+    development laptop while passing on Linux. The terminal is simulated here, so the CI
+    reproduces what Windows does.
+    """
+    import os
+    import shutil
+    import subprocess
+    import sys
+
+    if outil == "materialiser.py":
+        shutil.copy(RACINE / "data" / "manifeste_v1.0.json", tmp_path / "manifeste.json")
+    arguments = [a.format(tmp=tmp_path) for a in OUTILS_ET_ARGUMENTS[outil]]
+    resultat = subprocess.run(
+        [sys.executable, str(RACINE / "tools" / outil), *arguments],
+        cwd=RACINE,
+        capture_output=True,
+        env={**os.environ, "PYTHONIOENCODING": "cp1252"},
+        timeout=300,
+    )
+    assert resultat.returncode == 0, resultat.stderr.decode("utf-8", "replace")
+    resultat.stdout.decode("utf-8")  # raises if the tool wrote the terminal's encoding
+
+
 def test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne(tmp_path):
     """Files our code writes and Git versions must end with a newline.
 

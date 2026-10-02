@@ -1,0 +1,64 @@
+# =============================================================================
+# Contexte de construction de l'image.
+#
+# **Ce fichier est versionné**, et il doit l'être. Il détermine ce que Docker envoie au
+# moteur de construction : une version locale non partagée fait que l'image construite sur
+# un poste diffère de celle construite en CI, sans que rien ne le signale. C'est exactement
+# ce qui est arrivé — un `.dockerignore` local excluait `README.md`, que la construction
+# exige, et l'échec n'était pas reproductible ailleurs.
+#
+# Principe : l'image de production ne contient que le service. Tout ce qui relève du
+#            développement, de la documentation ou des données reste dehors — le contexte est plus léger,
+#            la construction plus rapide, et l'image ne transporte rien d'inutile.
+#  FICHIER : .dockerignore
+#  RÔLE    : liste des fichiers/dossiers à NE PAS envoyer à Docker quand il
+#            construit l'image. C'est l'équivalent d'un .gitignore, mais pour
+#            le "contexte de build" Docker.
+#  RÈGLES DE SYNTAXE :
+#    - Une entrée par ligne = un motif de fichiers/dossiers à EXCLURE.
+#    - '*' remplace n'importe quelle suite de caractères (dans un même niveau).
+#    - '**' traverse les sous-dossiers (récursif).
+#    - Un '!' au début = EXCEPTION = "ré-inclure" quelque chose qu'on avait exclu.
+#      L'ordre compte : une exception doit venir APRÈS l'exclusion qu'elle annule.
+# =============================================================================
+
+# --- Environnements et caches ---------------------------------------------------------
+.venv/
+.venv-ci/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-tmp/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Historique et outillage de dépôt -------------------------------------------------
+.git/
+.github/
+.gitignore
+.gitattributes
+.pre-commit-config.yaml
+Makefile
+
+# --- Données et sorties ---------------------------------------------------------------
+# Le modèle est monté depuis un volume, jamais embarqué : l'image est du code, le modèle
+# est une donnée versionnée séparément.
+data/
+models/
+reports/
+monitoring/
+
+# --- Travail de conception ------------------------------------------------------------
+# Les carnets, les tests et les documents n'ont aucun usage dans le service.
+notebooks/
+tests/
+tools/
+docs/
+config/
+
+# --- Secrets --------------------------------------------------------------------------
+.env
+
+# --- Artefacts d'échange --------------------------------------------------------------
+*.bundle
+*.patch

@@ -235,6 +235,7 @@ def test_la_cle_de_compte_peut_etre_desactivee():
     assert len(construire_silver(brut, cle_compte=None)) == 2
 
 
+@pytest.mark.phase5
 def test_gold_retire_la_date_brute_et_le_doublon_du_catalogue():
     """Each phase 4 exclusion is applied, and carries its own motive."""
     from churn_saas.donnees import MOTIFS_EXCLUSION
@@ -249,7 +250,8 @@ def test_gold_retire_la_date_brute_et_le_doublon_du_catalogue():
         }
     )
     gold = construire_gold(silver)
-    assert set(gold.columns) == {"fonctionnalites_total", "anciennete_mois", "churn"}
+    # fonctionnalites_total itself goes in phase 5: one value per plan (arbitrage 2).
+    assert set(gold.columns) == {"anciennete_mois", "churn"}
     assert MOTIFS_EXCLUSION["date_souscription"].startswith("date brute")
     assert MOTIFS_EXCLUSION["fonctionnalites_incluses"].startswith("doublon")
 
@@ -434,3 +436,49 @@ def test_une_regle_inapplicable_est_signalee_et_non_ignoree():
 
     _, bilan = reconstruire_valeurs_deterministes(_comptes().drop(columns="sieges_souscrits"))
     assert bilan["statut"].str.startswith("non applicable").all()
+
+
+# --- Phase 5 · Training / test split ------------------------------------------------------
+def _jeu_a_decouper(n: int = 500) -> tuple[pd.DataFrame, pd.Series]:
+    import numpy as np
+
+    generateur = np.random.default_rng(0)
+    X = pd.DataFrame({"a": generateur.normal(size=n), "b": generateur.choice(["x", "y"], n)})
+    y = pd.Series((generateur.random(n) < 0.28).astype(int))
+    return X, y
+
+
+@pytest.mark.phase5
+def test_le_decoupage_est_deterministe_disjoint_et_complet():
+    """Same seed, same accounts in the test part; no account in both; none lost."""
+    from churn_saas.donnees import decouper_entrainement_test
+
+    X, y = _jeu_a_decouper()
+    premier, second = decouper_entrainement_test(X, y), decouper_entrainement_test(X, y)
+    assert list(premier.X_test.index) == list(second.X_test.index)
+    assert set(premier.X_test.index).isdisjoint(premier.X_entrainement.index)
+    assert len(premier.X_test) + len(premier.X_entrainement) == len(X)
+    assert len(premier.X_test) == round(len(X) * premier.part_test)
+
+
+@pytest.mark.phase5
+def test_le_decoupage_est_stratifie_sur_la_cible():
+    """Both parts keep the churn rate: the gap stays under the threshold fixed beforehand."""
+    from churn_saas.config import ECART_STRATIFICATION_MAX_PTS
+    from churn_saas.donnees import decouper_entrainement_test, resume_decoupage
+
+    X, y = _jeu_a_decouper()
+    resume = resume_decoupage(decouper_entrainement_test(X, y))
+    ecart = resume.loc[resume["partie"] == "écart (points)", "taux de churn (%)"].iloc[0]
+    assert ecart < ECART_STRATIFICATION_MAX_PTS
+
+
+@pytest.mark.phase5
+def test_une_autre_graine_change_le_jeu_de_test():
+    """The seed matters: a change of seed must show in the recorded fingerprint."""
+    from churn_saas.donnees import decouper_entrainement_test
+
+    X, y = _jeu_a_decouper()
+    a = decouper_entrainement_test(X, y, graine=1)
+    b = decouper_entrainement_test(X, y, graine=2)
+    assert set(a.X_test.index) != set(b.X_test.index)

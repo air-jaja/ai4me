@@ -204,6 +204,31 @@ def _part_tukey(silver: pd.DataFrame) -> tuple[float, float]:
     return float(au_dela.mean() * 100), float(mrr[au_dela].sum() / mrr.sum() * 100)
 
 
+def _diagnostic_valeur_vie(silver: pd.DataFrame) -> dict[str, float]:
+    """Diagnostic of arbitrage 3, on the gold variables of the reference data."""
+    from churn_saas.evaluation import diagnostiquer_valeur_vie
+    from churn_saas.features import preparer_gold
+
+    gold = preparer_gold(silver).gold
+    explicatives = gold.drop(columns=["churn"]).select_dtypes("number")
+    diagnostic = diagnostiquer_valeur_vie(
+        explicatives,
+        silver["valeur_vie_client_eur"],
+        silver["revenu_mensuel_recurrent_eur"],
+        silver["churn"],
+        silver["anciennete_mois"],
+    )
+    return dict(zip(diagnostic["indicateur"], diagnostic["valeur"], strict=True))
+
+
+def _gold_candidat(silver: pd.DataFrame) -> pd.DataFrame:
+    """Gold with the variables the phase 5 selection removed: the chain still builds them."""
+    from churn_saas.config import EXCLUES_PAR_SELECTION
+    from churn_saas.features import preparer_gold
+
+    return preparer_gold(silver, garder=EXCLUES_PAR_SELECTION).gold
+
+
 # --- Published figures, declared once -------------------------------------------------
 @dataclass(frozen=True)
 class ChiffrePublie:
@@ -471,17 +496,18 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
     ChiffrePublie(
         phase="3 · Exploration",
         libelle="Colonnes du jeu gold livré au modèle",
-        # 34 until phase 4, which excluded the raw date and two duplicates.
-        cite_dans="03_exploration § 3.6 (34 avant la phase 4) · notebook § 7 · fiche modèle",
-        attendu=31,
+        # 34 until phase 4, 31 until the catalogue was reduced to plan, 26 until the
+        # selection (phase 5, blocs B and C) removed seven variables.
+        cite_dans="03_exploration § 3.6 (34 avant la phase 4) · notebook § 7, § 8.C · fiche modèle",
+        attendu=19,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver).shape[1]),
     ),
     ChiffrePublie(
         phase="3 · Exploration",
         libelle="Variables explicatives après séparation de la cible",
-        cite_dans="03_exploration § 3.6 (33 avant la phase 4) · notebook § 7 · suivi_projet_ia",
-        attendu=30,
+        cite_dans="03_exploration § 3.6 (33 avant la phase 4) · notebook § 1, 5, 7, 8.C · suivi",
+        attendu=18,
         tolerance=0,
         calcul=lambda brut, silver: float(_gold(silver).shape[1] - 1),
     ),
@@ -623,7 +649,7 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
         cite_dans="notebook § 7 · suivi § 4",
         attendu=284,
         tolerance=0,
-        calcul=lambda brut, silver: float(_gold(silver)["usage_par_actif"].isna().sum()),
+        calcul=lambda brut, silver: float(_gold_candidat(silver)["usage_par_actif"].isna().sum()),
     ),
     ChiffrePublie(
         phase="3 · Exploration",
@@ -642,6 +668,47 @@ CHIFFRES_PUBLIES: tuple[ChiffrePublie, ...] = (
         attendu=76.0,
         tolerance=0.5,
         calcul=lambda brut, silver: _part_tukey(silver)[1],
+    ),
+    # --- Phase 5 · Feature engineering --------------------------------------------------
+    ChiffrePublie(
+        phase="5 · Features",
+        libelle="Variance de la valeur vie client expliquée sans l'issue (R²)",
+        cite_dans="00.README_choix_methodologiques § 7 bis · registre E-508 · notebook § 12",
+        attendu=0.895,
+        tolerance=0.01,
+        calcul=lambda brut, silver: _diagnostic_valeur_vie(silver)[
+            "Variance expliquée sans l'issue (R², validation croisée)"
+        ],
+    ),
+    ChiffrePublie(
+        phase="5 · Features",
+        libelle="Gain de R² apporté par l'issue",
+        cite_dans="00.README_choix_methodologiques § 7 bis · registre E-508",
+        attendu=0.0,
+        tolerance=0.005,
+        calcul=lambda brut, silver: _diagnostic_valeur_vie(silver)[
+            "Gain de R² apporté par l'issue"
+        ],
+    ),
+    ChiffrePublie(
+        phase="5 · Features",
+        libelle="Ancienneté médiane des comptes qui partent (mois)",
+        cite_dans="00.README_choix_methodologiques § 7 bis",
+        attendu=6,
+        tolerance=0,
+        calcul=lambda brut, silver: _diagnostic_valeur_vie(silver)[
+            "Ancienneté, comptes qui partent (mois, médiane)"
+        ],
+    ),
+    ChiffrePublie(
+        phase="5 · Features",
+        libelle="Ancienneté médiane des comptes qui restent (mois)",
+        cite_dans="00.README_choix_methodologiques § 7 bis",
+        attendu=12,
+        tolerance=0,
+        calcul=lambda brut, silver: _diagnostic_valeur_vie(silver)[
+            "Ancienneté, comptes qui restent (mois, médiane)"
+        ],
     ),
     ChiffrePublie(
         phase="3 · Exploration",
@@ -828,7 +895,7 @@ def test_les_trous_structurels_sont_combles_sur_le_chemin_du_gold(silver: pd.Dat
     """Phase 4: in gold, the per-user ratios are 0 on abandoned accounts, and the only NaN
     left in `usage_par_actif` are hours genuinely unknown on accounts that have users -
     the one kind of gap the median may fill."""
-    gold = _gold(silver)
+    gold = _gold_candidat(silver)
     actifs = pd.to_numeric(gold["utilisateurs_actifs"], errors="coerce")
     sans_actif = actifs == 0
     assert (gold.loc[sans_actif, ["usage_par_actif", "tickets_par_actif"]] == 0).all().all()
@@ -1095,3 +1162,203 @@ def test_le_contrat_mesure_les_manquants_de_la_source(chaine):
     """
     assert chaine.silver["revenu_mensuel_recurrent_eur"].isna().sum() == 150
     assert chaine.gold["revenu_mensuel_recurrent_eur"].isna().sum() == 0
+
+
+def test_la_valeur_vie_client_n_encode_pas_l_issue(silver: pd.DataFrame):
+    """Arbitrage 3 settled by measurement: the observed value may evaluate the rule.
+
+    The 18.9 against 15.6 months gap is a composition effect - leavers are younger accounts.
+    Were the value to start encoding the outcome, the impact measured in phase 9 would be
+    inflated, and this test would say so before the jury does.
+    """
+    from churn_saas.evaluation import diagnostiquer_valeur_vie, valeur_encode_l_issue
+    from churn_saas.features import preparer_gold
+
+    gold = preparer_gold(silver).gold
+    diagnostic = diagnostiquer_valeur_vie(
+        gold.drop(columns=["churn"]).select_dtypes("number"),
+        silver["valeur_vie_client_eur"],
+        silver["revenu_mensuel_recurrent_eur"],
+        silver["churn"],
+        silver["anciennete_mois"],
+    )
+    assert not valeur_encode_l_issue(diagnostic), diagnostic.to_string()
+
+
+def test_les_attributs_de_formule_ne_prennent_qu_une_valeur_par_plan(silver: pd.DataFrame):
+    """The premise of arbitrage 2: if a plan ever had two prices, `plan` alone would lose it."""
+    from churn_saas.config import EXCLUES_ATTRIBUT_FORMULE
+
+    valeurs = silver.groupby("plan")[EXCLUES_ATTRIBUT_FORMULE].nunique()
+    assert (valeurs <= 1).all().all(), valeurs.to_string()
+
+
+# --- Phase 5 · Bloc A: the split and the dataset are valid --------------------------------
+@pytest.fixture(scope="module")
+def parties(chaine):
+    from churn_saas.features import parties_du_decoupage
+
+    return parties_du_decoupage(chaine)
+
+
+def test_le_decoupage_reste_celui_qui_a_ete_publie(parties):
+    """4,000 / 1,000 accounts, the same 28 % churn rate in both parts."""
+    from churn_saas.config import ECART_STRATIFICATION_MAX_PTS
+
+    assert (len(parties.y_entrainement), len(parties.y_test)) == (4000, 1000)
+    ecart = abs(parties.y_entrainement.mean() - parties.y_test.mean()) * 100
+    assert ecart < ECART_STRATIFICATION_MAX_PTS
+
+
+def test_chaque_variable_est_stable_entre_entrainement_et_test(chaine, parties):
+    """Largest PSI published at 0.033 (utilisateurs_actifs), rule: below 0.10 everywhere."""
+    from churn_saas.config import SEUIL_PSI_DECOUPAGE
+    from churn_saas.monitoring import rapport_derive
+
+    rapport = rapport_derive(
+        parties.X_entrainement, parties.X_test, list(chaine.X.columns), SEUIL_PSI_DECOUPAGE
+    )
+    assert len(rapport) == chaine.X.shape[1], "Une variable manque au rapport de dérive."
+    assert rapport["psi"].max() == pytest.approx(0.033, abs=0.01)
+    assert not rapport["alerte"].any(), rapport.head().to_string()
+
+
+def test_l_entrainement_et_le_test_sont_indiscernables(chaine, parties):
+    """Adversarial validation, published at 0.52 with the forest; checked here with the
+    logistic regression, which reaches the same verdict in a second instead of fifteen."""
+    from churn_saas.modelisation import construire_baseline, validation_adverse
+
+    resultat = validation_adverse(
+        construire_baseline(chaine.X), parties.X_entrainement, parties.X_test
+    )
+    assert resultat["conforme"] and resultat["auc"] == pytest.approx(0.516, abs=0.03)
+
+
+def test_le_modele_bat_les_etiquettes_melangees(chaine, parties):
+    """Published with 100 shuffles: 0.789 against 0.285, p = 0.01. Twenty shuffles here,
+    the fewest that can reach p < 0.05, to keep the suite fast."""
+    from churn_saas.modelisation import construire_baseline, tester_permutation
+
+    resultat = tester_permutation(
+        construire_baseline(chaine.X), parties.X_entrainement, parties.y_entrainement, 20
+    )
+    assert resultat["conforme"]
+    assert resultat["score"] == pytest.approx(0.789, abs=0.01)
+    assert resultat["moyenne_permutee"] == pytest.approx(0.28, abs=0.03)
+
+
+def test_la_regression_logistique_a_converge(chaine, parties):
+    """Learning curve: validation PR-AUC 0.789 at full size, 0.016 from the training score."""
+    from churn_saas.modelisation import construire_baseline, courbe_apprentissage
+
+    courbe = courbe_apprentissage(
+        construire_baseline(chaine.X), parties.X_entrainement, parties.y_entrainement
+    )
+    finale = courbe.iloc[-1]
+    assert finale["PR-AUC validation"] == pytest.approx(0.789, abs=0.01)
+    assert finale["écart entraînement - validation"] < 0.05
+
+
+def test_le_manifeste_decrit_le_decoupage_produit_par_le_code(chaine):
+    """The test part recorded is the one the code sets aside today.
+
+    When it fails after a deliberate change: re-run the materialisation (carnet 03), then
+    commit the manifest with the code. Until then, no result on the test part is comparable.
+    """
+    from churn_saas.features import verifier_decoupage
+
+    manifeste = json.loads((RACINE / "data" / "manifeste_v1.0.json").read_text(encoding="utf-8"))
+    if "decoupage" not in manifeste:
+        pytest.fail("Le manifeste n'enregistre pas le découpage : re-matérialiser (carnet 03).")
+    controle = verifier_decoupage(chaine, manifeste)
+    assert controle["conforme"].all(), controle.to_string()
+
+
+# --- Phase 5 · Blocs B and C: the selection holds, and integrates ---------------------------
+VARIABLES_RETENUES = [
+    "jour_souscription",
+    "secteur",
+    "taille_entreprise",
+    "plan",
+    "anciennete_mois",
+    "sieges_souscrits",
+    "utilisateurs_actifs",
+    "taux_adoption_pct",
+    "connexions_30j",
+    "heures_usage_30j",
+    "fonctionnalites_utilisees",
+    "nb_integrations",
+    "derniere_connexion_jours",
+    "tickets_support_90j",
+    "delai_reponse_support_h",
+    "csat",
+    "retards_paiement_12m",
+    "revenu_mensuel_recurrent_eur",
+]
+
+
+def test_les_variables_retenues_sont_celles_de_la_selection(chaine):
+    """The 18 variables the selection kept, and only them; no decoy reaches the model."""
+    from churn_saas.features import LEURRES
+
+    assert list(chaine.X.columns) == VARIABLES_RETENUES
+    assert not set(LEURRES) & set(chaine.X.columns)
+
+
+def test_les_familles_couvrent_exactement_le_jeu_candidat(chaine):
+    """Every candidate variable belongs to one family, so the ablation misses none."""
+    from churn_saas.features import GROUPES_DE_VARIABLES, parties_avant_selection
+
+    candidats = parties_avant_selection(chaine).X_entrainement.columns
+    membres = [v for groupe in GROUPES_DE_VARIABLES.values() for v in groupe]
+    assert sorted(membres) == sorted(candidats) and len(membres) == len(set(membres))
+
+
+def test_les_variables_construites_n_apportent_toujours_rien(chaine):
+    """Bloc B, logistic regression: gain -0.001, under one std between folds (0.020)."""
+    from churn_saas.features import (
+        VARIABLES_CONSTRUITES,
+        comparer_jeux,
+        parties_avant_selection,
+        resumer_apport,
+    )
+    from churn_saas.modelisation import construire_baseline
+
+    parties = parties_avant_selection(chaine)
+    X, y = parties.X_entrainement, parties.y_entrainement
+    brutes = [c for c in X.columns if c not in VARIABLES_CONSTRUITES]
+    scores = comparer_jeux(construire_baseline, X, y, {"brutes": brutes, "toutes": list(X.columns)})
+    apport = resumer_apport(scores, "brutes", "toutes")
+    assert not apport["gain significatif"]
+    assert apport["gain moyen"] == pytest.approx(-0.001, abs=0.005)
+
+
+def test_les_retraits_combines_ne_coutent_rien(chaine):
+    """Removals were confirmed one by one; together, the 18 variables lose nothing either
+    (logistic regression: +0.003 over the 25 candidates, better on 23 folds out of 25)."""
+    from churn_saas.features import comparer_jeux, parties_avant_selection, resumer_apport
+    from churn_saas.modelisation import construire_baseline
+
+    parties = parties_avant_selection(chaine)
+    X, y = parties.X_entrainement, parties.y_entrainement
+    scores = comparer_jeux(
+        construire_baseline, X, y, {"candidats": list(X.columns), "retenues": VARIABLES_RETENUES}
+    )
+    apport = resumer_apport(scores, "candidats", "retenues")
+    assert apport["gain moyen"] > -apport["écart-type entre plis"]
+    assert apport["PR-AUC candidat"] == pytest.approx(0.793, abs=0.01)
+
+
+def test_la_fuite_de_la_sante_du_compte_reste_demontree(chaine):
+    """Bloc D: the same logistic regression goes from 0.891 to 0.999 AUC with the
+    end-of-period health score - the leak the notebook narrates, now measured."""
+    from churn_saas.features import parties_du_decoupage
+    from churn_saas.modelisation import construire_baseline, demontrer_fuite
+
+    parties = parties_du_decoupage(chaine)
+    sante = pd.to_numeric(chaine.silver["sante_compte_fin_periode"], errors="coerce")
+    table = demontrer_fuite(
+        construire_baseline, parties.X_entrainement, parties.y_entrainement, sante
+    ).set_index("jeu")
+    assert table.loc["sans la variable", "AUC"] == pytest.approx(0.891, abs=0.01)
+    assert table.loc["avec `sante_compte_fin_periode`", "AUC"] > 0.99

@@ -52,7 +52,7 @@ argumentée. C'est pourquoi ce document insiste autant sur les *pourquoi*.
 | **Client / commanditaire** | Direction Customer Success de l'éditeur *(cas d'usage pédagogique)* |
 | **Date de début** | 08/08/2026 |
 | **Échéance cible** | **30/09/2026** (gel des livrables) — remise 01/10/2026 |
-| **Statut global** | 🟡 En cours — phases 1 à 4 terminées (notebook de certification aligné jusqu'à la section 7), 5 à 11 à exécuter |
+| **Statut global** | 🟡 En cours — phases 1 à 5 terminées (notebook de certification aligné jusqu'au § 8.C), 6 à 11 à exécuter |
 | **Nature** | Exercice de certification. **Aucun déploiement réel** : les phases 10 et 11 sont conçues et documentées, pas mises en service. |
 
 **Légende statut** : `[ ]` à faire · `[~]` en cours · `[x]` terminé · `[—]` sans objet ici
@@ -482,7 +482,7 @@ retirerait précisément les clients les plus importants.)*
 
 ---
 
-## 5 · Feature engineering *(🟡 en cours)*
+## 5 · Feature engineering *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Une *feature*, ou **variable explicative**, est une information fournie au modèle
 > pour l'aider à prédire. Le *feature engineering* consiste à en construire de nouvelles à partir des
@@ -492,8 +492,39 @@ retirerait précisément les clients les plus importants.)*
 
 - [x] Construire des ratios d'usage
 - [x] Vérifier l'absence de **fuite de données**
-- [~] Sélectionner les variables à conserver
-- [ ] Mesurer l'apport réel des variables construites
+- [x] Sélectionner les variables à conserver — *18 variables : 4 construites sans apport, `pays` et 2 leurres retirés (bloc C, 02/10)*
+- [x] Mesurer l'apport réel des variables construites — *aucun gain (−0,001 et −0,002, sous un écart-type) ; le support est la famille la plus porteuse (bloc B, 02/10)*
+- [x] Séparer le jeu gold en entraînement et test, valider la séparation — *80/20 stratifié, enregistré au manifeste ; stratification, PSI et validation adverse conformes (bloc A, 02/10)*
+- [x] Valider le jeu de données préparé (test de permutation, courbe d'apprentissage) — *p = 0,01 ; la régression logistique converge, la forêt sur-apprend (à régulariser en phase 7)*
+
+**Carnet de travail** : `notebooks/05_feature_engineering.ipynb` (blocs 0, A, B, C, exécuté) ; conclusions
+reportées au notebook de certification, § 7.5, § 7.7 et § 8.A à 8.C.
+
+**Clôture (bloc D, 02/10).** Fuite démontrée (même régression logistique : AUC 0,891 sans
+`sante_compte_fin_periode`, 0,999 avec) ; § 7.5 et § 8 réalignés sur les résultats (variables construites
+retirées, outillage réarbitré) ; ancien code du § 8 marqué « illustratif » jusqu'à la phase 6 ; Annexe D
+complétée (9 itérations, dont 4 défauts silencieux) ; chiffres figés en non-régression.
+
+**Préalables faits le 02/10 (bloc 0).** Catalogue réduit à `plan` (gold : 26 colonnes, 25 variables
+explicatives) ; valeur vie client diagnostiquée — elle n'encode pas l'issue, la valeur observée évaluera la
+règle ; module `optimisation.py` et groupe de dépendances retirés ; source de la puissance du poste citée
+(i5-6300U : 15 W nominal, 25 W configurable) ; règle des leurres validée : retirés du modèle final après la
+sélection.
+
+### Arbitrages du 01/10/2026, fixés avant tout résultat
+
+| Question | Décision |
+|---|---|
+| Découpage | Test de 20 % sous scellés, validation croisée stratifiée 5 plis répétée 5 fois |
+| Colonnes du catalogue | `plan` seul : les cinq autres ne prennent qu'une valeur par formule |
+| Valeur vie client | Diagnostic avant toute évaluation : elle pourrait encoder la durée de vie réelle |
+| Hyperparamètres | `GridSearchCV` (44 combinaisons) ; Optuna écarté |
+| Empreinte carbone | Temps de calcul mesurés sur le poste et convertis ; CodeCarbon écarté. Ressources du poste en entrée du projet (`config/ressources_poste.toml`), chiffrage généré (`docs/06.SOBRIETE_calcul.md`) |
+| MLflow | Différé à la phase 10, pour le modèle final |
+
+Les **règles de décision** — quand garder ou retirer une variable, quand juger le découpage représentatif,
+quel réglage retenir — sont écrites **avant** les résultats, dans `00.README_choix_methodologiques.md`
+§ 7 bis. Les options écartées sont au registre (E-501 à E-507, D-06 à D-08).
 
 **La fuite de données, point central de cet exercice.** Une *fuite* survient lorsqu'une information donnée
 au modèle n'était en réalité pas disponible au moment où la prédiction aurait dû être faite. Le modèle
@@ -577,8 +608,8 @@ données bien supérieurs ; sur 5 000 lignes, leur coût de calcul serait engag�
 outils de vision par ordinateur (CNN, YOLO) sont sans objet : il n'y a pas d'images ici.
 
 🔧 **Outils** : scikit-learn · validation croisée stratifiée
-*(MLflow, outil de traçabilité des expérimentations, n'est pas utilisé : le projet tient dans un notebook
-unique, et les paramètres sont consignés directement dans le document.)*
+*(MLflow, outil de traçabilité des expérimentations, est **différé à la phase 10** : il tracera le modèle
+final ; en phase 5, les résultats tiennent dans les tableaux du notebook — arbitrage du 01/10.)*
 📦 **Artefacts** : sections 8 et 9 du notebook · modèle entraîné
 **Statut** : **à faire** — prévu les 24 et 25 septembre
 
@@ -606,9 +637,10 @@ ré-entraînement est prévu tous les trois mois plutôt que tous les mois, ce q
 consommation associée.
 
 🔧 **Outils** : `GridSearchCV` *(exploration systématique d'une grille de réglages)*
-*(Optuna, outil d'optimisation plus avancé, n'est pas retenu : son intérêt apparaît sur de grands espaces de
-recherche, ce qui contredirait la démarche de sobriété adoptée. CodeCarbon, qui mesure l'empreinte carbone
-d'un calcul, serait un ajout pertinent et peu coûteux — **option ouverte**, non tranchée.)*
+*(Optuna, outil d'optimisation plus avancé, n'est pas retenu : l'espace compte 44 combinaisons, que la grille
+parcourt en quelques minutes. CodeCarbon, qui mesure l'empreinte carbone d'un calcul, est **écarté chiffres à
+l'appui** : les temps de calcul sont mesurés sur le poste de développement et convertis en énergie et en
+CO₂e — quelques minutes et quelques grammes pour toute la phase (`docs/06.SOBRIETE_calcul.md`) — arbitrages du 01/10.)*
 📦 **Artefacts** : section 9 du notebook · tableau des hyperparamètres
 **Statut** : **à faire**
 
@@ -737,7 +769,7 @@ test de Kolmogorov-Smirnov · tableau de bord de suivi
 | Feature engineering | ratios d'usage, `train_test_split`, mise à l'échelle | SMOTE/ADASYN *(fabriquent de faux clients)*, PCA *(détruit l'explicabilité)*, TimeSeriesSplit *(pas de série chronologique)* |
 | Baseline | scikit-learn, séparation stratifiée | — |
 | Entraînement | régression logistique, forêt aléatoire, validation croisée | CNN, YOLO, autoencodeur *(pas d'images)*, réseaux profonds *(trop peu de données)*, MLflow *(surdimensionné pour un notebook)* |
-| Optimisation | `GridSearchCV`, grille restreinte | Optuna *(contraire à la démarche de sobriété)* · CodeCarbon *(option ouverte)* |
+| Optimisation | `GridSearchCV`, grille restreinte (44 combinaisons) · temps de calcul mesuré | Optuna *(espace trop petit pour en bénéficier)* · CodeCarbon *(mesure sans effet sur aucune décision, chiffrée)* |
 | Validation | matrice de confusion, ROC, précision-rappel, importance par permutation | SHAP *(option ouverte)* · exactitude *(trompeuse ici)* |
 | Déploiement | joblib, esquisse d'API, CI/CD décrite | MLflow Model Registry *(pas d'environnement réel)* |
 | Suivi | PSI, Kolmogorov-Smirnov | — |
@@ -797,7 +829,7 @@ argument défendable devant un jury.
 | 2 · Données | 🟢 Terminé | — |
 | 3 · Exploration | 🟢 Terminé | — |
 | 4 · Préparation | 🟢 Terminé | 01/10 |
-| 5 · Feature engineering | 🟡 En cours | 24/09 |
+| 5 · Feature engineering | 🟢 Terminé | 02/10 |
 | 6 · Baseline | 🟡 En cours | 25/09 |
 | 7 · Entraînement | 🔴 À faire | 25/09 |
 | 8 · Optimisation | 🔴 À faire | 25/09 |

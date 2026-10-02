@@ -41,6 +41,26 @@ def psi(
     return float(np.sum((part_cur - part_ref) * np.log(part_cur / part_ref)))
 
 
+def psi_categoriel(reference: pd.Series, courant: pd.Series, epsilon: float = 1e-6) -> float:
+    """Stability index for a categorical variable: the same formula, on category shares.
+
+    Missing values form their own category: a rise in missing values is a drift too.
+    A category absent from the reference still counts, through the epsilon floor.
+    """
+    ref = pd.Series(reference).astype("string").fillna("<manquant>")
+    cur = pd.Series(courant).astype("string").fillna("<manquant>")
+    if ref.empty or cur.empty:
+        return float("nan")
+    modalites = sorted(set(ref) | set(cur))
+    part_ref = np.clip(
+        ref.value_counts(normalize=True).reindex(modalites, fill_value=0), epsilon, None
+    )
+    part_cur = np.clip(
+        cur.value_counts(normalize=True).reindex(modalites, fill_value=0), epsilon, None
+    )
+    return float(np.sum((part_cur - part_ref) * np.log(part_cur / part_ref)))
+
+
 def ks_deux_echantillons(reference: pd.Series, courant: pd.Series) -> tuple[float, float]:
     """Kolmogorov-Smirnov test: statistic and p-value.
 
@@ -66,11 +86,19 @@ def rapport_derive(
     for col in colonnes:
         if col not in reference.columns or col not in courant.columns:
             continue
-        stat_ks, p_ks = ks_deux_echantillons(reference[col], courant[col])
+        # Categorical variables get the categorical index and no KS test, which assumes an
+        # ordered scale. Until phase 5 the numeric index returned NaN on them, and NaN
+        # compared to the threshold reads as "no alert": any categorical drift went unseen.
+        if pd.api.types.is_numeric_dtype(reference[col]):
+            stat_ks, p_ks = ks_deux_echantillons(reference[col], courant[col])
+            indice = psi(reference[col], courant[col])
+        else:
+            stat_ks, p_ks = float("nan"), float("nan")
+            indice = psi_categoriel(reference[col], courant[col])
         lignes.append(
             {
                 "variable": col,
-                "psi": round(psi(reference[col], courant[col]), 4),
+                "psi": round(indice, 4),
                 "ks_statistique": round(stat_ks, 4),
                 "ks_p_valeur": round(p_ks, 4),
             }

@@ -16,9 +16,19 @@ FICHIER_COMPLET = DONNEES_BRUTES / "churn_saas_complet.csv"
 FICHIER_ECHANTILLON = DONNEES_BRUTES / "churn_saas_echantillon.csv"
 FICHIER_CATALOGUE = DONNEES_BRUTES / "catalogue_plans.csv"
 
+# Project inputs describing the machine that runs it, and the energy hypotheses applied to
+# its measured compute times (tools/ressources_calcul.py, `make ressources`).
+FICHIER_RESSOURCES = RACINE / "config" / "ressources_poste.toml"
+
 # Fixed seed: reproducibility is an acceptance criterion, not a nicety.
 GRAINE = 42
 PART_TEST = 0.20
+
+# --- Phase 5 decision rules, fixed on 01/10/2026 before any result (choix § 7 bis) -----
+ECART_STRATIFICATION_MAX_PTS = 1.0  # churn rate gap between train and test, in points
+SEUIL_PSI_DECOUPAGE = 0.10  # per-variable stability between train and test
+SEUIL_AUC_ADVERSE = 0.60  # a classifier must not tell train from test
+SEUIL_P_PERMUTATION = 0.05  # the model must beat shuffled labels
 
 # --- Excluded columns, each with its own rationale (notebook sections 4 and 7) -------
 # The motives are distinct and not interchangeable: the grid separates ethics from
@@ -36,6 +46,29 @@ EXCLUES_DOUBLON = {
     "taux_activation": "taux_adoption_pct",  # same ratio, scaled by 100 (phase 4)
 }
 EXCLUES_DATE_BRUTE = ["date_souscription"]  # one category per day; anciennete_mois carries it
+# Phase 5, arbitrage 2: each takes a single value per subscription plan, so `plan` already
+# carries all of it. Kept, they gave the model the same four-valued information six times.
+EXCLUES_ATTRIBUT_FORMULE = [
+    "prix_mensuel_par_siege_eur",
+    "sla_reponse_h",
+    "quota_stockage_go",
+    "support_dedie",
+    "fonctionnalites_total",
+]
+# Phase 5, blocs B and C: removed by the rules fixed on 01/10, measured on the training part.
+# Constructed variables: no significant gain as a family (bloc B), the raw variables
+# already carry what they say.
+EXCLUES_SANS_APPORT = [
+    "compte_sans_utilisateur_actif",
+    "taux_couverture_fonc",
+    "usage_par_actif",
+    "tickets_par_actif",
+]
+# Under the decoys' floor for both models, removable without loss (bloc C).
+EXCLUES_SOUS_LE_PLANCHER = ["pays"]
+# The decoys measure the noise during selection, then leave the final model.
+EXCLUES_LEURRES = ["couleur_theme_interface", "code_datacenter"]
+EXCLUES_PAR_SELECTION = EXCLUES_SANS_APPORT + EXCLUES_SOUS_LE_PLANCHER + EXCLUES_LEURRES
 
 CIBLE = "churn"
 CIBLE_SECONDAIRE = "valeur_vie_client_eur"

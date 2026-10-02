@@ -139,6 +139,9 @@ def rendre_markdown(
 
 def main(argv: list[str] | None = None) -> int:
     """Write the register, or print it when asked for standard output."""
+    # A Windows terminal hands a piped child process cp1252, whatever the document holds:
+    # the tool's output must not depend on who runs it (see test_conventions).
+    sys.stdout.reconfigure(encoding="utf-8")
     analyseur = argparse.ArgumentParser(description="Génère le registre des éléments écartés.")
     analyseur.add_argument(
         "--sortie",

@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from churn_saas.monitoring.alertes import evaluer_alertes, table_regles
 from churn_saas.monitoring.derive import ks_deux_echantillons, psi, rapport_derive
@@ -61,3 +62,40 @@ def test_alerte_declenchee_expose_son_action():
     ligne = resultat.loc[resultat["indicateur"] == "PSI sur variables clés"].iloc[0]
     assert ligne["declenchee"]
     assert ligne["responsable"] != "—"
+
+
+# --- Phase 5 · Categorical stability ------------------------------------------------------
+@pytest.mark.phase5
+def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():
+    from churn_saas.monitoring import psi_categoriel
+
+    reference = pd.Series(["a"] * 50 + ["b"] * 50)
+    assert psi_categoriel(reference, reference) == pytest.approx(0, abs=1e-9)
+    assert psi_categoriel(reference, pd.Series(["a"] * 90 + ["b"] * 10)) > 0.25
+
+
+@pytest.mark.phase5
+def test_une_hausse_des_manquants_categoriels_est_une_derive():
+    """Missing values form their own category: more of them is a drift."""
+    from churn_saas.monitoring import psi_categoriel
+
+    reference = pd.Series(["a", "b"] * 50)
+    courant = pd.Series(["a", "b"] * 25 + [None] * 50)
+    assert psi_categoriel(reference, courant) > 0.25
+
+
+@pytest.mark.phase5
+def test_une_derive_categorielle_declenche_une_alerte():
+    """A sector mix moving from 50/50 to 95/5 must raise an alert.
+
+    Until phase 5 the numeric index was applied to every column: on text it returned NaN,
+    and NaN compared to the threshold gave "no alert". The largest possible drift on a
+    categorical variable was reported as none, without any error.
+    """
+    from churn_saas.monitoring import rapport_derive
+
+    reference = pd.DataFrame({"x": range(100), "c": ["a", "b"] * 50})
+    courant = pd.DataFrame({"x": range(100), "c": ["a"] * 95 + ["b"] * 5})
+    rapport = rapport_derive(reference, courant, ["x", "c"]).set_index("variable")
+    assert rapport.loc["c", "alerte"] and not pd.isna(rapport.loc["c", "psi"])
+    assert not rapport.loc["x", "alerte"]

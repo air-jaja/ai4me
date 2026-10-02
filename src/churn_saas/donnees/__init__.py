@@ -26,7 +26,15 @@ from .empreinte import (
     racine_projet,
     verifier_manifeste,
 )
-from .gold import MOTIFS_EXCLUSION, construire_gold, separer_cible, table_exclusions
+from .gold import (
+    MOTIFS_EXCLUSION,
+    Decoupage,
+    construire_gold,
+    decouper_entrainement_test,
+    resume_decoupage,
+    separer_cible,
+    table_exclusions,
+)
 from .gouvernance import (
     comparer_stockage,
     exemples_anonymises,
@@ -75,6 +83,10 @@ __all__ = [
     "silver_lisible",
     "construire_gold",
     "separer_cible",
+    # Training / test split, set aside once (phase 5)
+    "decouper_entrainement_test",
+    "resume_decoupage",
+    "Decoupage",
     "MOTIFS_EXCLUSION",
     # Cleaning primitives, reused at scoring time and shown in the notebooks
     "nettoyer_decimal_texte",

@@ -17,6 +17,10 @@ et sélectionner le même noyau en haut à droite du notebook.
 
 | Symptôme | Cause | Correction |
 |---|---|---|
+| `Failed to build churn-saas-cisia` puis `Readme file does not exist` à la construction de l'image | `pyproject.toml` déclare `readme = "README.md"` et hatchling exige ce fichier pour construire la roue | Corrigé : le Dockerfile crée lui-même un README minimal, sans dépendre du contexte de construction |
+| `failed to compute cache key: "/README.md": not found` | Le fichier est absent du **contexte** de construction — supprimé du répertoire, ou exclu par un `.dockerignore` créé localement | Plus d'objet : le Dockerfile ne le copie plus. Vérifier tout de même `Test-Path README.md` et `Get-Content .dockerignore`, un README manquant signalant un répertoire de travail abîmé |
+| `service "db" has no container to start` | `docker compose start` ne crée aucun conteneur : il relance ceux qui existent déjà | Au premier lancement, `docker compose up -d --build`, ou `make up` |
+| `The "POSTGRES_PASSWORD" variable is not set` | Le fichier `.env` n'a pas été créé à partir du modèle | `Copy-Item .env.example .env`, puis renseigner les mots de passe |
 | *« requires the ipykernel package »* avec un chemin vers `AppData\Roaming\uv\python\...` | L'éditeur pointe sur l'interpréteur uv partagé, pas sur `.venv` | Lancer les deux commandes ci-dessus, puis sélectionner `.venv`. **Ne pas** accepter le `pip install` proposé par l'éditeur : il installerait hors du verrou |
 | `.venv` absent de la liste des interpréteurs | L'environnement a été créé après l'ouverture du dossier | Recharger la fenêtre (`Developer: Reload Window`) |
 | `make` : commande introuvable | `make` n'existe pas nativement sous Windows | Utiliser les commandes `uv run` directement, ou Git Bash |

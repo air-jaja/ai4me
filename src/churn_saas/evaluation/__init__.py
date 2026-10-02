@@ -13,6 +13,7 @@ therefore goes from metrics towards impact, never the other way round.
 from .decision import prioriser, sensibilite_classement, seuil_par_compte
 from .impact import mrr_a_risque, resume_impact
 from .metriques import evaluer, intervalle_confiance_rappel
+from .valeur_vie import diagnostiquer_valeur_vie, valeur_encode_l_issue
 
 __all__ = [
     "evaluer",
@@ -22,4 +23,7 @@ __all__ = [
     "sensibilite_classement",
     "mrr_a_risque",
     "resume_impact",
+    # Does the lifetime value carry the outcome? (arbitrage 3, phase 5)
+    "diagnostiquer_valeur_vie",
+    "valeur_encode_l_issue",
 ]

@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**434 cas de test** issus de 221 fonctions, répartis sur 18 fichiers.
+**510 cas de test** issus de 272 fonctions, répartis sur 20 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -28,23 +28,25 @@ soutenance.
 | Domaine | Fichier | Activité du cycle de vie | Compétences | Cas |
 |---|---|---|---|---|
 | [Structure du paquet](#structure-du-paquet) | `test_structure.py` | Transverse | C6 | 31 |
-| [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 42 |
+| [Nettoyage et niveaux de raffinage](#nettoyage-et-niveaux-de-raffinage) | `test_donnees.py` | 1 · Gestion des données | C3 | 45 |
 | [Schéma, gouvernance et versionnement des données](#schéma-gouvernance-et-versionnement-des-données) | `test_donnees_gouvernance.py` | 1 · Gestion des données | C1, C2, C3 | 26 |
-| [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 9 |
+| [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 15 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
-| [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 14 |
-| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 6 |
+| [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
+| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 8 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
-| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 6 |
+| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 139 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 162 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 66 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 83 |
+| [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 5 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
-| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 4 |
+| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 12 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
+| [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 
 ---
 
@@ -116,6 +118,9 @@ soutenance.
 | 34 | `test_le_taux_d_adoption_est_reconstruit_exactement` | Active users over seats, times 100, one decimal. | the form of the source column. |
 | 35 | `test_un_ingredient_manquant_laisse_la_valeur_manquante` | No price, no revenue: the gap stays, for the median imputation to handle. | — |
 | 36 | `test_une_regle_inapplicable_est_signalee_et_non_ignoree` | A batch lacking an ingredient column says so in the report, it is not skipped quietly. | — |
+| 37 | `test_le_decoupage_est_deterministe_disjoint_et_complet` | Same seed, same accounts in the test part; no account in both; none lost. | — |
+| 38 | `test_le_decoupage_est_stratifie_sur_la_cible` | Both parts keep the churn rate: the gap stays under the threshold fixed beforehand. | — |
+| 39 | `test_une_autre_graine_change_le_jeu_de_test` | The seed matters: a change of seed must show in the recorded fingerprint. | — |
 
 ### Schéma, gouvernance et versionnement des données
 
@@ -167,6 +172,12 @@ soutenance.
 | 7 | `test_la_chaine_partagee_produit_le_meme_gold_que_le_pipeline` | Training and monthly batch go through `preparer_gold`; it must match the pipeline. | The batch used to rebuild silver without the column lists and to skip what the pipeline did. This compares on a small frame; the non-regression suite compares on the full dataset. |
 | 8 | `test_le_silver_garde_les_nan_que_l_exploration_lit` | The zeros apply on the way to gold; silver keeps the phase 3 NaN as they were. | — |
 | 9 | `test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues` | Each drawing function works on its arguments alone: no global, no file written. | They were inline closures in the phase notebooks, reading notebook variables. Moved here so the certification notebook calls them instead of holding a second copy. |
+| 10 | `test_les_jeux_sont_compares_sur_les_memes_plis` | Paired comparison: same folds for every set, so a difference is the variables'. | — |
+| 11 | `test_un_apport_nul_n_est_pas_declare_significatif` | A redundant copy of a variable adds nothing: the one-std rule must say so. | — |
+| 12 | `test_l_ablation_distingue_un_groupe_utile_d_un_groupe_inutile` | _(sans description)_ | — |
+| 13 | `test_le_plancher_des_leurres_designe_les_variables_sans_information` | A variable carrying nothing falls under the decoy's floor; the signal stands above. | — |
+| 14 | `test_une_variable_utile_a_un_seul_modele_est_gardee` | Removal needs the floor for every model: one model finding it useful is enough to keep. | — |
+| 15 | `test_le_facteur_d_inflation_signale_une_quasi_copie` | _(sans description)_ | — |
 
 ### Profilage et exploration
 
@@ -220,6 +231,7 @@ soutenance.
 | 12 | `test_relire_un_instantane_modifie_leve_une_erreur` | Loading a snapshot without checking it defeats its purpose. | The error names both fingerprints: a message saying only "mismatch" leaves the reader unable to tell which side moved. |
 | 13 | `test_le_controle_peut_etre_leve_explicitement` | Inspecting a snapshot known to have drifted stays possible, but never by default. | — |
 | 14 | `test_la_table_de_materialisation_est_lisible` | _(sans description)_ | — |
+| 15 | `test_l_outil_de_materialisation_ecrit_un_manifeste_conforme` | `make materialiser` refreshes the manifest without Jupyter, and checks what it wrote. | The phase 3 notebook used to be the only way to refresh it; when Jupyter failed (the orjson episode of 02/10), the manifest could not follow the code. |
 
 ### Métriques, décision et impact
 
@@ -235,6 +247,8 @@ soutenance.
 | 4 | `test_la_capacite_borne_le_nombre_de_comptes_traites` | The shortlist must never exceed team capacity. | A model flagging more accounts than the team can handle produces no additional action: the constraint is operational, not statistical. |
 | 5 | `test_les_trois_niveaux_d_impact_sont_decroissants` | Exposed, covered and preserved revenue must decrease in that order. | An inversion would mean claiming to save more than what is at risk - the kind of figure that discredits an entire presentation. |
 | 6 | `test_intervalle_de_confiance_sur_le_rappel` | The stated uncertainty on recall must remain around five points. | Section 9 tells the jury that two operating points at 70% and 74% are statistically indistinguishable. That statement must stay true. |
+| 7 | `test_une_valeur_construite_sans_l_issue_n_est_pas_signalee` | Leavers are younger here, so their value is lower. | but the outcome adds nothing. |
+| 8 | `test_une_valeur_qui_encode_l_issue_est_signalee` | A value cut short by the actual departure is caught: the outcome explains it. | — |
 
 ### Artefacts et fiche modèle
 
@@ -262,6 +276,9 @@ soutenance.
 | 4 | `test_rapport_derive_marque_les_alertes` | The drift report must flag the drifting variable and only that one. | — |
 | 5 | `test_chaque_regle_porte_une_action_et_un_responsable` | No rule may exist without a triggered action and a named owner. | A dashboard with no action owner produces no decision - it produces meetings. |
 | 6 | `test_alerte_declenchee_expose_son_action` | A triggered alert must surface what to do and who does it. | — |
+| 7 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
+| 8 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
+| 9 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
 
 ### Contrat d'affichage des notebooks
 
@@ -283,14 +300,16 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×65)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×65)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×73)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×73)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
-| 4 | `test_les_carnets_respectent_le_format_notebook` _(×4)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
+| 4 | `test_les_carnets_respectent_le_format_notebook` _(×5)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_reste_sans_sorties` | The certification notebook ships without outputs until the freeze. | Committed outputs would make every run produce a diff, drowning the real changes. The notebook is executed at the freeze milestone, deliberately and once. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
-| 8 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
+| 8 | `test_chaque_outil_est_couvert_par_le_controle_d_encodage` | A new tool must join the check below; a forgotten one would escape it silently. | — |
+| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×5)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
+| 10 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
 
 ### Stockage et cache des figures
 
@@ -363,7 +382,7 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_chiffres_publies_sont_inchanges` _(×41)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
+| 1 | `test_les_chiffres_publies_sont_inchanges` _(×45)_ | A published figure must still be reproducible by the code that produced it. | When this fails, the code is not necessarily wrong: a source may legitimately have changed. What is certain is that the documents listed in `cite_dans` now contradict it, and must be updated in the same commit. |
 | 2 | `test_l_ecart_de_seuil_entre_deciles_reste_superieur_a_cent` | The "factor over 100" argument justifies rejecting a single global threshold. | It is the central argument of the decision rule, quoted in the framing notebook, in the explanatory document and in the oral pitch. If the spread narrowed, a global threshold would become defensible and the whole design would need rethinking. |
 | 3 | `test_le_seuil_du_dernier_decile_reste_tres_bas` | Acting on a top-decile account stays rational below 1% risk. | The 0.3% figure is the striking end of the argument presented to the jury. |
 | 4 | `test_les_hypotheses_de_cadrage_sont_inchangees` | These values are quoted verbatim in the documents and in the oral pitch. | — |
@@ -389,6 +408,33 @@ soutenance.
 | 24 | `test_l_absence_d_une_valeur_source_n_est_toujours_pas_un_signal` | Phase 2 published a 4.5-point maximum churn gap on raw data; it holds after cleaning. | Measured on silver now, since the cleaning is what phase 4 changed. A gap growing past the published figure plus its tolerance would mean the cleaning creates a signal. |
 | 25 | `test_le_manifeste_decrit_les_jeux_produits_par_le_code` | The derived datasets recorded in the manifest are the ones the code produces today. | Changing a cleaning rule changes silver and gold. Without this test the manifest kept describing the phase 3 gold - 34 columns, misread dates - while the code produced another one, and a model card would have cited a fingerprint nobody can reproduce. When it fails after a deliberate change: re-run the materialisation (README of the phase 4 delivery), then commit the manifest with the code. |
 | 26 | `test_le_contrat_mesure_les_manquants_de_la_source` | The reconstruction runs after the contract, so the contract still sees real gaps. | Placed before, it would report 0 % missing revenue where the source has 3 %, and the monthly monitoring of incoming data quality would go blind. |
+| 27 | `test_la_valeur_vie_client_n_encode_pas_l_issue` | Arbitrage 3 settled by measurement: the observed value may evaluate the rule. | The 18.9 against 15.6 months gap is a composition effect - leavers are younger accounts. Were the value to start encoding the outcome, the impact measured in phase 9 would be inflated, and this test would say so before the jury does. |
+| 28 | `test_les_attributs_de_formule_ne_prennent_qu_une_valeur_par_plan` | The premise of arbitrage 2: if a plan ever had two prices, `plan` alone would lose it. | — |
+| 29 | `test_le_decoupage_reste_celui_qui_a_ete_publie` | 4,000 / 1,000 accounts, the same 28 % churn rate in both parts. | — |
+| 30 | `test_chaque_variable_est_stable_entre_entrainement_et_test` | Largest PSI published at 0.033 (utilisateurs_actifs), rule: below 0.10 everywhere. | — |
+| 31 | `test_l_entrainement_et_le_test_sont_indiscernables` | Adversarial validation, published at 0.52 with the forest; checked here with the logistic regression, which reaches the same verdict in a second instead of fifteen. | — |
+| 32 | `test_le_modele_bat_les_etiquettes_melangees` | Published with 100 shuffles: 0.789 against 0.285, p = 0.01. | Twenty shuffles here, the fewest that can reach p < 0.05, to keep the suite fast. |
+| 33 | `test_la_regression_logistique_a_converge` | Learning curve: validation PR-AUC 0.789 at full size, 0.016 from the training score. | — |
+| 34 | `test_le_manifeste_decrit_le_decoupage_produit_par_le_code` | The test part recorded is the one the code sets aside today. | When it fails after a deliberate change: re-run the materialisation (carnet 03), then commit the manifest with the code. Until then, no result on the test part is comparable. |
+| 35 | `test_les_variables_retenues_sont_celles_de_la_selection` | The 18 variables the selection kept, and only them; no decoy reaches the model. | — |
+| 36 | `test_les_familles_couvrent_exactement_le_jeu_candidat` | Every candidate variable belongs to one family, so the ablation misses none. | — |
+| 37 | `test_les_variables_construites_n_apportent_toujours_rien` | Bloc B, logistic regression: gain -0.001, under one std between folds (0.020). | — |
+| 38 | `test_les_retraits_combines_ne_coutent_rien` | Removals were confirmed one by one; together, the 18 variables lose nothing either (logistic regression: +0.003 over the 25 candidates, better on 23 folds out of 25). | — |
+| 39 | `test_la_fuite_de_la_sante_du_compte_reste_demontree` | Bloc D: the same logistic regression goes from 0.891 to 0.999 AUC with the end-of-period health score. | the leak the notebook narrates, now measured. |
+
+### test_campagnes.py
+
+**Fichier :** `tests/test_campagnes.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_l_activite_courante_a_une_campagne` | _(sans description)_ | — |
+| 2 | `test_chaque_marqueur_de_campagne_est_declare` | With --strict-markers, an undeclared marker fails loudly instead of selecting nothing. | — |
+| 3 | `test_chaque_fichier_de_non_regression_existe` | _(sans description)_ | — |
+| 4 | `test_aucun_test_ne_tourne_deux_fois_dans_une_campagne` | A file listed for non-regression carries no activity marker, or it would run twice. | — |
+| 5 | `test_les_tests_courants_selectionnent_des_tests` | A campaign whose current level selects nothing would pass without testing anything. | — |
 
 ### test_industrialisation.py
 
@@ -415,6 +461,14 @@ soutenance.
 | 2 | `test_aucune_valeur_manquante_ne_sort_du_preprocesseur` | _(sans description)_ | — |
 | 3 | `test_les_categories_manquantes_deviennent_non_renseigne` | An explicit category, not the most frequent one. | The mode would have turned the unknown sector into "Retail" here, inflating the dominant segment and biasing the per-segment fairness analysis. |
 | 4 | `test_le_candidat_partage_le_preprocesseur_de_la_baseline` | One imputation strategy for both models: otherwise the comparison measures two. | — |
+| 5 | `test_la_conversion_en_energie_et_en_emissions_est_exacte` | One hour at 10 W is 10 Wh; at 30.2 g/kWh, 0.302 g. | Ten runs, ten times as much. |
+| 6 | `test_la_charge_se_deduit_des_temps_elementaires` | The workload is declared as data: each step costs its operations times their time. | — |
+| 7 | `test_la_mesure_des_temps_renvoie_chaque_operation` | Smoke test on a small frame: every elementary time the document needs is measured. | — |
+| 8 | `test_la_validation_adverse_ne_distingue_pas_deux_tirages_de_la_meme_source` | _(sans description)_ | — |
+| 9 | `test_la_validation_adverse_detecte_un_decalage` | A test part drawn elsewhere is told apart. | The check can fail, which is what gives its passing a meaning. |
+| 10 | `test_le_test_de_permutation_separe_signal_et_bruit` | Real signal beats every shuffle; pure noise does not. | — |
+| 11 | `test_la_courbe_d_apprentissage_couvre_chaque_taille` | _(sans description)_ | — |
+| 12 | `test_une_variable_connue_apres_l_issue_est_demontree_comme_fuite` | A variable built from the outcome lifts the AUC to near perfection: the symptom. | — |
 
 ### test_registre.py
 
@@ -432,3 +486,20 @@ soutenance.
 | 6 | `test_le_registre_reprend_chaque_exclusion_du_code` | The readable register lists every excluded column, read from the code. | — |
 | 7 | `test_le_registre_genere_est_a_jour` | The document matches its source. | otherwise it describes decisions no longer made. |
 | 8 | `test_le_document_s_ouvre_par_l_avertissement_de_generation` | A reader must know not to edit it, or the next generation erases the edit. | — |
+
+### test_ressources.py
+
+**Fichier :** `tests/test_ressources.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_l_entree_porte_toutes_les_sections` | _(sans description)_ | — |
+| 2 | `test_chaque_hypothese_cite_sa_source` | A power or a carbon intensity without its source is an assertion, not an input. | — |
+| 3 | `test_chaque_mesure_attendue_est_presente_et_positive` | _(sans description)_ | — |
+| 4 | `test_le_poste_est_decrit` | _(sans description)_ | — |
+| 5 | `test_la_description_du_poste_fonctionne_sur_ce_systeme` | Each system has its own source; on the one running the suite, none may come back empty. | — |
+| 6 | `test_le_document_de_sobriete_est_a_jour` | The document matches its input. | otherwise it states a footprint nobody measured. |
+| 7 | `test_des_mesures_provisoires_sont_signalees_comme_telles` | Measures not taken on the development laptop must say so at the top of the document. | — |
+| 8 | `test_l_ecriture_preserve_les_hypotheses_declarees` | Re-measuring the machine must never overwrite what a person declared. | — |

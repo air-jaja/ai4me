@@ -99,7 +99,9 @@ class PreparationGold:
     reconstructions: pd.DataFrame
 
 
-def preparer_gold(silver: pd.DataFrame, enrichir: bool = True) -> PreparationGold:
+def preparer_gold(
+    silver: pd.DataFrame, enrichir: bool = True, garder: list[str] | None = None
+) -> PreparationGold:
     """Silver -> gold, identically for training and for the monthly batch.
 
     Order: usage ratios, structural zeros, deterministic reconstruction, exclusions. The
@@ -114,7 +116,9 @@ def preparer_gold(silver: pd.DataFrame, enrichir: bool = True) -> PreparationGol
     enrichi = ajouter_ratios_usage(silver) if enrichir else silver.copy()
     reconstruit, bilan = reconstruire_valeurs_deterministes(combler_ratios_structurels(enrichi))
     return PreparationGold(
-        silver_enrichi=enrichi, gold=construire_gold(reconstruit), reconstructions=bilan
+        silver_enrichi=enrichi,
+        gold=construire_gold(reconstruit, garder=garder),
+        reconstructions=bilan,
     )
 
 

@@ -140,7 +140,13 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = ["--color=yes", "-ra", "--tb=short"]
+addopts = ["--color=yes", "-ra", "--tb=short", "--strict-markers"]
+# One marker per activity: it selects the tests of the modules created or updated during
+# that activity (tests/campagnes.toml, `make test-courants`). Strict: a misspelt marker
+# would silently select nothing.
+markers = [
+    "phase5: tests des modules créés ou modifiés en phase 5 (feature engineering)",
+]
 
 # Un carnet est un livrable narratif, pas du code de production. Les règles levées
 # ci-dessous relèvent du style ou d'une convention de production, pas d'un défaut :
