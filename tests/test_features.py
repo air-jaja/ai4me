@@ -126,7 +126,7 @@ def test_le_silver_garde_les_nan_que_l_exploration_lit():
 
 
 # --- Phase 4 · Figures of the certification notebook ------------------------------------
-@pytest.mark.phase5
+@pytest.mark.phase6
 def test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues():
     """Each drawing function works on its arguments alone: no global, no file written.
 
@@ -175,6 +175,15 @@ def test_les_graphiques_se_tracent_a_partir_des_seules_donnees_recues():
         ),
         graphiques.tracer_charge_calcul(
             pd.DataFrame({"étape": ["a", "b"], "secondes": [60.0, 30.0]})
+        ),
+        graphiques.tracer_courbes_pr_roc(
+            {"m": (pd.Series([0, 1, 0, 1]), pd.Series([0.1, 0.8, 0.3, 0.6]))}
+        ),
+        graphiques.tracer_calibration(
+            {"m": (pd.Series([0, 1, 0, 1]), pd.Series([0.1, 0.8, 0.3, 0.6]))}
+        ),
+        graphiques.tracer_baselines(
+            {"a": pd.DataFrame({"PR-AUC": [0.5, 0.6]}), "b": pd.DataFrame({"PR-AUC": [0.7, 0.8]})}
         ),
         graphiques.tracer_demonstration_fuite(
             {

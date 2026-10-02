@@ -30,6 +30,13 @@ SEUIL_PSI_DECOUPAGE = 0.10  # per-variable stability between train and test
 SEUIL_AUC_ADVERSE = 0.60  # a classifier must not tell train from test
 SEUIL_P_PERMUTATION = 0.05  # the model must beat shuffled labels
 
+# --- Phase 6 evaluation protocol, fixed on 02/10/2026 before any baseline result ---------
+PLIS_VALIDATION = 5  # stratified folds...
+REPETITIONS_VALIDATION = 5  # ...repeated: the same 25 folds as the phase 5 selection
+PART_HAUT_CLASSEMENT = 0.10  # top of the ranking read for recall and precision
+SEUIL_ERREUR_CALIBRATION = 0.05  # above it, phase 7 calibrates the retained model
+VARIABLE_REGLE_METIER = "derniere_connexion_jours"  # what a CSM would rank by, without a model
+
 # --- Excluded columns, each with its own rationale (notebook sections 4 and 7) -------
 # The motives are distinct and not interchangeable: the grid separates ethics from
 # technical preparation, so one blanket justification would satisfy neither.

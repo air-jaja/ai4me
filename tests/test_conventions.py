@@ -220,6 +220,7 @@ OUTILS_ET_ARGUMENTS = {
     "ressources_calcul.py": ["--sortie", "{tmp}/SOBRIETE.md"],
     "materialiser.py": ["--manifeste", "{tmp}/manifeste.json", "--dossier", "{tmp}/processed"],
     "campagne_tests.py": ["--lister"],
+    "resultats_reference.py": ["--sortie", "{tmp}/reference.json"],
 }
 
 

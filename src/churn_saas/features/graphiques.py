@@ -444,3 +444,79 @@ def tracer_demonstration_fuite(tables: dict[str, pd.DataFrame]) -> Figure:
     )
     fig.tight_layout()
     return fig
+
+
+# --- Phase 6: baselines and evaluation protocol ---------------------------------------------
+def tracer_courbes_pr_roc(predictions: dict[str, tuple[pd.Series, pd.Series]]) -> Figure:
+    """Precision-recall and ROC curves, one line per model, from out-of-fold predictions."""
+    from sklearn.metrics import average_precision_score, precision_recall_curve, roc_curve
+
+    fig, (ax_pr, ax_roc) = plt.subplots(1, 2, figsize=(10.4, 4.2))
+    couleurs = [PALETTE["neutre"], PALETTE["attention"], PALETTE["principal"], PALETTE["accent"]]
+    for (nom, (y, score)), couleur in zip(predictions.items(), couleurs, strict=False):
+        libelle = f"{nom} ({average_precision_score(y, score):.3f})"
+        if pd.Series(score).nunique() == 1:
+            # A constant score has a single operating point; joining it to (0, 1) would draw a
+            # diagonal no threshold reaches. Its true curve is flat at the base rate.
+            ax_pr.hlines(float(np.mean(y)), 0, 1, color=couleur, lw=2, label=libelle)
+        else:
+            precision, rappel, _ = precision_recall_curve(y, score)
+            ax_pr.plot(rappel, precision, color=couleur, lw=2, label=libelle)
+        faux, vrais, _ = roc_curve(y, score)
+        ax_roc.plot(faux, vrais, color=couleur, lw=2, label=nom)
+    ax_roc.plot([0, 1], [0, 1], color=PALETTE["neutre"], ls=":", lw=1)
+    ax_pr.set_xlabel("Rappel")
+    ax_pr.set_ylabel("Précision")
+    ax_pr.set_title("Courbe précision-rappel (PR-AUC entre parenthèses)")
+    ax_roc.set_xlabel("Taux de faux positifs")
+    ax_roc.set_ylabel("Taux de vrais positifs")
+    ax_roc.set_title("Courbe ROC")
+    ax_pr.legend(fontsize=8)
+    ax_roc.legend(fontsize=8, loc="lower right")
+    fig.tight_layout()
+    return fig
+
+
+def tracer_calibration(
+    predictions: dict[str, tuple[pd.Series, pd.Series]], tranches: int = 10
+) -> Figure:
+    """Observed churn rate against announced probability, by probability bucket."""
+    fig, ax = plt.subplots(figsize=(5.4, 4.6))
+    ax.plot([0, 1], [0, 1], color=PALETTE["neutre"], ls=":", lw=1, label="Calibration parfaite")
+    couleurs = [PALETTE["principal"], PALETTE["accent"], PALETTE["attention"]]
+    for (nom, (y, proba)), couleur in zip(predictions.items(), couleurs, strict=False):
+        donnees = pd.DataFrame(
+            {"y": np.asarray(y, dtype=float), "p": np.asarray(proba, dtype=float)}
+        )
+        donnees["tranche"] = pd.cut(
+            donnees["p"], np.linspace(0, 1, tranches + 1), include_lowest=True
+        )
+        points = donnees.groupby("tranche", observed=True).agg(p=("p", "mean"), y=("y", "mean"))
+        ax.plot(points["p"], points["y"], marker="o", color=couleur, lw=1.8, label=nom)
+    ax.set_xlabel("Probabilité annoncée (moyenne de la tranche)")
+    ax.set_ylabel("Taux de churn observé")
+    ax.set_title("Calibration des probabilités")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_baselines(par_pli: dict[str, pd.DataFrame], metrique: str = "PR-AUC") -> Figure:
+    """Distribution of one metric over the 25 folds, one box per baseline."""
+    noms = list(par_pli)
+    fig, ax = plt.subplots(figsize=(6.4, 3.6))
+    boites = ax.boxplot(
+        [par_pli[n][metrique] for n in noms],
+        orientation="horizontal",
+        patch_artist=True,
+        showfliers=False,
+    )
+    for boite in boites["boxes"]:
+        boite.set_facecolor(PALETTE["principal"])
+        boite.set_alpha(0.6)
+    ax.set_yticks(range(1, len(noms) + 1))
+    ax.set_yticklabels(noms)
+    ax.set_xlabel(f"{metrique} sur les 25 plis")
+    ax.set_title(f"Les trois références : {metrique}")
+    fig.tight_layout()
+    return fig

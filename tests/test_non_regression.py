@@ -1362,3 +1362,45 @@ def test_la_fuite_de_la_sante_du_compte_reste_demontree(chaine):
     ).set_index("jeu")
     assert table.loc["sans la variable", "AUC"] == pytest.approx(0.891, abs=0.01)
     assert table.loc["avec `sante_compte_fin_periode`", "AUC"] > 0.99
+
+
+# --- Phase 6 · Baselines and reference results ------------------------------------------------
+def _reference() -> dict:
+    return json.loads(
+        (RACINE / "resultats" / "reference_baseline.json").read_text(encoding="utf-8")
+    )
+
+
+def test_les_resultats_de_reference_sont_reproduits():
+    """The code still yields, fold by fold, the baselines' results phase 7 must beat.
+
+    When it fails after a deliberate change to the data or the protocol: rerun
+    `tools/resultats_reference.py`, then commit the file with the change.
+    """
+    import importlib.util
+
+    specification = importlib.util.spec_from_file_location(
+        "resultats_reference", RACINE / "tools" / "resultats_reference.py"
+    )
+    outil = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(outil)
+    differences = outil.ecarts(_reference(), outil.calculer())
+    assert not differences, "\n".join(differences)
+
+
+def test_le_modele_bat_la_regle_metier_qui_bat_le_hasard():
+    """PR-AUC 0.793 > 0.530 > 0.280: the model is worth more than what a CSM would do alone."""
+    moyennes = {n: b["moyenne"]["PR-AUC"] for n, b in _reference()["baselines"].items()}
+    assert moyennes["régression logistique"] > moyennes["règle métier"] > moyennes["naïve"]
+    assert moyennes["régression logistique"] == pytest.approx(0.793, abs=0.01)
+    assert moyennes["règle métier"] == pytest.approx(0.530, abs=0.01)
+
+
+def test_la_regression_doit_etre_calibree_en_phase_7():
+    """Calibration error 0.11, over the 0.05 threshold fixed beforehand: phase 7 calibrates.
+    The class weighting that helps ranking pushes the probabilities up."""
+    from churn_saas.config import SEUIL_ERREUR_CALIBRATION
+
+    erreur = _reference()["baselines"]["régression logistique"]["moyenne"]["erreur de calibration"]
+    assert erreur > SEUIL_ERREUR_CALIBRATION
+    assert erreur == pytest.approx(0.114, abs=0.02)

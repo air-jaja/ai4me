@@ -30,7 +30,13 @@ from sklearn.base import clone
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedKFold, cross_val_score
 
-from ..config import EXCLUES_LEURRES, EXCLUES_PAR_SELECTION, GRAINE
+from ..config import (
+    EXCLUES_LEURRES,
+    EXCLUES_PAR_SELECTION,
+    GRAINE,
+    PLIS_VALIDATION,
+    REPETITIONS_VALIDATION,
+)
 from ..donnees import Decoupage, decouper_entrainement_test, separer_cible
 from .pipeline import ResultatPipeline, preparer_gold
 
@@ -83,7 +89,9 @@ def parties_avant_selection(resultat: ResultatPipeline) -> Decoupage:
     return decouper_entrainement_test(X, y.astype(int))
 
 
-def plis_repetes(plis: int = 5, repetitions: int = 5) -> RepeatedStratifiedKFold:
+def plis_repetes(
+    plis: int = PLIS_VALIDATION, repetitions: int = REPETITIONS_VALIDATION
+) -> RepeatedStratifiedKFold:
     """The shared folds: the same splits for every variable set compared."""
     return RepeatedStratifiedKFold(n_splits=plis, n_repeats=repetitions, random_state=GRAINE)
 

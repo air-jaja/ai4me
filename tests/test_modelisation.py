@@ -189,3 +189,26 @@ def test_une_variable_connue_apres_l_issue_est_demontree_comme_fuite():
     table = demontrer_fuite(construire_baseline, X, y, fuite).set_index("jeu")
     assert table.loc["avec `apres`", "AUC"] > 0.98
     assert table.loc["sans la variable", "AUC"] < table.loc["avec `apres`", "AUC"]
+
+
+# --- Phase 6 · The simpler references ---------------------------------------------------------
+@pytest.mark.phase6
+def test_la_regle_metier_classe_par_la_variable_choisie():
+    """The longer since the last login, the higher the score; a gap gets the median."""
+    from churn_saas.modelisation import RegleMetier
+
+    X = pd.DataFrame({"derniere_connexion_jours": [1, 30, 90, None]})
+    regle = RegleMetier("derniere_connexion_jours").fit(X, pd.Series([0, 0, 1, 0]))
+    score = regle.predict_proba(X)[:, 1]
+    assert score[0] < score[1] < score[2]
+    assert score[3] == pytest.approx(score[1])
+
+
+@pytest.mark.phase6
+def test_la_baseline_naive_annonce_le_taux_de_base():
+    from churn_saas.modelisation import construire_baseline_naive
+
+    X = pd.DataFrame({"a": range(10)})
+    y = pd.Series([1, 1, 1, 0, 0, 0, 0, 0, 0, 0])
+    proba = construire_baseline_naive().fit(X, y).predict_proba(X)[:, 1]
+    assert np.allclose(proba, 0.3)

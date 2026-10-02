@@ -1,9 +1,12 @@
 # Environnement
 .venv/
+.vscode/**
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 .pytest-tmp/
+.venv-ci/
+.env
 
 # Données
 #
@@ -41,12 +44,11 @@ reports/figures/*
 # Outils
 .pytest_cache/
 .ruff_cache/
-.env
+
 # Artefacts d'échange Git : bundles et patchs se régénèrent, ils n'ont pas à
 # vivre dans l'historique qu'ils servent à transporter.
 *.bundle
 *.patch
 .catalogue-tests-tmp.md
-.venv-ci/
 .registre-tmp.md
 .sobriete-tmp.md

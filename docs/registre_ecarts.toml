@@ -441,10 +441,10 @@ phase = "5 · Features"
 date = "01/10/2026"
 competence = "C5"
 section = "8"
-motif = "Sections 0 à 8 réalignées (phases 1 à 5, dont § 8.A à 8.C et la démonstration de la fuite). Reste l'ancien code de la section 8, marqué « illustratif », et les sections 9 à 13, avec la cellule-pont qui leur fournit les noms attendus."
+motif = "Sections 0 à 8 réalignées (phases 1 à 6) ; l'ancien code du § 8 est remplacé par le § 8.D. Restent les sections 9 à 13, avec la cellule-pont qui leur fournit, à partir du code du projet, les noms qu'elles attendent."
 preuve = "notebooks/cas_usage_churn_saas.ipynb"
 source = "livraison du réalignement des sections 0 à 7"
-condition = "Phase 6 : la cellule illustrative et la cellule-pont sont retirées quand la section 9 est réécrite."
+condition = "Phase 7 : la cellule-pont est retirée quand la section 9 est réécrite."
 
 [[element]]
 id = "D-05"
@@ -593,3 +593,45 @@ motif = "Signal le plus fort de l'exploration (86,5 % de churn), mais sans appor
 preuve = "test_les_variables_construites_n_apportent_toujours_rien"
 source = "00.README_choix_methodologiques § 7 bis"
 condition = "Si un modèle réglé (phase 6) ou un nouveau jeu montre un gain supérieur à un écart-type."
+
+# ═══ Phase 6 · Baseline et protocole d'évaluation ════════════════════════════
+
+[[element]]
+id = "E-601"
+titre = "Seuil fixe de 0,5 et F1 comme critères d'évaluation"
+nature = "méthode"
+statut = "écarté"
+phase = "6 · Baseline"
+date = "02/10/2026"
+competence = "C5"
+section = "8"
+motif = "Ils supposent des erreurs de coût égal, faux dans un modèle de revenus récurrents. Le protocole lit le classement (PR-AUC, haut du classement) ; la décision est prise par valeur espérée (phase 9)."
+preuve = "src/churn_saas/evaluation/protocole.py"
+source = "00.README_choix_methodologiques § 7 ter"
+
+[[element]]
+id = "E-602"
+titre = "Se comparer à des résultats recalculés à la volée plutôt qu'à une référence enregistrée"
+nature = "méthode"
+statut = "écarté"
+phase = "6 · Baseline"
+date = "02/10/2026"
+competence = "C5"
+section = "8"
+motif = "Une régression dans la chaîne déplacerait les deux termes de la comparaison à la fois, sans que personne ne le voie. La référence est enregistrée pli par pli et un test vérifie que le code la reproduit."
+preuve = "test_les_resultats_de_reference_sont_reproduits"
+source = "00.README_choix_methodologiques § 7 ter"
+
+[[element]]
+id = "D-07"
+titre = "Calibrer les probabilités du modèle retenu"
+nature = "action"
+statut = "différé"
+phase = "7 · Modélisation"
+date = "02/10/2026"
+competence = "C5"
+section = "9"
+motif = "Erreur de calibration de la régression logistique : 0,114, au-delà du seuil de 0,05 fixé d'avance. La pondération des classes gonfle les probabilités ; la règle de décision les multiplie par la valeur des comptes."
+preuve = "test_la_regression_doit_etre_calibree_en_phase_7"
+source = "00.README_choix_methodologiques § 7 ter"
+condition = "Phase 7, sur le modèle retenu, avant l'évaluation unique sur le jeu de test."

@@ -5,7 +5,13 @@ more complex model adds anything - and a complex model that adds nothing costs
 maintenance, explainability and compute.
 """
 
-from .baseline import construire_baseline, construire_preprocesseur
+from .baseline import (
+    RegleMetier,
+    construire_baseline,
+    construire_baseline_metier,
+    construire_baseline_naive,
+    construire_preprocesseur,
+)
 from .selection import comparer, construire_candidat, grille_hyperparametres
 from .sobriete import (
     CHARGE_PHASE5,
@@ -26,6 +32,10 @@ from .validation import (
 __all__ = [
     "construire_preprocesseur",
     "construire_baseline",
+    # Phase 6: the simpler references the logistic regression must beat
+    "construire_baseline_naive",
+    "construire_baseline_metier",
+    "RegleMetier",
     "construire_candidat",
     "grille_hyperparametres",
     "comparer",

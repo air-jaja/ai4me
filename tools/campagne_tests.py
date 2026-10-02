@@ -32,12 +32,18 @@ def charger_configuration(chemin: Path = CONFIGURATION) -> dict:
 
 def commandes(niveau: str, campagne: dict) -> list[tuple[str, list[str]]]:
     """The pytest invocations a level stands for, each with a readable label."""
-    courants = ("Tests courants", ["-m", campagne["marqueur"]])
-    non_regression = ("Non-régression", list(campagne["non_regression"]))
+    courants = [("Tests courants", ["-m", campagne["marqueur"]])]
+    non_regression = [("Non-régression", list(campagne["non_regression"]))]
+    precedents = campagne.get("marqueurs_precedents", [])
+    if precedents:
+        # The unit tests of earlier activities stay in the safety net.
+        non_regression.append(
+            ("Non-régression (activités précédentes)", ["-m", " or ".join(precedents)])
+        )
     return {
-        "courants": [courants],
-        "non-regression": [non_regression],
-        "activite": [courants, non_regression],
+        "courants": courants,
+        "non-regression": non_regression,
+        "activite": courants + non_regression,
         "tout": [("Suite complète", [])],
     }[niveau]
 

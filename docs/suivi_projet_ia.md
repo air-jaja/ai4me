@@ -52,7 +52,7 @@ argumentée. C'est pourquoi ce document insiste autant sur les *pourquoi*.
 | **Client / commanditaire** | Direction Customer Success de l'éditeur *(cas d'usage pédagogique)* |
 | **Date de début** | 08/08/2026 |
 | **Échéance cible** | **30/09/2026** (gel des livrables) — remise 01/10/2026 |
-| **Statut global** | 🟡 En cours — phases 1 à 5 terminées (notebook de certification aligné jusqu'au § 8.C), 6 à 11 à exécuter |
+| **Statut global** | 🟡 En cours — phases 1 à 6 terminées (notebook de certification aligné jusqu'au § 8.D), 7 à 11 à exécuter |
 | **Nature** | Exercice de certification. **Aucun déploiement réel** : les phases 10 et 11 sont conçues et documentées, pas mises en service. |
 
 **Légende statut** : `[ ]` à faire · `[~]` en cours · `[x]` terminé · `[—]` sans objet ici
@@ -551,7 +551,7 @@ signalé ; **TimeSeriesSplit** — sans objet, les données ne forment pas une s
 
 ---
 
-## 6 · Baseline & protocole d'évaluation *(🟡 en cours)*
+## 6 · Baseline & protocole d'évaluation *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Une **baseline** est un modèle simple servant de point de comparaison. Sans elle,
 > impossible de dire si un modèle sophistiqué apporte quoi que ce soit. Le **protocole d'évaluation** fixe à
@@ -561,7 +561,12 @@ signalé ; **TimeSeriesSplit** — sans objet, les données ne forment pas une s
 - [x] Définir une séparation reproductible entre données d'apprentissage et de test
 - [x] Choisir la baseline : régression logistique
 - [x] Fixer les critères de performance **avant** l'entraînement
-- [ ] Exécuter la baseline et relever les résultats de référence
+- [x] Exécuter la baseline et relever les résultats de référence — *trois références sur les 25 plis :
+  naïve 0,280, règle métier 0,530, régression logistique **0,793** de PR-AUC ; enregistrées dans
+  `resultats/reference_baseline.json` (02/10)*
+
+**Résultat à porter en phase 7.** La régression logistique bat la règle métier sur les 25 plis, mais elle est
+**mal calibrée** (erreur 0,114, seuil 0,05) : la phase 7 calibrera le modèle retenu (registre, D-07).
 
 **Comment on mesure.** Plusieurs indicateurs coexistent, chacun répondant à une question différente.
 
@@ -578,8 +583,9 @@ inutile.
 
 🔧 **Outils** : scikit-learn *(bibliothèque Python de référence pour l'apprentissage automatique)* ·
 séparation stratifiée · graine aléatoire fixée *(pour que les résultats soient reproductibles à l'identique)*
-📦 **Artefacts** : section 8 du notebook · protocole d'évaluation
-**Statut** : **en cours** — protocole défini, exécution à faire
+📦 **Artefacts** : `evaluation/protocole.py` · carnet `06_baseline.ipynb` · notebook § 8.D ·
+`resultats/reference_baseline.json`
+**Statut** : **terminé** (02/10)
 
 ---
 
@@ -830,7 +836,7 @@ argument défendable devant un jury.
 | 3 · Exploration | 🟢 Terminé | — |
 | 4 · Préparation | 🟢 Terminé | 01/10 |
 | 5 · Feature engineering | 🟢 Terminé | 02/10 |
-| 6 · Baseline | 🟡 En cours | 25/09 |
+| 6 · Baseline | 🟢 Terminé | 02/10 |
 | 7 · Entraînement | 🔴 À faire | 25/09 |
 | 8 · Optimisation | 🔴 À faire | 25/09 |
 | 9 · Validation | 🔴 À faire | 26/09 |
