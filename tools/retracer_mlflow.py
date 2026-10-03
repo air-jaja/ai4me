@@ -115,8 +115,10 @@ def retracer_phase5(mlflow, etiquettes, X, y, forcer: bool = False) -> dict[str,
 
 def main(argv: list[str] | None = None) -> int:
     # A Windows terminal hands a piped child process cp1252, whatever the document holds:
-    # the tool's output must not depend on who runs it (see test_conventions).
+    # the tool's output must not depend on who runs it - its errors on stderr included,
+    # which escaped the first version of this fix (see test_conventions).
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     analyseur = argparse.ArgumentParser(description="Retrace les phases 5 et 6 dans MLflow.")
     analyseur.add_argument("--phase", choices=["5", "6", "tout"], default="tout")
     analyseur.add_argument("--forcer", action="store_true", help="rejouer les runs déjà retracés")

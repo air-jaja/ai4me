@@ -34,6 +34,34 @@ def construire_candidat(X: pd.DataFrame, equilibrer: bool = True) -> Pipeline:
     )
 
 
+# Class balance for XGBoost, which has no class_weight: negatives over positives at the
+# stratified 28 % churn rate (frozen by the non-regression tests).
+POIDS_POSITIFS = 0.72 / 0.28
+
+
+def construire_xgboost(X: pd.DataFrame, **reglages) -> Pipeline:
+    """Third candidate family (D6): gradient boosting, same preprocessing as the others.
+
+    `scale_pos_weight` plays the role of `class_weight="balanced"`. Imported lazily: the
+    `boosting` group is optional, and the CI does not install it.
+    """
+    from xgboost import XGBClassifier
+
+    parametres = {
+        "n_estimators": 300,
+        "max_depth": 4,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "scale_pos_weight": POIDS_POSITIFS,
+        "random_state": GRAINE,
+        "n_jobs": N_JOBS,
+        "verbosity": 0,
+    } | reglages
+    return Pipeline(
+        [("preparation", construire_preprocesseur(X)), ("modele", XGBClassifier(**parametres))]
+    )
+
+
 def grille_hyperparametres() -> dict[str, dict[str, list]]:
     """Deliberately narrow search grid (eco-design, notebook section 8).
 

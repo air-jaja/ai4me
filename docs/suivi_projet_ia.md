@@ -589,7 +589,7 @@ séparation stratifiée · graine aléatoire fixée *(pour que les résultats so
 
 ---
 
-## 7 · Choix & entraînement du modèle *(🟡 en cours — bloc 7.0 fait)*
+## 7 · Choix & entraînement du modèle *(🟢 terminé — B6 à décider)*
 
 **Bloc 7.0 — suivi des expériences (MLflow), 02/10.** Suivi local actif (SQLite, chemin absolu), XGBoost ajouté
 (`xgboost-cpu`), chaîne de quatre runs (forêt et XGBoost en autolog, régression logistique manuelle avec matrice
@@ -615,11 +615,11 @@ options) pour le retraçage et la chaîne ; le retraçage gardait sinon des chif
 > l'opération plusieurs fois sur des découpages différents des données, pour vérifier que le résultat ne
 > tient pas au hasard d'un découpage favorable.
 
-- [ ] Entraîner la baseline (régression logistique)
-- [ ] Entraîner le modèle candidat (forêt aléatoire)
-- [ ] Comparer par validation croisée en 5 découpages
-- [ ] Sélectionner le modèle final et justifier le choix
-- [ ] Entraîner le modèle secondaire d'estimation de la valeur client
+- [x] Entraîner la baseline (régression logistique) — *mesurée en phase 6, référence figée*
+- [x] Entraîner le modèle candidat (forêt aléatoire) — *et XGBoost, réglés sur leurs grilles (03/10)*
+- [x] Comparer par validation croisée en 5 découpages — *25 plis appariés contre la référence : régression 0,793, XGBoost 0,780, forêt 0,774*
+- [x] Sélectionner le modèle final et justifier le choix — *régression logistique calibrée (règle B1) ; test : PR-AUC 0,761 [0,712 ; 0,806] ; alias `champion`*
+- [x] Entraîner le modèle secondaire d'estimation de la valeur client — *forêt de régression, R² (log) 0,888 (règle B5)*
 
 **Les deux modèles comparés**
 
@@ -636,7 +636,7 @@ outils de vision par ordinateur (CNN, YOLO) sont sans objet : il n'y a pas d'ima
 *(MLflow, outil de traçabilité des expérimentations, est **différé à la phase 10** : il tracera le modèle
 final ; en phase 5, les résultats tiennent dans les tableaux du notebook — arbitrage du 01/10.)*
 📦 **Artefacts** : sections 8 et 9 du notebook · modèle entraîné
-**Statut** : **à faire** — prévu les 24 et 25 septembre
+**Statut** : **terminé** (03/10) — SHAP (B6) à décider
 
 ---
 

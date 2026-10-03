@@ -247,6 +247,9 @@ OUTILS_ET_ARGUMENTS = {
     "pipeline_mlflow.py": ["--help"],
     "retracer_mlflow.py": ["--phase", "6"],
     "nettoyer_mlflow.py": [],
+    "selection_modele.py": ["--help"],
+    "evaluation_finale.py": ["--help"],
+    "modele_valeur_vie.py": ["--help"],
 }
 
 
@@ -278,11 +281,46 @@ def test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal(outil, t
         [sys.executable, str(RACINE / "tools" / outil), *arguments],
         cwd=RACINE,
         capture_output=True,
-        env={**os.environ, "PYTHONIOENCODING": "cp1252"},
+        # PYTHONUTF8=0: a Linux CI in the C locale turns UTF-8 mode on by itself and
+        # would hide what a Windows terminal does.
+        env={**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
         timeout=300,
     )
     assert resultat.returncode == 0, resultat.stderr.decode("utf-8", "replace")
     resultat.stdout.decode("utf-8")  # raises if the tool wrote the terminal's encoding
+    resultat.stderr.decode("utf-8")  # errors and warnings too
+
+
+def test_les_erreurs_des_outils_s_ecrivent_aussi_en_utf8(tmp_path):
+    """stderr too: the refusal of a second test evaluation opens with an accented capital,
+    which a Windows terminal turned into byte 0xC9 - unreadable for a UTF-8 reader. The
+    first version of the encoding fix covered stdout only; this reproduces the refusal on a
+    simulated cp1252 terminal."""
+    import os
+    import shutil
+    import subprocess
+    import sys
+
+    source = RACINE / "resultats" / "evaluation_finale.json"
+    if not source.exists():
+        pytest.skip("Évaluation finale pas encore faite.")
+    shutil.copy(source, tmp_path / "evaluation_finale.json")
+    resultat = subprocess.run(
+        [
+            sys.executable,
+            str(RACINE / "tools" / "evaluation_finale.py"),
+            "--sortie",
+            str(tmp_path / "evaluation_finale.json"),
+        ],
+        cwd=RACINE,
+        capture_output=True,
+        # PYTHONUTF8=0: a Linux CI in the C locale turns UTF-8 mode on by itself and
+        # would hide what a Windows terminal does.
+        env={**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
+        timeout=120,
+    )
+    assert resultat.returncode != 0
+    assert "ne sert qu'une fois" in resultat.stderr.decode("utf-8")
 
 
 def test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne(tmp_path):
@@ -317,3 +355,25 @@ def test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne(tmp_p
     carte = tmp_path / "MODEL_CARD.md"
     generer_model_card({"model_id": "essai"}, destination=carte)
     assert carte.read_bytes().endswith(b"\n"), "model card sans saut de ligne final"
+
+
+def test_aucun_fichier_de_modele_n_est_versionne_hors_de_models():
+    """Models live under models/ with their card, written by an absolute path; a model file
+    elsewhere comes from a relative path (the legacy notebook wrote two into notebooks/).
+    Tracked or not yet ignored, it must not reach the repository."""
+    import subprocess
+
+    suivis = subprocess.run(
+        ["git", "ls-files"], cwd=RACINE, capture_output=True, text=True, check=True
+    ).stdout.splitlines()
+    hors_models = [
+        f for f in suivis if f.endswith((".joblib", ".pkl")) and not f.startswith("models/")
+    ]
+    assert not hors_models, f"Fichiers de modèle suivis hors de models/ : {hors_models}"
+    ignores = subprocess.run(
+        ["git", "check-ignore", "notebooks/essai.joblib", "essai.pkl"],
+        cwd=RACINE,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+    assert "notebooks/essai.joblib" in ignores, "Un .joblib hors de models/ ne serait pas ignoré."

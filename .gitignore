@@ -62,5 +62,6 @@ mlartifacts/
 reports/execution/
 
 # Model files written outside models/ (legacy notebook sections 9-13, relative paths):
-# regenerated at each run, never versioned. models/ is already ignored above.
+# regenerated at each run, never versioned (pickles too). models/ is already ignored above.
 *.joblib
+*.pkl

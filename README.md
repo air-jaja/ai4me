@@ -110,9 +110,11 @@ churn-saas-cisia/
     │
     ├── modelisation/       3. MODÉLISATION
     │   ├── baseline.py           régression logistique et préprocesseur
+    │   ├── reglage.py            grilles bornées et calibration apprise dans le pli (phase 7)
     │   ├── selection.py          candidat, grille bornée, comparaison en CV
     │   ├── sobriete.py           temps de calcul mesurés, charge déclarée, énergie et CO₂e
-    │   └── validation.py         validation adverse, test de permutation, courbe d'apprentissage
+    │   ├── validation.py         validation adverse, test de permutation, courbe d'apprentissage
+    │   └── valeur_vie.py         valeur client des comptes récents, linéaire contre forêt (B5)
     │
     ├── evaluation/         4. ÉVALUATION DE LA PERFORMANCE
     │   ├── metriques.py          métriques et intervalle de confiance

@@ -323,8 +323,10 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
 
 def main(argv: list[str] | None = None) -> int:
     # A Windows terminal hands a piped child process cp1252, whatever the document holds:
-    # the tool's output must not depend on who runs it (see test_conventions).
+    # the tool's output must not depend on who runs it - its errors on stderr included,
+    # which escaped the first version of this fix (see test_conventions).
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     # A script draws nothing on screen. Without this, matplotlib picks Tk on Windows, and
     # the figures MLflow's autolog draws are destroyed by another thread at exit:
     # "main thread is not in main loop", "Tcl_AsyncDelete". Set before matplotlib loads.

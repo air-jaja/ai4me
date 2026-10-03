@@ -171,3 +171,39 @@ def test_le_protocole_et_la_selection_utilisent_les_memes_plis():
     a = [tuple(v) for _, v in plis_du_protocole().split(X, y)]
     b = [tuple(v) for _, v in plis_repetes().split(X, y)]
     assert a == b
+
+
+# --- Phase 7 · Rule B1: selecting the final model ---------------------------------------------
+def _scores(gain: float, bruit: float = 0.02, n: int = 25):
+    import numpy as np
+
+    generateur = np.random.default_rng(0)
+    base = 0.79 + generateur.normal(0, bruit, n)
+    return base.tolist(), (base + gain + generateur.normal(0, 0.001, n)).tolist()
+
+
+@pytest.mark.phase7
+def test_un_gain_sous_un_ecart_type_garde_la_reference():
+    from churn_saas.evaluation import comparer_a_la_reference, selectionner
+
+    reference, candidat = _scores(gain=0.005)
+    table = comparer_a_la_reference({"rl": reference, "foret": candidat}, "rl")
+    assert selectionner(table, "rl", ("rl", "foret")) == "rl"
+
+
+@pytest.mark.phase7
+def test_un_gain_significatif_remplace_la_reference():
+    from churn_saas.evaluation import comparer_a_la_reference, selectionner
+
+    reference, candidat = _scores(gain=0.05)
+    table = comparer_a_la_reference({"rl": reference, "foret": candidat}, "rl")
+    assert selectionner(table, "rl", ("rl", "foret")) == "foret"
+
+
+@pytest.mark.phase7
+def test_a_egalite_le_plus_simple_l_emporte():
+    from churn_saas.evaluation import comparer_a_la_reference, selectionner
+
+    reference, candidat = _scores(gain=0.05)
+    table = comparer_a_la_reference({"rl": reference, "foret": candidat, "xgb": candidat}, "rl")
+    assert selectionner(table, "rl", ("rl", "foret", "xgb")) == "foret"

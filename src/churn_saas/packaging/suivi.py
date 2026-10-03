@@ -358,9 +358,13 @@ def tracer_donnees(
         # stays in the tags, the digest carries its prefix.
         jeu = mlflow.data.from_pandas(gold, name="gold", digest=empreinte[:32])
         mlflow.log_input(jeu, context="gold")
-        mlflow.log_table(journal.astype(str), "journal_de_la_chaine.json")
+        # Plain objects, not pandas 3's `str` dtype: MLflow selects text columns as `object`,
+        # which pandas now warns will stop matching `str` columns.
+        mlflow.log_table(journal.astype(str).astype(object), "journal_de_la_chaine.json")
         if profil is not None:
-            mlflow.log_table(profil.reset_index().astype(str), "profil_de_reference.json")
+            mlflow.log_table(
+                profil.reset_index().astype(str).astype(object), "profil_de_reference.json"
+            )
         return run.info.run_id
 
 

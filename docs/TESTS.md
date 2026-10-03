@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**568 cas de test** issus de 310 fonctions, répartis sur 22 fichiers.
+**597 cas de test** issus de 326 fonctions, répartis sur 22 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -33,18 +33,18 @@ soutenance.
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 15 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
-| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 13 |
+| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 16 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 182 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 197 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 89 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 95 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 7 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
-| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 14 |
+| [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 | [test_resultats_reference.py](#test_resultats_referencepy) | `test_resultats_reference.py` | — | — | 5 |
@@ -257,6 +257,9 @@ soutenance.
 | 11 | `test_un_classement_n_a_ni_brier_ni_calibration` | A ranking rule is not a probability: its calibration is reported missing, not computed. | — |
 | 12 | `test_le_protocole_couvre_25_plis_et_chaque_compte_une_fois_hors_pli` | _(sans description)_ | — |
 | 13 | `test_le_protocole_et_la_selection_utilisent_les_memes_plis` | The baselines are measured on the very folds the phase 5 selection used. | — |
+| 14 | `test_un_gain_sous_un_ecart_type_garde_la_reference` | _(sans description)_ | — |
+| 15 | `test_un_gain_significatif_remplace_la_reference` | _(sans description)_ | — |
+| 16 | `test_a_egalite_le_plus_simple_l_emporte` | _(sans description)_ | — |
 
 ### Artefacts et fiche modèle
 
@@ -308,16 +311,18 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×80)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×80)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×85)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×85)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×7)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_est_execute_en_entier_sans_erreur` | The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026). | Outputs in the repository are only worth something if they are trustworthy: either the notebook carries none, or it carries ONE complete run, top to bottom - execution counts 1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the code in order does not produce) - with no error, and no path of the machine it ran on. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
 | 8 | `test_chaque_outil_est_couvert_par_le_controle_d_encodage` | A new tool must join the check below; a forgotten one would escape it silently. | — |
-| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×9)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
-| 10 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
+| 9 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×12)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
+| 10 | `test_les_erreurs_des_outils_s_ecrivent_aussi_en_utf8` | stderr too: the refusal of a second test evaluation opens with an accented capital, which a Windows terminal turned into byte 0xC9 - unreadable for a UTF-8 reader. | The first version of the encoding fix covered stdout only; this reproduces the refusal on a simulated cp1252 terminal. |
+| 11 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
+| 12 | `test_aucun_fichier_de_modele_n_est_versionne_hors_de_models` | Models live under models/ with their card, written by an absolute path; a model file elsewhere comes from a relative path (the legacy notebook wrote two into notebooks/). | Tracked or not yet ignored, it must not reach the repository. |
 
 ### Stockage et cache des figures
 
@@ -435,6 +440,12 @@ soutenance.
 | 43 | `test_le_jeu_vu_par_mlflow_est_celui_du_manifeste` | The data run attaches the gold with the manifest's own fingerprint as digest. | — |
 | 44 | `test_les_baselines_retracees_sont_les_references_figees` | Phase 6 replayed into MLflow gives back, to the digit, the recorded reference. | — |
 | 45 | `test_les_regles_de_la_phase_7_n_ont_pas_bouge_depuis_leur_validation` | B1 to B5 were validated on 02/10/2026, before tuning, comparison, calibration and the test evaluation. | Changing one after the results is precisely what rule 8 forbids: it must go through this test, hence through a reviewed, dated change. |
+| 46 | `test_la_selection_applique_la_regle_b1_a_ses_propres_chiffres` | Recomputing rule B1 from the recorded per-fold scores gives the recorded decision, and the regression's folds are those of the frozen reference. | — |
+| 47 | `test_la_calibration_retenue_est_celle_de_moindre_erreur` | _(sans description)_ | — |
+| 48 | `test_l_evaluation_finale_porte_sur_le_jeu_de_test_enregistre` | The test part evaluated is the one the manifest set aside in phase 5. | — |
+| 49 | `test_le_resultat_sur_le_test_est_coherent_avec_la_validation_croisee` | PR-AUC 0.761 on the test part, interval [0.712, 0.806]: the cross-validated 0.793 lies inside it. | the model generalises as the protocol predicted. |
+| 50 | `test_le_jeu_de_test_ne_peut_pas_etre_relu_en_silence` | A second evaluation is refused unless a motive is given and kept (rule B4). | — |
+| 51 | `test_le_modele_de_valeur_retenu_suit_la_regle_b5` | Recorded: forest R² 0.888 against 0.805 on log(value), gain far above one standard deviation (0.004): the forest is kept, by the rule validated beforehand. | — |
 
 ### test_campagnes.py
 
@@ -487,6 +498,11 @@ soutenance.
 | 12 | `test_une_variable_connue_apres_l_issue_est_demontree_comme_fuite` | A variable built from the outcome lifts the AUC to near perfection: the symptom. | — |
 | 13 | `test_la_regle_metier_classe_par_la_variable_choisie` | The longer since the last login, the higher the score; a gap gets the median. | — |
 | 14 | `test_la_baseline_naive_annonce_le_taux_de_base` | _(sans description)_ | — |
+| 15 | `test_le_reglage_retient_une_combinaison_de_la_grille` | _(sans description)_ | — |
+| 16 | `test_un_modele_calibre_annonce_des_probabilites` | _(sans description)_ | — |
+| 17 | `test_xgboost_s_insere_dans_la_meme_chaine` | _(sans description)_ | — |
+| 18 | `test_la_foret_de_valeur_n_est_retenue_qu_avec_un_gain_significatif` | _(sans description)_ | — |
+| 19 | `test_le_modele_de_valeur_predit_en_euros` | _(sans description)_ | — |
 
 ### test_registre.py
 

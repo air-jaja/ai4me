@@ -12,7 +12,14 @@ from .baseline import (
     construire_baseline_naive,
     construire_preprocesseur,
 )
-from .selection import comparer, construire_candidat, grille_hyperparametres
+from .reglage import ResultatReglage, construire_calibre, regler
+from .selection import (
+    POIDS_POSITIFS,
+    comparer,
+    construire_candidat,
+    construire_xgboost,
+    grille_hyperparametres,
+)
 from .sobriete import (
     CHARGE_PHASE5,
     CHARGE_PRODUCTION_ANNUELLE,
@@ -23,6 +30,12 @@ from .sobriete import (
     estimer_duree,
     mesurer_temps,
     table_empreinte,
+)
+from .valeur_vie import (
+    choisir_modele_valeur,
+    comparer_modeles_valeur,
+    construire_foret_valeur,
+    construire_regression_valeur,
 )
 from .validation import (
     courbe_apprentissage,
@@ -41,6 +54,17 @@ __all__ = [
     "construire_candidat",
     "grille_hyperparametres",
     "comparer",
+    # Phase 7: third family, tuning, calibration
+    "construire_xgboost",
+    "POIDS_POSITIFS",
+    "regler",
+    "ResultatReglage",
+    "construire_calibre",
+    # Phase 7, rule B5: customer lifetime value of recent accounts
+    "construire_regression_valeur",
+    "construire_foret_valeur",
+    "comparer_modeles_valeur",
+    "choisir_modele_valeur",
     # Validating the prepared dataset and its split (phase 5)
     "validation_adverse",
     "tester_permutation",
