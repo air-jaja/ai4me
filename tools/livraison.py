@@ -85,9 +85,10 @@ def verifier(base: str, patchs: list[Path]) -> dict[str, str]:
                 encoding="utf-8",
                 errors="replace",
             )
-            derniere = [x for x in sortie.stdout.splitlines() if x.strip()][-1:] or [
-                "(sans sortie)"
-            ]
+            propre = __import__("re").sub(r"\x1b\[[0-9;]*m", "", sortie.stdout)
+            derniere = [
+                x for x in propre.splitlines() if x.strip() and ("passed" in x or "Campagne" in x)
+            ][-1:] or ["(sans sortie)"]
             resultats[nom] = ("OK — " if sortie.returncode == 0 else "ÉCHEC — ") + derniere[0][:150]
         return resultats
     finally:
