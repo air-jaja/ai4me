@@ -1,0 +1,151 @@
+{
+  "identite_execution": "e509cf057b01699d",
+  "regles": "B1 à B3 validées le 02/10/2026 (commit « decision(phase 7) »)",
+  "reglages": {
+    "forêt aléatoire": {
+      "meilleurs_parametres": {
+        "modele__class_weight": "None",
+        "modele__max_depth": "10",
+        "modele__min_samples_leaf": "5",
+        "modele__n_estimators": "100"
+      },
+      "pr_auc_grille": 0.7748
+    },
+    "xgboost": {
+      "meilleurs_parametres": {
+        "modele__learning_rate": "0.05",
+        "modele__max_depth": "3",
+        "modele__min_child_weight": "5",
+        "modele__n_estimators": "200"
+      },
+      "pr_auc_grille": 0.7794
+    }
+  },
+  "comparaison": [
+    {
+      "modèle": "régression logistique",
+      "PR-AUC": 0.7933,
+      "gain apparié": 0.0,
+      "seuil (1 écart-type)": 0.0188,
+      "plis gagnés": 0,
+      "gain significatif": false
+    },
+    {
+      "modèle": "forêt aléatoire",
+      "PR-AUC": 0.7738,
+      "gain apparié": -0.0195,
+      "seuil (1 écart-type)": 0.0188,
+      "plis gagnés": 1,
+      "gain significatif": false
+    },
+    {
+      "modèle": "xgboost",
+      "PR-AUC": 0.7803,
+      "gain apparié": -0.013,
+      "seuil (1 écart-type)": 0.0188,
+      "plis gagnés": 1,
+      "gain significatif": false
+    }
+  ],
+  "par_pli": {
+    "régression logistique": [
+      0.7809281636,
+      0.8096800957,
+      0.8157069374,
+      0.7614899168,
+      0.7965306888,
+      0.8090873137,
+      0.7920042251,
+      0.7709294218,
+      0.7790046933,
+      0.8175526424,
+      0.7964520839,
+      0.7921810054,
+      0.8158680088,
+      0.7917118759,
+      0.7716256659,
+      0.7620202776,
+      0.8039144206,
+      0.801953116,
+      0.7910712636,
+      0.8008511665,
+      0.799249517,
+      0.7574350953,
+      0.8168097569,
+      0.7783714205,
+      0.8200762173
+    ],
+    "forêt aléatoire": [
+      0.7761309386,
+      0.7702079962,
+      0.7848058996,
+      0.7482724891,
+      0.7944076588,
+      0.7725721572,
+      0.7674799516,
+      0.7730170533,
+      0.7660654363,
+      0.7926668343,
+      0.7874038624,
+      0.782174948,
+      0.7835333905,
+      0.7551770152,
+      0.7549935787,
+      0.7490752553,
+      0.7719157743,
+      0.773716495,
+      0.773978193,
+      0.795803051,
+      0.7721013113,
+      0.7094690439,
+      0.8126389784,
+      0.7594442455,
+      0.8178676078
+    ],
+    "xgboost": [
+      0.7752967316,
+      0.7818427443,
+      0.79280203,
+      0.7549238836,
+      0.7922075868,
+      0.7881479182,
+      0.7824955923,
+      0.7655922251,
+      0.7609007494,
+      0.8014870203,
+      0.7860283997,
+      0.7826921495,
+      0.8010344368,
+      0.7789090488,
+      0.7550424828,
+      0.7568034805,
+      0.7736717928,
+      0.790118963,
+      0.7783023092,
+      0.7903341418,
+      0.7891261633,
+      0.7283304465,
+      0.8223016645,
+      0.7673277749,
+      0.8126132235
+    ]
+  },
+  "modele_retenu": "régression logistique",
+  "calibration": {
+    "methodes": {
+      "sigmoid": {
+        "PR-AUC": 0.7934,
+        "erreur de calibration": 0.0298,
+        "erreur hors pli (première répétition)": 0.0097
+      },
+      "isotonic": {
+        "PR-AUC": 0.7901,
+        "erreur de calibration": 0.0318,
+        "erreur hors pli (première répétition)": 0.0124
+      }
+    },
+    "methode_retenue": "sigmoid",
+    "objectif_atteint": true
+  },
+  "duree_s": 191.0
+}

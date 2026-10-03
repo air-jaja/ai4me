@@ -11,7 +11,7 @@ CATALOGUE_TEMPORAIRE := .catalogue-tests-tmp.md
 REGISTRE_TEMPORAIRE := .registre-tmp.md
 SOBRIETE_TEMPORAIRE := .sobriete-tmp.md
 
-.PHONY: aide install install-plateforme kernel hooks test test-activite test-courants test-non-regression test-ci test-doc test-doc-check registre-doc registre-doc-check ressources sobriete-doc sobriete-doc-check materialiser lint format check \
+.PHONY: aide install install-plateforme kernel hooks test test-activite test-courants test-non-regression test-ci test-doc test-doc-check registre-doc registre-doc-check ressources sobriete-doc sobriete-doc-check materialiser mlflow-nettoyer vider-notebook lint format check \
         notebook executer-notebook \
         serve docker-build up down logs ps smoke mlflow lot-mensuel exporteur clean
 
@@ -169,11 +169,20 @@ notebook:
 
 # Rejoue le notebook sur les données réelles, kernel neuf. Contrôle exigé avant remise :
 # il doit se terminer sans erreur.
+# Run the certification notebook in place, top to bottom: it is versioned WITH its outputs
+# (rule 3, revised 03/10/2026). An HTML copy goes to reports/execution/ (ignored).
 executer-notebook:
-	uv run jupyter nbconvert --to notebook --execute \
-		--ExecutePreprocessor.timeout=1800 \
-		--output cas_usage_churn_saas_execute.ipynb \
+	uv run jupyter nbconvert --to notebook --execute --inplace \
+		--ExecutePreprocessor.timeout=1800 notebooks/cas_usage_churn_saas.ipynb
+	uv run jupyter nbconvert --to html --output-dir reports/execution \
 		notebooks/cas_usage_churn_saas.ipynb
+
+# Optional since rule 3 was revised: remove outputs and per-cell execution timestamps,
+# e.g. before a series of edits. Notebook metadata is kept.
+vider-notebook:
+	uv run jupyter nbconvert --clear-output --ClearMetadataPreprocessor.enabled=True \
+		--ClearMetadataPreprocessor.clear_notebook_metadata=False \
+		--inplace notebooks/cas_usage_churn_saas.ipynb
 
 # --- Plateforme --------------------------------------------------------------
 serve:
@@ -199,8 +208,14 @@ ps:
 smoke:
 	curl -fsS http://localhost:8000/ready && echo " OK"
 
+# The interface must read the project's store (config.URI_SUIVI), not a default one: without
+# --backend-store-uri it would open an empty store in the current directory.
 mlflow:
-	uv run mlflow ui --port 5000
+	uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db --port 5000
+
+# Empty the local store: MLflow is a journal, rebuilt by materialiser, retracer and pipeline.
+mlflow-nettoyer:
+	uv run python tools/nettoyer_mlflow.py --confirmer
 
 lot-mensuel:
 	uv run python -m churn_saas.industrialisation.flux

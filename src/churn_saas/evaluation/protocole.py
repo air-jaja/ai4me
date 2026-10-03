@@ -163,3 +163,40 @@ def resumer(resultats: dict[str, ResultatProtocole]) -> pd.DataFrame:
             for m in resultat.par_pli.columns
         }
     return pd.DataFrame(lignes).T
+
+
+# --- Phase 7, rule B1: selecting the final model ---------------------------------------------
+def comparer_a_la_reference(scores: dict[str, list[float]], reference: str) -> pd.DataFrame:
+    """Paired PR-AUC gain of each model over the reference, on the same 25 folds (B1).
+
+    The threshold is the standard deviation of the reference between folds: a gain below
+    the variation due to the split alone cannot be told from it.
+    """
+    base = pd.Series(scores[reference], dtype=float)
+    seuil = float(base.std())
+    lignes = []
+    for nom, valeurs in scores.items():
+        serie = pd.Series(valeurs, dtype=float)
+        gain = serie - base
+        lignes.append(
+            {
+                "modèle": nom,
+                "PR-AUC": round(float(serie.mean()), 4),
+                "gain apparié": round(float(gain.mean()), 4),
+                "seuil (1 écart-type)": round(seuil, 4),
+                "plis gagnés": int((gain > 0).sum()),
+                "gain significatif": nom != reference and float(gain.mean()) > seuil,
+            }
+        )
+    return pd.DataFrame(lignes)
+
+
+def selectionner(comparaison: pd.DataFrame, reference: str, ordre: tuple[str, ...]) -> str:
+    """Rule B1: a candidate replaces the reference only with a significant paired gain;
+    among significant candidates the largest gain wins, and on a tie, the simplest."""
+    significatifs = comparaison[comparaison["gain significatif"]]
+    if significatifs.empty:
+        return reference
+    meilleur = significatifs["gain apparié"].max()
+    ex_aequo = significatifs.loc[significatifs["gain apparié"] == meilleur, "modèle"]
+    return min(ex_aequo, key=lambda nom: ordre.index(nom) if nom in ordre else len(ordre))

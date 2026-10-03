@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 
-from ..config import GRAINE
+from ..config import GRAINE, N_JOBS
 from .baseline import construire_preprocesseur
 
 
@@ -27,10 +27,38 @@ def construire_candidat(X: pd.DataFrame, equilibrer: bool = True) -> Pipeline:
                     min_samples_leaf=5,
                     class_weight="balanced" if equilibrer else None,
                     random_state=GRAINE,
-                    n_jobs=-1,
+                    n_jobs=N_JOBS,
                 ),
             ),
         ]
+    )
+
+
+# Class balance for XGBoost, which has no class_weight: negatives over positives at the
+# stratified 28 % churn rate (frozen by the non-regression tests).
+POIDS_POSITIFS = 0.72 / 0.28
+
+
+def construire_xgboost(X: pd.DataFrame, **reglages) -> Pipeline:
+    """Third candidate family (D6): gradient boosting, same preprocessing as the others.
+
+    `scale_pos_weight` plays the role of `class_weight="balanced"`. Imported lazily: the
+    `boosting` group is optional, and the CI does not install it.
+    """
+    from xgboost import XGBClassifier
+
+    parametres = {
+        "n_estimators": 300,
+        "max_depth": 4,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "scale_pos_weight": POIDS_POSITIFS,
+        "random_state": GRAINE,
+        "n_jobs": N_JOBS,
+        "verbosity": 0,
+    } | reglages
+    return Pipeline(
+        [("preparation", construire_preprocesseur(X)), ("modele", XGBClassifier(**parametres))]
     )
 
 
@@ -51,6 +79,13 @@ def grille_hyperparametres() -> dict[str, dict[str, list]]:
             "modele__min_samples_leaf": [1, 5, 20],
             "modele__class_weight": [None, "balanced"],
         },
+        # B3 (02/10/2026): bounded like the forest's - 3 x 2 x 2 x 2 = 24 combinations.
+        "xgboost": {
+            "modele__max_depth": [3, 4, 6],
+            "modele__learning_rate": [0.05, 0.1],
+            "modele__n_estimators": [200, 400],
+            "modele__min_child_weight": [1, 5],
+        },
     }
 
 
@@ -70,7 +105,7 @@ def comparer(
     lignes = []
     for nom, modele in modeles.items():
         scores = cross_validate(
-            modele, X, y, cv=plis, scoring=["average_precision", "roc_auc"], n_jobs=-1
+            modele, X, y, cv=plis, scoring=["average_precision", "roc_auc"], n_jobs=1
         )
         lignes.append(
             {

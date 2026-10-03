@@ -26,6 +26,7 @@ rounding difference.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -1404,3 +1405,144 @@ def test_la_regression_doit_etre_calibree_en_phase_7():
     erreur = _reference()["baselines"]["régression logistique"]["moyenne"]["erreur de calibration"]
     assert erreur > SEUIL_ERREUR_CALIBRATION
     assert erreur == pytest.approx(0.114, abs=0.02)
+
+
+# --- Phase 7 · Bloc 7.0: MLflow agrees with the sources of truth -----------------------------
+@pytest.mark.skipif(
+    importlib.util.find_spec("mlflow") is None, reason="MLflow absent (groupe suivi)"
+)
+def test_le_jeu_vu_par_mlflow_est_celui_du_manifeste(chaine):
+    """The data run attaches the gold with the manifest's own fingerprint as digest."""
+    mlflow = pytest.importorskip("mlflow")
+
+    from churn_saas.packaging import tracer_donnees
+
+    manifeste = json.loads((RACINE / "data" / "manifeste_v1.0.json").read_text(encoding="utf-8"))
+    run_id = tracer_donnees(chaine.gold, chaine.journal, manifeste)
+    run = mlflow.get_run(run_id)
+    empreinte = manifeste["jeux_derives"]["jeux"]["gold"]["empreinte_contenu"]
+    assert run.inputs.dataset_inputs[0].dataset.digest == empreinte[:32]
+    assert run.data.tags["empreinte_gold"] == empreinte
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("mlflow") is None, reason="MLflow absent (groupe suivi)"
+)
+def test_les_baselines_retracees_sont_les_references_figees():
+    """Phase 6 replayed into MLflow gives back, to the digit, the recorded reference."""
+    from churn_saas.packaging import configurer_suivi
+
+    specification = importlib.util.spec_from_file_location(
+        "retracer_mlflow", RACINE / "tools" / "retracer_mlflow.py"
+    )
+    outil = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(outil)
+    retrace = outil.retracer_phase6(configurer_suivi(), {"phase": "6"})
+    for nom, baseline in _reference()["baselines"].items():
+        assert retrace[nom] == pytest.approx(baseline["moyenne"]["PR-AUC"], abs=1e-9)
+
+
+# --- Phase 7 · The decision rules validated before any comparison (rule 8) ---------------------
+def test_les_regles_de_la_phase_7_n_ont_pas_bouge_depuis_leur_validation():
+    """B1 to B5 were validated on 02/10/2026, before tuning, comparison, calibration and the
+    test evaluation. Changing one after the results is precisely what rule 8 forbids: it
+    must go through this test, hence through a reviewed, dated change."""
+    from churn_saas import config
+    from churn_saas.modelisation import grille_hyperparametres
+
+    assert config.ORDRE_DE_SIMPLICITE == ("régression logistique", "forêt aléatoire", "xgboost")
+    assert config.METHODES_CALIBRATION == ("sigmoid", "isotonic")
+    assert config.SEUIL_ERREUR_CALIBRATION == 0.05
+    assert (config.TIRAGES_BOOTSTRAP, config.NIVEAU_CONFIANCE) == (1000, 0.95)
+    assert config.MODELES_VALEUR_VIE == ("régression linéaire", "forêt de régression")
+    grille = grille_hyperparametres()["xgboost"]
+    combinaisons = 1
+    for valeurs in grille.values():
+        combinaisons *= len(valeurs)
+    assert combinaisons == 24
+
+
+# --- Phase 7 · The recorded selection follows the rules ------------------------------------------
+def _selection() -> dict:
+    chemin = RACINE / "resultats" / "selection_modele.json"
+    if not chemin.exists():
+        pytest.skip("Sélection pas encore enregistrée (tools/selection_modele.py).")
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def test_la_selection_applique_la_regle_b1_a_ses_propres_chiffres():
+    """Recomputing rule B1 from the recorded per-fold scores gives the recorded decision,
+    and the regression's folds are those of the frozen reference."""
+    from churn_saas.config import ORDRE_DE_SIMPLICITE
+    from churn_saas.evaluation import comparer_a_la_reference, selectionner
+
+    selection = _selection()
+    regression = "régression logistique"
+    reference = _reference()["baselines"][regression]["par_pli"]["PR-AUC"]
+    assert selection["par_pli"][regression] == pytest.approx(reference, abs=1e-9)
+    table = comparer_a_la_reference(selection["par_pli"], regression)
+    assert selectionner(table, regression, ORDRE_DE_SIMPLICITE) == selection["modele_retenu"]
+
+
+def test_la_calibration_retenue_est_celle_de_moindre_erreur():
+    calibration = _selection()["calibration"]
+    erreurs = {m: v["erreur de calibration"] for m, v in calibration["methodes"].items()}
+    assert calibration["methode_retenue"] == min(erreurs, key=erreurs.get)
+
+
+# --- Phase 7 · The single evaluation on the test part (rule B4) -----------------------------------
+def _evaluation_finale() -> dict:
+    chemin = RACINE / "resultats" / "evaluation_finale.json"
+    if not chemin.exists():
+        pytest.skip("Évaluation finale pas encore faite (tools/evaluation_finale.py).")
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def test_l_evaluation_finale_porte_sur_le_jeu_de_test_enregistre():
+    """The test part evaluated is the one the manifest set aside in phase 5."""
+    manifeste = json.loads((RACINE / "data" / "manifeste_v1.0.json").read_text(encoding="utf-8"))
+    evaluation = _evaluation_finale()
+    assert evaluation["empreinte_comptes_test"] == manifeste["decoupage"]["empreinte_comptes_test"]
+    assert evaluation["comptes_test"] == 1000
+
+
+def test_le_resultat_sur_le_test_est_coherent_avec_la_validation_croisee():
+    """PR-AUC 0.761 on the test part, interval [0.712, 0.806]: the cross-validated 0.793 lies
+    inside it - the model generalises as the protocol predicted."""
+    evaluation = _evaluation_finale()
+    bas, haut = evaluation["intervalles_95"]["PR-AUC"]
+    assert bas <= evaluation["validation_croisee_pr_auc"] <= haut
+    assert bas <= evaluation["metriques"]["PR-AUC"] <= haut
+
+
+def test_le_jeu_de_test_ne_peut_pas_etre_relu_en_silence(tmp_path):
+    """A second evaluation is refused unless a motive is given and kept (rule B4)."""
+    import shutil
+    import subprocess
+    import sys
+
+    copie = tmp_path / "evaluation_finale.json"
+    if not (RACINE / "resultats" / "evaluation_finale.json").exists():
+        pytest.skip("Évaluation finale pas encore faite.")
+    shutil.copy(RACINE / "resultats" / "evaluation_finale.json", copie)
+    sortie = subprocess.run(
+        [sys.executable, str(RACINE / "tools" / "evaluation_finale.py"), "--sortie", str(copie)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        cwd=RACINE,
+        timeout=120,
+    )
+    assert sortie.returncode != 0 and "ne sert qu'une fois" in sortie.stderr
+
+
+def test_le_modele_de_valeur_retenu_suit_la_regle_b5():
+    """Recorded: forest R² 0.888 against 0.805 on log(value), gain far above one standard
+    deviation (0.004): the forest is kept, by the rule validated beforehand."""
+    chemin = RACINE / "resultats" / "modele_valeur_vie.json"
+    if not chemin.exists():
+        pytest.skip("Modèle de valeur pas encore comparé (tools/modele_valeur_vie.py).")
+    from churn_saas.modelisation import choisir_modele_valeur
+
+    bilan = json.loads(chemin.read_text(encoding="utf-8"))
+    assert choisir_modele_valeur(pd.DataFrame(bilan["r2_log_par_pli"])) == bilan["modele_retenu"]

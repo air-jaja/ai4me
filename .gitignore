@@ -52,3 +52,16 @@ reports/figures/*
 .catalogue-tests-tmp.md
 .registre-tmp.md
 .sobriete-tmp.md
+
+# MLflow local tracking store (config.URI_SUIVI): regenerated, never versioned.
+# What is authoritative stays in resultats/ and data/manifeste_v1.0.json.
+mlruns/
+mlartifacts/
+
+# Executed copy of the certification notebook (make executer-notebook) and its HTML.
+reports/execution/
+
+# Model files written outside models/ (legacy notebook sections 9-13, relative paths):
+# regenerated at each run, never versioned (pickles too). models/ is already ignored above.
+*.joblib
+*.pkl

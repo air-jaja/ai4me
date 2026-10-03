@@ -16,12 +16,14 @@ from .metriques import evaluer, intervalle_confiance_rappel
 from .protocole import (
     METRIQUES,
     ResultatProtocole,
+    comparer_a_la_reference,
     erreur_calibration,
     evaluer_selon_protocole,
     mesurer,
     plis_du_protocole,
     rappel_precision_haut,
     resumer,
+    selectionner,
 )
 from .valeur_vie import diagnostiquer_valeur_vie, valeur_encode_l_issue
 
@@ -45,4 +47,7 @@ __all__ = [
     "evaluer_selon_protocole",
     "ResultatProtocole",
     "resumer",
+    # Phase 7, rule B1
+    "comparer_a_la_reference",
+    "selectionner",
 ]

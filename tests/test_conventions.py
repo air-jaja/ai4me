@@ -121,19 +121,42 @@ def test_les_carnets_respectent_le_format_notebook(carnet: Path):
     nbformat.validate(nb)
 
 
-def test_le_notebook_de_certification_reste_sans_sorties():
-    """The certification notebook ships without outputs until the freeze.
+def test_le_notebook_de_certification_est_execute_en_entier_sans_erreur():
+    """The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026).
 
-    Committed outputs would make every run produce a diff, drowning the real changes. The
-    notebook is executed at the freeze milestone, deliberately and once.
+    Outputs in the repository are only worth something if they are trustworthy: either the
+    notebook carries none, or it carries ONE complete run, top to bottom - execution counts
+    1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the
+    code in order does not produce) - with no error, and no path of the machine it ran on.
     """
+    import json
+    import re
+
     import nbformat
 
     nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
-    avec_sorties = [i for i, c in enumerate(nb.cells) if c.cell_type == "code" and c.get("outputs")]
-    assert not avec_sorties, (
-        f"Cellules avec sorties : {avec_sorties}. "
-        "Le notebook de certification est exécuté au moment du gel, pas avant."
+    code = [c for c in nb.cells if c.cell_type == "code"]
+    compteurs = [c.get("execution_count") for c in code]
+    if all(n is None for n in compteurs) and not any(c.get("outputs") for c in code):
+        return  # not executed at all: allowed, nothing to trust or distrust
+    correction = (
+        " Le réexécuter en entier : `make executer-notebook` (sans make : "
+        "`uv run jupyter nbconvert --to notebook --execute --inplace "
+        "notebooks/cas_usage_churn_saas.ipynb`)."
+    )
+    assert compteurs == list(range(1, len(code) + 1)), (
+        "Le notebook n'a pas été exécuté en une seule fois, du début à la fin : compteurs "
+        f"{compteurs[:12]}…" + correction
+    )
+    en_erreur = [i for i, c in enumerate(code) if any(o.output_type == "error" for o in c.outputs)]
+    assert not en_erreur, f"Cellules de code en erreur : {en_erreur}." + correction
+    chemin_local = re.compile(r"[A-Za-z]:\\\\Users|/home/[a-z]|/Users/[A-Za-z]")
+    avec_chemin = [
+        i for i, c in enumerate(code) if chemin_local.search(json.dumps(c.outputs, default=str))
+    ]
+    assert not avec_chemin, (
+        f"Sorties contenant un chemin du poste (cellules {avec_chemin}) : le livrable ne doit "
+        "dépendre d'aucune machine. Afficher des chemins relatifs à la racine du projet."
     )
 
 
@@ -221,6 +244,12 @@ OUTILS_ET_ARGUMENTS = {
     "materialiser.py": ["--manifeste", "{tmp}/manifeste.json", "--dossier", "{tmp}/processed"],
     "campagne_tests.py": ["--lister"],
     "resultats_reference.py": ["--sortie", "{tmp}/reference.json"],
+    "pipeline_mlflow.py": ["--help"],
+    "retracer_mlflow.py": ["--phase", "6"],
+    "nettoyer_mlflow.py": [],
+    "selection_modele.py": ["--help"],
+    "evaluation_finale.py": ["--help"],
+    "modele_valeur_vie.py": ["--help"],
 }
 
 
@@ -252,11 +281,46 @@ def test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal(outil, t
         [sys.executable, str(RACINE / "tools" / outil), *arguments],
         cwd=RACINE,
         capture_output=True,
-        env={**os.environ, "PYTHONIOENCODING": "cp1252"},
+        # PYTHONUTF8=0: a Linux CI in the C locale turns UTF-8 mode on by itself and
+        # would hide what a Windows terminal does.
+        env={**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
         timeout=300,
     )
     assert resultat.returncode == 0, resultat.stderr.decode("utf-8", "replace")
     resultat.stdout.decode("utf-8")  # raises if the tool wrote the terminal's encoding
+    resultat.stderr.decode("utf-8")  # errors and warnings too
+
+
+def test_les_erreurs_des_outils_s_ecrivent_aussi_en_utf8(tmp_path):
+    """stderr too: the refusal of a second test evaluation opens with an accented capital,
+    which a Windows terminal turned into byte 0xC9 - unreadable for a UTF-8 reader. The
+    first version of the encoding fix covered stdout only; this reproduces the refusal on a
+    simulated cp1252 terminal."""
+    import os
+    import shutil
+    import subprocess
+    import sys
+
+    source = RACINE / "resultats" / "evaluation_finale.json"
+    if not source.exists():
+        pytest.skip("Évaluation finale pas encore faite.")
+    shutil.copy(source, tmp_path / "evaluation_finale.json")
+    resultat = subprocess.run(
+        [
+            sys.executable,
+            str(RACINE / "tools" / "evaluation_finale.py"),
+            "--sortie",
+            str(tmp_path / "evaluation_finale.json"),
+        ],
+        cwd=RACINE,
+        capture_output=True,
+        # PYTHONUTF8=0: a Linux CI in the C locale turns UTF-8 mode on by itself and
+        # would hide what a Windows terminal does.
+        env={**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
+        timeout=120,
+    )
+    assert resultat.returncode != 0
+    assert "ne sert qu'une fois" in resultat.stderr.decode("utf-8")
 
 
 def test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne(tmp_path):
@@ -291,3 +355,25 @@ def test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne(tmp_p
     carte = tmp_path / "MODEL_CARD.md"
     generer_model_card({"model_id": "essai"}, destination=carte)
     assert carte.read_bytes().endswith(b"\n"), "model card sans saut de ligne final"
+
+
+def test_aucun_fichier_de_modele_n_est_versionne_hors_de_models():
+    """Models live under models/ with their card, written by an absolute path; a model file
+    elsewhere comes from a relative path (the legacy notebook wrote two into notebooks/).
+    Tracked or not yet ignored, it must not reach the repository."""
+    import subprocess
+
+    suivis = subprocess.run(
+        ["git", "ls-files"], cwd=RACINE, capture_output=True, text=True, check=True
+    ).stdout.splitlines()
+    hors_models = [
+        f for f in suivis if f.endswith((".joblib", ".pkl")) and not f.startswith("models/")
+    ]
+    assert not hors_models, f"Fichiers de modèle suivis hors de models/ : {hors_models}"
+    ignores = subprocess.run(
+        ["git", "check-ignore", "notebooks/essai.joblib", "essai.pkl"],
+        cwd=RACINE,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+    assert "notebooks/essai.joblib" in ignores, "Un .joblib hors de models/ ne serait pas ignoré."

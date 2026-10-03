@@ -177,3 +177,37 @@ def table_empreinte(
             }
         )
     return pd.DataFrame(lignes)
+
+
+def estimer_duree(
+    temps: dict[str, float], entrainements_lr: int = 0, entrainements_foret: int = 0
+) -> float:
+    """Seconds a tool will take on this machine, from its measured elementary times.
+
+    Printed by the tools before they start (bloc 7.0 bis): "about 2 minutes on this
+    laptop" is information; "running..." is not.
+    """
+    return (
+        entrainements_lr * temps["entrainement_lr_s"]
+        + entrainements_foret * temps["entrainement_foret_s"]
+    )
+
+
+def annoncer_duree(entrainements_lr: int = 0, entrainements_foret: int = 0) -> str:
+    """The sentence a tool prints before starting, from `config/ressources_poste.toml`."""
+    import tomllib
+
+    from ..config import FICHIER_RESSOURCES
+
+    try:
+        with open(FICHIER_RESSOURCES, "rb") as flux:
+            ressources = tomllib.load(flux)
+    except OSError:
+        return "Durée estimée : inconnue (config/ressources_poste.toml absent)."
+    secondes = estimer_duree(ressources["mesures"], entrainements_lr, entrainements_foret)
+    duree = f"{secondes:.0f} s" if secondes < 90 else f"{secondes / 60:.0f} min"
+    return (
+        f"Durée estimée : environ {duree} sur {ressources['poste']['processeur']} "
+        f"({entrainements_lr} régressions, {entrainements_foret} forêts ; "
+        "temps mesurés par make ressources)."
+    )

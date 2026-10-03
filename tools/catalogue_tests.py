@@ -350,8 +350,10 @@ DESTINATION_PAR_DEFAUT = RACINE / "docs" / "TESTS.md"
 def main(argv: list[str] | None = None) -> int:
     """Write the catalogue, or print it when asked for standard output."""
     # A Windows terminal hands a piped child process cp1252, whatever the document holds:
-    # the tool's output must not depend on who runs it (see test_conventions).
+    # the tool's output must not depend on who runs it - its errors on stderr included,
+    # which escaped the first version of this fix (see test_conventions).
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     analyseur = argparse.ArgumentParser(description="Génère le catalogue des tests.")
     analyseur.add_argument(
         "--sortie",
@@ -365,6 +367,7 @@ def main(argv: list[str] | None = None) -> int:
         # Force UTF-8: the default encoding of a Windows console cannot represent the
         # arrows and accents this document contains.
         sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
         sys.stdout.write(contenu)
         return 0
 

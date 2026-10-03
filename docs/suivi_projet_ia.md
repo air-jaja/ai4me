@@ -589,18 +589,37 @@ séparation stratifiée · graine aléatoire fixée *(pour que les résultats so
 
 ---
 
-## 7 · Choix & entraînement du modèle *(à faire)*
+## 7 · Choix & entraînement du modèle *(🟢 terminé — B6 à décider)*
+
+**Bloc 7.0 — suivi des expériences (MLflow), 02/10.** Suivi local actif (SQLite, chemin absolu), XGBoost ajouté
+(`xgboost-cpu`), chaîne de quatre runs (forêt et XGBoost en autolog, régression logistique manuelle avec matrice
+de confusion, `GridSearchCV`), comparaison par `search_runs()` sur les métriques hors pli, régression logistique
+enregistrée en `challenger`, rechargée et utilisée pour scorer l'échantillon ; phases 5 et 6 retracées, run
+« données » à chaque matérialisation. Carnet `07_suivi_mlflow.ipynb`, choix § 7 quater.
+
+**Règles de la suite de la phase 7, validées le 02/10 avant tout résultat** (choix § 7 quinquies) : sélection
+par gain apparié supérieur à un écart-type, le plus simple à égalité ; calibration choisie dans les plis ; grille
+XGBoost de 24 combinaisons ; évaluation unique sur le test avec intervalles par bootstrap ; modèle de valeur
+client linéaire contre forêt. SHAP décidé après la sélection.
+
+**Bloc 7.0 bis — fiabilité des relances, 02/10.** Artefacts à un emplacement absolu, à côté du magasin (ils
+suivaient le dossier courant) ; outils **idempotents** : chaque exécution de la chaîne est un run parent et la
+comparaison ne lit qu'elle, une nouvelle version n'est enregistrée que si le code, les données ou la configuration
+ont changé, retraçage et run « données » sans doublon ; parallélisme piloté par `config.N_JOBS` (cœurs mesurés
+moins un, une seule couche) ; durée annoncée avant chaque lancement ; étiquettes du poste sur chaque run ;
+`make mlflow-nettoyer`. **Contrôle commun (A1)** : une seule identité d'exécution (code, données, protocole,
+options) pour le retraçage et la chaîne ; le retraçage gardait sinon des chiffres périmés après un changement de code.
 
 > **De quoi s'agit-il ?** « Entraîner » un modèle, c'est lui présenter des milliers d'exemples passés dont
 > on connaît l'issue, afin qu'il repère les régularités. La **validation croisée** consiste à répéter
 > l'opération plusieurs fois sur des découpages différents des données, pour vérifier que le résultat ne
 > tient pas au hasard d'un découpage favorable.
 
-- [ ] Entraîner la baseline (régression logistique)
-- [ ] Entraîner le modèle candidat (forêt aléatoire)
-- [ ] Comparer par validation croisée en 5 découpages
-- [ ] Sélectionner le modèle final et justifier le choix
-- [ ] Entraîner le modèle secondaire d'estimation de la valeur client
+- [x] Entraîner la baseline (régression logistique) — *mesurée en phase 6, référence figée*
+- [x] Entraîner le modèle candidat (forêt aléatoire) — *et XGBoost, réglés sur leurs grilles (03/10)*
+- [x] Comparer par validation croisée en 5 découpages — *25 plis appariés contre la référence : régression 0,793, XGBoost 0,780, forêt 0,774*
+- [x] Sélectionner le modèle final et justifier le choix — *régression logistique calibrée (règle B1) ; test : PR-AUC 0,761 [0,712 ; 0,806] ; alias `champion`*
+- [x] Entraîner le modèle secondaire d'estimation de la valeur client — *forêt de régression, R² (log) 0,888 (règle B5)*
 
 **Les deux modèles comparés**
 
@@ -617,7 +636,7 @@ outils de vision par ordinateur (CNN, YOLO) sont sans objet : il n'y a pas d'ima
 *(MLflow, outil de traçabilité des expérimentations, est **différé à la phase 10** : il tracera le modèle
 final ; en phase 5, les résultats tiennent dans les tableaux du notebook — arbitrage du 01/10.)*
 📦 **Artefacts** : sections 8 et 9 du notebook · modèle entraîné
-**Statut** : **à faire** — prévu les 24 et 25 septembre
+**Statut** : **terminé** (03/10) — SHAP (B6) à décider
 
 ---
 

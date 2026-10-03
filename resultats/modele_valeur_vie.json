@@ -1,0 +1,29 @@
+{
+  "identite_execution": "cd63a48cba6d6b33",
+  "regle": "B5 validée le 02/10/2026 (commit « decision(phase 7) »)",
+  "r2_log_par_pli": {
+    "régression linéaire": [
+      0.808522,
+      0.806768,
+      0.801593,
+      0.806282,
+      0.800047
+    ],
+    "forêt de régression": [
+      0.883494,
+      0.895349,
+      0.89333,
+      0.877209,
+      0.890012
+    ]
+  },
+  "r2_log_moyen": {
+    "régression linéaire": 0.8046,
+    "forêt de régression": 0.8879
+  },
+  "seuil_un_ecart_type": 0.0036,
+  "modele_retenu": "forêt de régression",
+  "comptes": 4000,
+  "artefact": "models/valeur_vie_client_v1.0_20261003.joblib",
+  "date": "2026-10-03 04:54"
+}

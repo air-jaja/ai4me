@@ -212,3 +212,77 @@ def test_la_baseline_naive_annonce_le_taux_de_base():
     y = pd.Series([1, 1, 1, 0, 0, 0, 0, 0, 0, 0])
     proba = construire_baseline_naive().fit(X, y).predict_proba(X)[:, 1]
     assert np.allclose(proba, 0.3)
+
+
+# --- Phase 7 · Tuning and calibration ---------------------------------------------------------
+@pytest.mark.phase7
+def test_le_reglage_retient_une_combinaison_de_la_grille():
+    from churn_saas.modelisation import construire_baseline, regler
+
+    X, y = _donnees_informatives()
+    grille = {"modele__C": [0.01, 1.0]}
+    resultat = regler(construire_baseline, grille, X, y)
+    assert resultat.meilleurs_parametres["modele__C"] in (0.01, 1.0)
+    assert len(resultat.tableau) == 2 and 0 < resultat.meilleur_score <= 1
+
+
+@pytest.mark.phase7
+def test_un_modele_calibre_annonce_des_probabilites():
+    from churn_saas.modelisation import construire_baseline, construire_calibre
+
+    X, y = _donnees_informatives()
+    for methode in ("sigmoid", "isotonic"):
+        modele = construire_calibre(construire_baseline, methode)(X).fit(X, y)
+        proba = modele.predict_proba(X)[:, 1]
+        assert ((proba >= 0) & (proba <= 1)).all()
+
+
+@pytest.mark.phase7
+def test_xgboost_s_insere_dans_la_meme_chaine():
+    pytest.importorskip("xgboost")
+    from churn_saas.modelisation import construire_xgboost
+
+    X, y = _donnees_informatives()
+    modele = construire_xgboost(X, n_estimators=20).fit(X, y)
+    assert modele.predict_proba(X).shape == (len(X), 2)
+    assert list(modele.named_steps) == ["preparation", "modele"]
+
+
+# --- Phase 7 · Rule B5: lifetime value model ------------------------------------------------
+@pytest.mark.phase7
+def test_la_foret_de_valeur_n_est_retenue_qu_avec_un_gain_significatif():
+    from churn_saas.modelisation import choisir_modele_valeur
+
+    lineaire = [0.80, 0.81, 0.79, 0.80, 0.81]
+    assert (
+        choisir_modele_valeur(
+            pd.DataFrame(
+                {
+                    "régression linéaire": lineaire,
+                    "forêt de régression": [v + 0.001 for v in lineaire],
+                }
+            )
+        )
+        == "régression linéaire"
+    )
+    assert (
+        choisir_modele_valeur(
+            pd.DataFrame(
+                {
+                    "régression linéaire": lineaire,
+                    "forêt de régression": [v + 0.08 for v in lineaire],
+                }
+            )
+        )
+        == "forêt de régression"
+    )
+
+
+@pytest.mark.phase7
+def test_le_modele_de_valeur_predit_en_euros():
+    from churn_saas.modelisation import construire_regression_valeur
+
+    X, _ = _donnees_informatives()
+    valeur = pd.Series(np.exp(5 + X["a"].to_numpy()), index=X.index)
+    prediction = construire_regression_valeur(X).fit(X, valeur).predict(X)
+    assert (prediction > 0).all() and np.corrcoef(prediction, valeur)[0, 1] > 0.9

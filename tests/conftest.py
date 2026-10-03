@@ -304,3 +304,14 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
         tr.write("  Un test ignoré ne prouve rien. Détail : pytest -rs\n", yellow=True)
     else:
         tr.write("\n  Taux d'exécution : 100 % — tous les cas ont tourné.\n", green=True)
+
+
+@pytest.fixture(autouse=True)
+def suivi_mlflow_isole(tmp_path, monkeypatch):
+    """No test ever writes into the project's MLflow store.
+
+    Every test, and every tool a test launches as a subprocess, sees a temporary store
+    through MLFLOW_TRACKING_URI - which the project's configuration reads first.
+    """
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", f"sqlite:///{(tmp_path / 'mlflow.db').as_posix()}")
+    monkeypatch.setenv("MLFLOW_ENABLE_ARTIFACTS_PROGRESS_BAR", "false")

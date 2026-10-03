@@ -99,8 +99,23 @@ def separer_cible(gold: pd.DataFrame, cible: str = CIBLE) -> tuple[pd.DataFrame,
     if cible not in gold.columns:
         raise KeyError(f"Colonne cible `{cible}` absente du jeu gold.")
     y = pd.to_numeric(gold[cible], errors="coerce").astype("Int64")
-    X = gold.drop(columns=[cible])
+    X = typer_pour_modele(gold.drop(columns=[cible]))
     return X, y
+
+
+def typer_pour_modele(X: pd.DataFrame) -> pd.DataFrame:
+    """Integer columns become floats at the model's entrance.
+
+    A nullable integer column (`Int64`) holds missing values a plain integer cannot: a
+    model signature inferred on it declares "integer" and then refuses the very missing
+    values the model's imputer was built to fill. Floats hold them natively. Applied by
+    `separer_cible` and by the monthly batch alike, so training and serving see the same
+    types (phase 7, bloc 7.0).
+    """
+    # Plain integer columns too: none of them is missing in training, but one may be in a
+    # monthly batch, and a signature declaring "integer" would then refuse it.
+    entiers = [c for c in X.columns if pd.api.types.is_integer_dtype(X[c].dtype)]
+    return X.astype({c: "float64" for c in entiers})
 
 
 @dataclass(frozen=True)

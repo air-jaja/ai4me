@@ -12,7 +12,12 @@ from typing import Any
 import pandas as pd
 
 from ..config import CAPACITE_MENSUELLE, EFFICACITE_RETENTION
-from ..donnees import colonnes_attendues_au_scoring, exiger_contrat, verifier_contrat
+from ..donnees import (
+    colonnes_attendues_au_scoring,
+    exiger_contrat,
+    typer_pour_modele,
+    verifier_contrat,
+)
 from ..evaluation import prioriser
 from ..features import (
     COLONNES_DATES,
@@ -78,7 +83,7 @@ def scorer_lot_mensuel(
     identifiants = brut[identifiant] if identifiant in brut.columns else pd.Series(brut.index)
     exiger_contrat(controler_lot(brut, catalogue=catalogue))
     X = preparer(brut, catalogue=catalogue, **options_silver)
-    X = X.drop(columns=[c for c in ("churn",) if c in X.columns])
+    X = typer_pour_modele(X.drop(columns=[c for c in ("churn",) if c in X.columns]))
 
     proba = pd.Series(modele_churn.predict_proba(X)[:, 1], index=X.index)
 
