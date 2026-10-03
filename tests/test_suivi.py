@@ -382,3 +382,93 @@ def test_journaliser_un_modele_ne_cherche_pas_la_version_de_pip(caplog):
     with caplog.at_level(logging.WARNING), experience("churn-saas/pip"):
         journaliser_modele(modele, X)
     assert not any("pip version" in r.getMessage() for r in caplog.records)
+
+
+@exige_mlflow
+def test_une_execution_incomplete_n_est_pas_reutilisee(monkeypatch):
+    """Carnet 07, on the laptop: an execution interrupted earlier had been closed as
+    FINISHED with no child run. Reused, it made the comparison read an empty table
+    (KeyError). An incomplete execution is now replaced, and a failed one is FAILED."""
+    from churn_saas.packaging import configurer_suivi
+
+    mlflow = configurer_suivi()
+    premiere = _chaine_rapide(monkeypatch)
+    for run_id in mlflow.search_runs(
+        experiment_names=["churn-saas/phase7-chaine-mlflow"],
+        filter_string=f"tags.mlflow.parentRunId = '{premiere['execution']}'",
+    )["run_id"]:
+        mlflow.MlflowClient().delete_run(run_id)  # the parent stays, alone and FINISHED
+
+    seconde = _chaine_rapide(monkeypatch)
+    assert not seconde["reutilisee"] and seconde["execution"] != premiere["execution"]
+
+
+@exige_mlflow
+def test_une_execution_en_echec_est_marquee_failed(monkeypatch):
+    import churn_saas.evaluation as evaluation
+    from churn_saas.packaging import configurer_suivi
+
+    mlflow = configurer_suivi()
+
+    def echec(*args, **kwargs):
+        raise RuntimeError("évaluation interrompue")
+
+    monkeypatch.setattr(evaluation, "evaluer_selon_protocole", echec)
+    with pytest.raises(RuntimeError):
+        _outil_chaine().executer(avec_grille=False, rapide=True)
+    parents = mlflow.search_runs(
+        experiment_names=["churn-saas/phase7-chaine-mlflow"],
+        filter_string="tags.execution = 'parent'",
+    )
+    assert set(parents["status"]) == {"FAILED"}
+
+
+# --- Refined execution identity (03/10/2026): only the code that produces results ------------
+def test_le_perimetre_de_l_identite_est_le_code_qui_produit_les_resultats():
+    """Correcting MLflow logging, a figure or another tool invalidated every recorded
+    result three times in a day (15 minutes of recomputation each, identical figures).
+    The identity now covers the result-producing code and the producing tool only."""
+    from churn_saas.config import RACINE
+    from churn_saas.packaging import fichiers_du_perimetre
+
+    perimetre = {
+        f.relative_to(RACINE).as_posix() for f in fichiers_du_perimetre("tools/selection_modele.py")
+    }
+    for dedans in (
+        "src/churn_saas/config.py",
+        "src/churn_saas/modelisation/reglage.py",
+        "src/churn_saas/evaluation/protocole.py",
+        "src/churn_saas/features/pipeline.py",
+        "src/churn_saas/donnees/gold.py",
+        "tools/selection_modele.py",
+    ):
+        assert dedans in perimetre, dedans
+    for dehors in (
+        "src/churn_saas/packaging/suivi.py",
+        "src/churn_saas/features/graphiques.py",
+        "src/churn_saas/industrialisation/scoring.py",
+        "tools/pipeline_mlflow.py",
+        "tools/selection_variables.py",
+    ):
+        assert dehors not in perimetre, dehors
+
+
+def test_l_empreinte_ne_bouge_qu_avec_le_code_du_perimetre(tmp_path, monkeypatch):
+    """Same fingerprint after touching a file outside the perimeter; a new one after
+    touching a file inside it."""
+    import shutil
+
+    import churn_saas.packaging.suivi as suivi
+    from churn_saas.config import RACINE
+
+    copie = tmp_path / "depot"
+    shutil.copytree(RACINE / "src", copie / "src")
+    shutil.copytree(RACINE / "tools", copie / "tools")
+    monkeypatch.setattr(suivi, "RACINE", copie)
+    avant = suivi.empreinte_code("tools/selection_modele.py")
+    (copie / "src/churn_saas/packaging/suivi.py").write_text("# journalisation modifiée\n")
+    (copie / "tools/pipeline_mlflow.py").write_text("# autre outil modifié\n")
+    assert suivi.empreinte_code("tools/selection_modele.py") == avant
+    with open(copie / "src/churn_saas/modelisation/reglage.py", "a", encoding="utf-8") as f:
+        f.write("\n# réglage modifié\n")
+    assert suivi.empreinte_code("tools/selection_modele.py") != avant

@@ -47,6 +47,9 @@ dev = [
     # où les tests s'exécutent : l'hériter du groupe `notebook` la rendait absente en CI,
     # qui n'installe que `dev`.
     "nbformat>=5.10",
+    # tests/test_docker.py lit docker-compose.yml : même raison, déclaré ici et non
+    # hérité d'un autre outil (pre-commit l'installe dans son propre environnement).
+    "pyyaml>=6.0",
 ]
 
 # Nécessaire pour exécuter et exporter le notebook livré au jury.

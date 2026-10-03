@@ -119,21 +119,43 @@ def run_existant(nom: str, etiquettes: dict[str, str], nom_run: str | None = Non
     return None if trouves.empty else str(trouves.iloc[0]["run_id"])
 
 
-def empreinte_code() -> str:
-    """Fingerprint of the code that produces models: the package and the tools.
+# The code that PRODUCES results (bloc 7.0 bis, refined 03/10/2026): data preparation,
+# variables, models, evaluation, and the configuration. Left out on purpose: tracking and
+# packaging (packaging/), serving and monitoring (industrialisation/, monitoring/), the
+# notebook helpers, and figures (features/graphiques.py) - changing them changes no figure.
+PERIMETRE_RESULTATS = ("config.py", "donnees", "features", "modelisation", "evaluation")
+HORS_PERIMETRE = ("features/graphiques.py",)
+
+
+def fichiers_du_perimetre(origine: str | None = None) -> list:
+    """The source files whose change may change a result produced by `origine`.
+
+    The package's result-producing code, plus the tool that produced the result - and
+    no other tool: correcting MLflow logging, a figure or an unrelated tool no longer
+    invalidates fifteen minutes of recorded computations.
+    """
+    paquet = RACINE / "src" / "churn_saas"
+    fichiers = []
+    for element in PERIMETRE_RESULTATS:
+        chemin = paquet / element
+        fichiers += [chemin] if chemin.is_file() else sorted(chemin.rglob("*.py"))
+    fichiers = [f for f in fichiers if f.relative_to(paquet).as_posix() not in HORS_PERIMETRE]
+    if origine and (RACINE / origine).is_file():
+        fichiers.append(RACINE / origine)
+    return sorted(fichiers)
+
+
+def empreinte_code(origine: str | None = None) -> str:
+    """Fingerprint of the code that produces a result (see `fichiers_du_perimetre`).
 
     A commit identifies committed code only; this fingerprint also tells two runs apart
-    when the working tree holds uncommitted changes.
+    when the working tree holds uncommitted changes. Line endings are normalised, so a
+    Windows checkout and a Linux one agree.
     """
     import hashlib
 
     condense = hashlib.sha256()
-    for fichier in sorted(
-        [
-            *RACINE.joinpath("src", "churn_saas").rglob("*.py"),
-            *RACINE.joinpath("tools").glob("*.py"),
-        ]
-    ):
+    for fichier in fichiers_du_perimetre(origine):
         condense.update(fichier.relative_to(RACINE).as_posix().encode())
         condense.update(fichier.read_bytes().replace(b"\r\n", b"\n"))
     return condense.hexdigest()[:16]
@@ -206,7 +228,7 @@ def etiquettes_tracabilite(
     except (OSError, subprocess.CalledProcessError):
         etiquettes["commit"] = "inconnu"
     etiquettes["n_jobs"] = str(N_JOBS)
-    etiquettes["empreinte_code"] = empreinte_code()
+    etiquettes["empreinte_code"] = empreinte_code(origine)
     etiquettes["empreinte_protocole"] = empreinte_protocole()
     try:
         import tomllib

@@ -10,6 +10,7 @@ from .model_card import generer_model_card
 from .suivi import (
     CLES_IDENTITE_MODELE,
     CLES_MLFLOW,
+    PERIMETRE_RESULTATS,
     activer_experience,
     charger,
     configurer_suivi,
@@ -23,6 +24,7 @@ from .suivi import (
     environnement_du_modele,
     etiquettes_tracabilite,
     experience,
+    fichiers_du_perimetre,
     identite_execution,
     journaliser,
     journaliser_modele,
@@ -65,5 +67,7 @@ __all__ = [
     # A1: one execution identity shared by every MLflow tool
     "empreinte_protocole",
     "empreinte_code",
+    "fichiers_du_perimetre",
+    "PERIMETRE_RESULTATS",
     "identite_execution",
 ]

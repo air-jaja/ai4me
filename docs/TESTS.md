@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**626 cas de test** issus de 336 fonctions, répartis sur 22 fichiers.
+**642 cas de test** issus de 350 fonctions, répartis sur 23 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,18 +37,19 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 218 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 220 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
 | [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 97 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 7 |
+| [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 10 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 | [test_resultats_reference.py](#test_resultats_referencepy) | `test_resultats_reference.py` | — | — | 5 |
-| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 21 |
+| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 25 |
 
 ---
 
@@ -313,8 +314,8 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×87)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×87)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×88)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×88)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×7)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_est_execute_en_entier_sans_erreur` | The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026). | Outputs in the repository are only worth something if they are trustworthy: either the notebook carries none, or it carries ONE complete run, top to bottom - execution counts 1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the code in order does not produce) - with no error, and no path of the machine it ran on. |
@@ -469,6 +470,25 @@ soutenance.
 | 6 | `test_un_test_ne_porte_qu_un_marqueur_d_activite` | Two activity markers on one test would run it in both the current and the earlier level of the same campaign. | — |
 | 7 | `test_les_marqueurs_precedents_sont_declares` | _(sans description)_ | — |
 
+### test_docker.py
+
+**Fichier :** `tests/test_docker.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_le_docker_compose_se_lit_et_declare_ses_cinq_services` | _(sans description)_ | — |
+| 2 | `test_aucune_interpolation_mal_formee` | A `$` not followed by `{NAME}` or `$` makes Docker refuse the file ("invalid interpolation format"); `$:` once slipped into the MLflow URL. | — |
+| 3 | `test_chaque_variable_sans_defaut_est_declaree_dans_l_exemple` | Without a default, a variable missing from .env becomes an empty string. | an empty password or port, discovered at start-up. |
+| 4 | `test_l_exemple_d_environnement_n_a_que_des_lignes_cle_valeur` | `CLE: valeur` is YAML, not the env-file format: the line is silently ignored. | — |
+| 5 | `test_les_ports_internes_ne_suivent_pas_les_variables_du_poste` | `HOTE:CONTENEUR` - only the host side may be configurable. | A server listens on a fixed port inside its container (Prometheus 9090, Grafana 3000): a variable on the container side breaks the service as soon as someone changes the host port. |
+| 6 | `test_l_api_joint_mlflow_sur_le_port_ou_il_ecoute` | _(sans description)_ | — |
+| 7 | `test_les_fichiers_montes_et_construits_existent` | _(sans description)_ | — |
+| 8 | `test_chaque_image_est_epinglee` | _(sans description)_ | — |
+| 9 | `test_le_serveur_mlflow_a_la_version_du_client` | The server and the client must speak the same MLflow version: a 3.16 client writing to a 3.1 server can fail on objects the server does not know (logged models). | — |
+| 10 | `test_docker_compose_valide_le_fichier` | Docker's own reading of the file, with the example environment. | — |
+
 ### test_industrialisation.py
 
 **Fichier :** `tests/test_industrialisation.py` — **Activité :** — — **Compétences :** —
@@ -587,3 +607,7 @@ soutenance.
 | 19 | `test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele` | One layer, inside the forest and by threads: the search itself spawns no worker process. | Worker processes broke on Windows under autolog (a task they could not unpickle: MemoryError, BrokenProcessPool). |
 | 20 | `test_les_dependances_du_modele_sont_declarees_et_epinglees` | B2: declared rather than inferred by a uv export at every logged model. | — |
 | 21 | `test_journaliser_un_modele_ne_cherche_pas_la_version_de_pip` | The uv environment has no pip: inferring the conda file made MLflow look for it, slowly, with a warning at every logged model (B2, completed). | — |
+| 22 | `test_une_execution_incomplete_n_est_pas_reutilisee` | Carnet 07, on the laptop: an execution interrupted earlier had been closed as FINISHED with no child run. | Reused, it made the comparison read an empty table (KeyError). An incomplete execution is now replaced, and a failed one is FAILED. |
+| 23 | `test_une_execution_en_echec_est_marquee_failed` | _(sans description)_ | — |
+| 24 | `test_le_perimetre_de_l_identite_est_le_code_qui_produit_les_resultats` | Correcting MLflow logging, a figure or another tool invalidated every recorded result three times in a day (15 minutes of recomputation each, identical figures). | The identity now covers the result-producing code and the producing tool only. |
+| 25 | `test_l_empreinte_ne_bouge_qu_avec_le_code_du_perimetre` | Same fingerprint after touching a file outside the perimeter; a new one after touching a file inside it. | — |

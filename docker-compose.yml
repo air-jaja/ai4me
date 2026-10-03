@@ -5,7 +5,10 @@
 #
 #    api         service de scoring (C6)          -> port 8000
 #    db          PostgreSQL, entrepôt des scores (C3, C7) -> port 5432
-#    mlflow      suivi des expérimentations et registre de modèles (C5, C9) -> 5100
+#    mlflow      suivi des expérimentations et registre de modèles (C5, C9) -> 5000
+#
+#  Ports : seul le côté POSTE (gauche) est réglable par .env. Dans son conteneur,
+#  chaque serveur écoute sur un port fixe ; les services se joignent par ce port.
 #    prometheus  collecte des indicateurs (C8, C9) -> port 9090
 #    grafana     restitution des indicateurs (C8)  -> port 3000
 #
@@ -25,8 +28,9 @@ services:
       # `db:5432` : nom de service et port interne. PostgreSQL écoute toujours sur
       # 5432 dans le conteneur, quel que soit le port publié sur le poste.
       CHURN_DB_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
-      CHURN_MODEL_PATH: /app/models/churn_model.joblib
-      MLFLOW_TRACKING_URI: http://mlflow:5100
+      CHURN_MODEL_PATH: ${CHURN_MODEL_PATH:-/app/models/churn_model.joblib}
+      # Port interne du serveur MLflow, fixe : MLFLOW_PORT ne règle que le port publié.
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     volumes:
       # Le modèle est monté, pas embarqué : un réentraînement ne force pas la
       # reconstruction de l'image (voir le commentaire du Dockerfile).
@@ -59,7 +63,7 @@ services:
       context: .
       dockerfile: docker/mlflow.Dockerfile
     image: churn-saas-mlflow:${IMAGE_TAG:-v1.0}
-    ports: ["${MLFLOW_PORT}:${MLFLOW_PORT}"]
+    ports: ["${MLFLOW_PORT:-5000}:5000"]
     environment:
       MLFLOW_BACKEND_STORE_URI: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
     volumes: ["mlruns:/mlruns"]
@@ -70,13 +74,14 @@ services:
     # volume : les deux ont des cycles de vie différents (notebook § 3).
     command: >
       mlflow server
-      --host 0.0.0.0 --port ${MLFLOW_PORT}
+      --host 0.0.0.0 --port 5000
       --backend-store-uri postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       --default-artifact-root /mlruns
 
   prometheus:
     image: prom/prometheus:v2.53.0
-    ports: ["${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"]
+    # Prometheus écoute sur 9090 dans son conteneur : seul le port publié est réglable.
+    ports: ["${PROMETHEUS_PORT:-9090}:9090"]
     volumes: ["./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
     extra_hosts:
       # Permet à Prometheus de joindre un exporteur lancé sur l'hôte (port 9109),
@@ -86,7 +91,8 @@ services:
 
   grafana:
     image: grafana/grafana:11.1.0
-    ports: ["${GRAFANA_PORT}:${GRAFANA_PORT}"]
+    # Grafana écoute sur 3000 dans son conteneur : seul le port publié est réglable.
+    ports: ["${GRAFANA_PORT:-3000}:3000"]
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
