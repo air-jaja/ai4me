@@ -1546,3 +1546,115 @@ def test_le_modele_de_valeur_retenu_suit_la_regle_b5():
 
     bilan = json.loads(chemin.read_text(encoding="utf-8"))
     assert choisir_modele_valeur(pd.DataFrame(bilan["r2_log_par_pli"])) == bilan["modele_retenu"]
+
+
+# --- Optimisation B1 · The recorded phase 5 results say what the frozen figures say -------------
+def test_les_resultats_enregistres_de_la_phase_5_concordent_avec_les_chiffres_figes():
+    """The notebook now READS phase 5's computations from resultats/selection_variables.json.
+    Whatever identity they were recorded under, they must agree with the figures frozen
+    above - otherwise the notebook would show stale results."""
+    chemin = RACINE / "resultats" / "selection_variables.json"
+    if not chemin.exists():
+        pytest.skip("Calculs de la phase 5 pas encore enregistrés (tools/selection_variables.py).")
+    bilan = json.loads(chemin.read_text(encoding="utf-8"))
+    assert bilan["permutation"]["score"] == pytest.approx(0.789, abs=0.01)
+    assert bilan["permutation"]["p_valeur"] < 0.05
+    assert bilan["adverse"]["auc"] < 0.6
+    apport = pd.DataFrame(bilan["apports"]["Régression logistique"])
+    assert (apport["brutes + construites"] - apport["brutes"]).mean() == pytest.approx(
+        -0.001, abs=0.005
+    )
+    final = pd.DataFrame(bilan["final"]["Régression logistique"])
+    assert final.filter(like="retenues").iloc[:, 0].mean() == pytest.approx(0.793, abs=0.01)
+    assert sorted(bilan["candidates_au_retrait"]) == ["pays", "usage_par_actif"]
+
+
+def test_les_trois_modeles_s_appuient_sur_des_facteurs_communs():
+    """B6, option C: recorded SHAP comparison - integrations, seniority and support tickets
+    are among the five main factors of all three models; the two tree models agree almost
+    perfectly (rank correlation 0.96)."""
+    chemin = RACINE / "resultats" / "explicabilite_comparee.json"
+    if not chemin.exists():
+        pytest.skip("Comparaison des explications pas encore enregistrée.")
+    bilan = json.loads(chemin.read_text(encoding="utf-8"))
+    assert {"nb_integrations", "anciennete_mois", "tickets_support_90j"} <= set(
+        bilan["top_5_commun_aux_trois"]
+    )
+    for parts in bilan["parts"].values():
+        assert sum(parts.values()) == pytest.approx(1.0, abs=1e-3)
+
+
+def test_les_regles_de_la_phase_8_n_ont_pas_bouge_depuis_leur_validation():
+    """Validated on 03/10/2026 before any tuning computation (rule 8)."""
+    from churn_saas import config
+    from churn_saas.modelisation import grille_hyperparametres
+
+    assert (
+        config.SEUIL_ECART_SURAPPRENTISSAGE,
+        config.SEUIL_OPTIMISME_SELECTION,
+        config.SEUIL_ECART_APPRENTISSAGE,
+    ) == (0.05, 0.01, 0.02)
+    assert (config.BUDGET_LOT_MENSUEL_S, config.BUDGET_COMPTE_MS) == (60.0, 50.0)
+    grille = grille_hyperparametres()["regression"]
+    assert grille["modele__C"] == [0.01, 0.03, 0.1, 0.3, 1, 3, 10]
+    assert grille["modele__class_weight"] == [None, "balanced"]
+
+
+# --- Phase 8 · The recorded tuning follows the rules validated beforehand ------------------------
+def _reglage() -> dict:
+    chemin = RACINE / "resultats" / "reglage_modele.json"
+    if not chemin.exists():
+        pytest.skip("Réglage pas encore enregistré (tools/reglage_modele.py).")
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def test_le_reglage_retenu_suit_la_regle_d_un_ecart_type():
+    """P3 then P1, recomputed from the recorded grid: C=0.01 without weighting, the most
+    regularised combination within one standard deviation of the best (C=0.03)."""
+    from churn_saas.config import SEUIL_ECART_SURAPPRENTISSAGE
+    from churn_saas.modelisation import regle_un_ecart_type
+
+    reglage = _reglage()
+    table = pd.DataFrame(reglage["grille"])
+    assert regle_un_ecart_type(table, SEUIL_ECART_SURAPPRENTISSAGE) == reglage["indice_retenu"]
+
+
+def test_aucun_signe_de_surapprentissage_dans_le_reglage():
+    """S1: every gap under 0.011 (threshold 0.05); S3: no selection optimism (-0.001);
+    S4: final learning-curve gap 0.005; S5: calibration error 0.032."""
+    s = _reglage()["surapprentissage"]
+    assert s["S1_combinaisons_ecartees"] == 0 and s["S1_ecart_max_grille"] < 0.05
+    assert s["S3_conforme"] and s["S4_conforme"] and s["S5_conforme"]
+
+
+def test_le_reglage_ne_remplace_pas_le_champion():
+    """P2: +0.0003 of paired PR-AUC (14 folds of 25), far under one standard deviation
+    (0.019): the champion of phase 7 stays - and the test part need not be read again."""
+
+    reglage = _reglage()
+    table = pd.DataFrame(reglage["P2_comparaison"])
+    assert not table["gain significatif"].any()
+    assert reglage["P2_remplacer_le_champion"] is False
+
+
+# --- Phase 8 · Decision c: the served model is equivalent to the evaluated champion -----------
+def test_le_modele_servi_est_equivalent_au_champion_evalue():
+    """One calibrated copy instead of five (decision c, option i - the test part is not read
+    again): same PR-AUC (paired gain -0.0001, threshold 0.019), same calibration, same
+    rankings (rank correlation 0.9999), within the per-account budget, about 5 times faster."""
+    chemin = RACINE / "resultats" / "modele_servi.json"
+    if not chemin.exists():
+        pytest.skip("Modèle servi pas encore construit (tools/modele_servi.py).")
+    bilan = json.loads(chemin.read_text(encoding="utf-8"))
+    equivalence = bilan["equivalence"]
+    assert equivalence["équivalent en performance"] and equivalence["calibration conforme"]
+    assert equivalence["corrélation de rang des probabilités"] > 0.999
+    assert equivalence["budget d'un compte respecté"] and equivalence["budget du lot respecté"]
+    assert equivalence["accélération d'un compte"] > 3
+    hyper = bilan["hyperparametres"]
+    assert (hyper["C"], hyper["class_weight"], hyper["calibration"], hyper["copies calibrées"]) == (
+        1.0,
+        "balanced",
+        "sigmoid",
+        1,
+    )

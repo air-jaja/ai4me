@@ -1,0 +1,82 @@
+{
+  "identite_execution": "446e86f8155968de",
+  "decision": "P4 option c et jeu de test option i, décidées par le porteur le 03/10/2026",
+  "hyperparametres": {
+    "famille": "régression logistique",
+    "C": 1.0,
+    "class_weight": "balanced",
+    "penalty": "l2",
+    "solver": "lbfgs",
+    "max_iter": 2000,
+    "calibration": "sigmoid",
+    "copies calibrées": 1,
+    "plis de calibration": 5,
+    "graine": 42
+  },
+  "mesures": {
+    "champion évalué (5 copies calibrées)": {
+      "PR-AUC (25 plis)": 0.7934,
+      "erreur de calibration (25 plis)": 0.0298,
+      "un compte (ms)": 34.36,
+      "lot de 5 000 comptes (s)": 0.095
+    },
+    "modèle servi (une copie calibrée)": {
+      "PR-AUC (25 plis)": 0.7933,
+      "erreur de calibration (25 plis)": 0.0303,
+      "un compte (ms)": 6.99,
+      "lot de 5 000 comptes (s)": 0.017
+    }
+  },
+  "equivalence": {
+    "gain apparié du modèle servi": -0.0001,
+    "seuil (1 écart-type)": 0.0189,
+    "équivalent en performance": true,
+    "corrélation de rang des probabilités": 0.99987,
+    "écart moyen des probabilités": 0.0024,
+    "écart maximal des probabilités": 0.0274,
+    "comptes comparés": "partie d'entraînement (le jeu de test n'est pas relu : décision i)",
+    "calibration conforme": true,
+    "budget d'un compte respecté": true,
+    "budget du lot respecté": true,
+    "accélération d'un compte": 4.9
+  },
+  "test_du_champion_evalue": {
+    "metriques": {
+      "PR-AUC": 0.7612,
+      "ROC-AUC": 0.8815,
+      "rappel haut": 0.3143,
+      "précision haut": 0.88,
+      "Brier": 0.1206,
+      "erreur de calibration": 0.0364
+    },
+    "intervalles_95": {
+      "PR-AUC": [
+        0.7118,
+        0.8059
+      ],
+      "ROC-AUC": [
+        0.858,
+        0.9045
+      ],
+      "rappel haut": [
+        0.2842,
+        0.3514
+      ],
+      "précision haut": [
+        0.81,
+        0.94
+      ],
+      "Brier": [
+        0.1075,
+        0.1327
+      ],
+      "erreur de calibration": [
+        0.0282,
+        0.061
+      ]
+    },
+    "date": "2026-10-03 00:44"
+  },
+  "artefact": "models/churn_saas_servi_v1.1_20261003.joblib",
+  "date": "2026-10-03 11:34"
+}

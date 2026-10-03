@@ -206,13 +206,32 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
     existante = run_existant(
         nom_experience(EXPERIENCE), {"identite_execution": identite, "execution": "parent"}
     )
+
+    def enfants_mesures(parent: str):
+        return mlflow.search_runs(
+            experiment_names=[nom_experience(EXPERIENCE)],
+            filter_string=f"tags.mlflow.parentRunId = '{parent}'",
+        )
+
+    # A parent is only reusable if it holds every expected run with its protocol metric.
+    # An execution interrupted before this fix was closed as FINISHED with no child: reused,
+    # it made the comparison read an empty table (KeyError in carnet 07).
+    attendus = 1 if rapide else 3 + (1 if avec_grille else 0)
+    if existante and not forcer:
+        enfants = enfants_mesures(existante)
+        complets = (
+            int(enfants["metrics.pr_auc_cv"].notna().sum()) if "metrics.pr_auc_cv" in enfants else 0
+        )
+        if complets < attendus:
+            print(
+                f"Exécution {existante[:8]} incomplète ({complets} run(s) sur {attendus}) : "
+                "elle est remplacée.",
+                flush=True,
+            )
+            forcer = True
     if existante and forcer:
         client = mlflow.MlflowClient()
-        enfants = mlflow.search_runs(
-            experiment_names=[nom_experience(EXPERIENCE)],
-            filter_string=f"tags.mlflow.parentRunId = '{existante}'",
-        )
-        for run_id in [*enfants["run_id"], existante]:
+        for run_id in [*enfants_mesures(existante)["run_id"], existante]:
             client.delete_run(run_id)
         existante = None
     runs = {}
@@ -313,8 +332,11 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
                 )
                 _desactiver_autologs(mlflow)
 
-        finally:
-            mlflow.end_run()
+        except BaseException:
+            # A failed execution must never look complete: FAILED, so it is not reused.
+            mlflow.end_run(status="FAILED")
+            raise
+        mlflow.end_run()
 
     # Comparison on the common out-of-fold keys only (decision D4).
     tableau = mlflow.search_runs(
@@ -322,6 +344,11 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
         filter_string=f"tags.mlflow.parentRunId = '{parent_id}' and metrics.pr_auc_cv > 0",
         order_by=["metrics.pr_auc_cv DESC"],
     )
+    if tableau.empty or "metrics.pr_auc_cv" not in tableau:
+        raise RuntimeError(
+            f"Aucun run mesuré sous l'exécution {parent_id[:8]} : relancer avec "
+            "--forcer, ou vider le suivi (make mlflow-nettoyer)."
+        )
     colonnes = [
         "tags.mlflow.runName",
         "metrics.pr_auc_cv",

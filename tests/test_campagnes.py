@@ -105,3 +105,19 @@ def test_les_marqueurs_precedents_sont_declares():
     declares = _marqueurs_declares()
     for campagne in _configuration()["campagnes"].values():
         assert set(campagne.get("marqueurs_precedents", [])) <= declares
+
+
+def test_un_ko_dit_ce_qui_a_echoue():
+    """A campaign once reported three KO although every test had passed: pytest had broken
+    while cleaning its temporary folder. The verdict now names the kind of failure."""
+    import importlib.util
+
+    specification = importlib.util.spec_from_file_location(
+        "campagne_tests", RACINE / "tools" / "campagne_tests.py"
+    )
+    outil = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(outil)
+    assert outil.verdict(0) == "OK"
+    assert "tests en échec" in outil.verdict(1)
+    assert "erreur interne" in outil.verdict(3) and "DEPANNAGE" in outil.verdict(3)
+    assert "aucun test" in outil.verdict(5)

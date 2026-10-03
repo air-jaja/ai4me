@@ -207,3 +207,54 @@ def test_a_egalite_le_plus_simple_l_emporte():
     reference, candidat = _scores(gain=0.05)
     table = comparer_a_la_reference({"rl": reference, "foret": candidat, "xgb": candidat}, "rl")
     assert selectionner(table, "rl", ("rl", "foret", "xgb")) == "foret"
+
+
+# --- B6, option C: exact linear contributions --------------------------------------------------
+def _modele_lineaire():
+    import numpy as np
+
+    from churn_saas.modelisation import construire_baseline, construire_calibre
+
+    generateur = np.random.default_rng(0)
+    X = pd.DataFrame(
+        {
+            "a": generateur.normal(size=300),
+            "b": generateur.choice(["x", "y", "z"], 300),
+            "c": generateur.normal(size=300),
+        }
+    )
+    y = ((X["a"] + (X["b"] == "z") + generateur.normal(scale=0.5, size=300)) > 0.5).astype(int)
+    return X, y, construire_baseline, construire_calibre
+
+
+@pytest.mark.phase7
+def test_les_contributions_reconstituent_exactement_le_score():
+    """Base + sum of contributions = the model's log-odds, to the floating-point digit -
+    for a plain regression and for the calibrated average of its copies."""
+    import numpy as np
+
+    from churn_saas.evaluation import contributions_lineaires
+
+    X, y, construire_baseline, construire_calibre = _modele_lineaire()
+    simple = construire_baseline(X).fit(X, y)
+    contributions, base = contributions_lineaires(simple, X)
+    assert np.allclose(base + contributions.sum(axis=1), simple.decision_function(X))
+    assert list(contributions.columns) == ["a", "b", "c"]  # one-hot summed back into "b"
+
+    calibre = construire_calibre(construire_baseline, "sigmoid")(X).fit(X, y)
+    contributions, base = contributions_lineaires(calibre, X)
+    logit = np.mean(
+        [c.estimator.decision_function(X) for c in calibre.calibrated_classifiers_], axis=0
+    )
+    assert np.allclose(base + contributions.sum(axis=1), logit)
+
+
+@pytest.mark.phase7
+def test_le_motif_du_conseiller_vient_des_contributions():
+    from churn_saas.evaluation import expliquer_par_contributions, motif_lisible
+
+    X, y, construire_baseline, _ = _modele_lineaire()
+    modele = construire_baseline(X).fit(X, y)
+    explication = expliquer_par_contributions(modele, X, X.index[0], n_facteurs=2)
+    assert len(explication) == 2 and explication["contribution"].abs().is_monotonic_decreasing
+    assert motif_lisible(explication, n=2).startswith("Facteurs principaux : ")

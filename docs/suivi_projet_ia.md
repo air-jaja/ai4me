@@ -589,7 +589,7 @@ séparation stratifiée · graine aléatoire fixée *(pour que les résultats so
 
 ---
 
-## 7 · Choix & entraînement du modèle *(🟢 terminé — B6 à décider)*
+## 7 · Choix & entraînement du modèle *(🟢 terminé)*
 
 **Bloc 7.0 — suivi des expériences (MLflow), 02/10.** Suivi local actif (SQLite, chemin absolu), XGBoost ajouté
 (`xgboost-cpu`), chaîne de quatre runs (forêt et XGBoost en autolog, régression logistique manuelle avec matrice
@@ -636,21 +636,21 @@ outils de vision par ordinateur (CNN, YOLO) sont sans objet : il n'y a pas d'ima
 *(MLflow, outil de traçabilité des expérimentations, est **différé à la phase 10** : il tracera le modèle
 final ; en phase 5, les résultats tiennent dans les tableaux du notebook — arbitrage du 01/10.)*
 📦 **Artefacts** : sections 8 et 9 du notebook · modèle entraîné
-**Statut** : **terminé** (03/10) — SHAP (B6) à décider
+**Statut** : **terminé** (03/10) — explicabilité B6 : option C (contributions linéaires en production, SHAP pour l'analyse)
 
 ---
 
-## 8 · Optimisation & fine-tuning *(à faire)*
+## 8 · Optimisation & fine-tuning *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Un modèle comporte des **hyperparamètres** : des réglages fixés avant
 > l'entraînement, comme le nombre d'arbres d'une forêt. Les optimiser consiste à essayer plusieurs
 > combinaisons pour retenir la meilleure. Le **surapprentissage** est le risque associé : à force d'ajuster,
 > le modèle finit par mémoriser les exemples d'apprentissage au lieu d'en tirer des règles générales.
 
-- [ ] Explorer la grille d'hyperparamètres définie
-- [ ] Surveiller le surapprentissage
-- [ ] Documenter les paramètres retenus
-- [~] Arbitrer entre performance et consommation de ressources
+- [x] Explorer la grille d'hyperparamètres définie — *régression : 14 combinaisons, grille plate (0,7931 à 0,7943) ; arbres : en phase 7*
+- [x] Surveiller le surapprentissage — *S1 à S5 : écarts ≤ 0,010, optimisme imbriqué −0,001, courbe 0,005, calibration 0,030*
+- [x] Documenter les paramètres retenus — *tableau complet, réglés et fixés, avec motif (choix méthodologiques)*
+- [x] Arbitrer entre performance et consommation de ressources — *P4 : régression servie en une copie calibrée (57 → ≈ 11 ms par compte), XGBoost non retenu (décision c)*
 
 **Un choix volontairement sobre.** La grille de recherche est **restreinte** plutôt qu'exhaustive. Explorer
 des milliers de combinaisons consommerait beaucoup de calcul — donc d'énergie — pour un gain marginal. Cette

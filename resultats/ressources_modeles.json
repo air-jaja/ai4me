@@ -1,0 +1,51 @@
+{
+ "identite_execution": "637caf768bcf67c0",
+ "mesures": [
+  {
+   "modèle": "régression logistique (calibrée)",
+   "entraînement (s)": 0.241,
+   "lot de 5 000 comptes (s)": 0.083,
+   "un compte (ms)": 33.61,
+   "taille (Ko)": 27.2,
+   "mémoire de pointe à l'entraînement (Mo)": 2.9,
+   "énergie d'un entraînement (Wh)": 0.00168,
+   "PR-AUC (25 plis)": 0.7936
+  },
+  {
+   "modèle": "forêt aléatoire réglée",
+   "entraînement (s)": 0.5,
+   "lot de 5 000 comptes (s)": 0.074,
+   "un compte (ms)": 18.54,
+   "taille (Ko)": 2682.1,
+   "mémoire de pointe à l'entraînement (Mo)": 2.8,
+   "énergie d'un entraînement (Wh)": 0.00347,
+   "PR-AUC (25 plis)": 0.7738
+  },
+  {
+   "modèle": "xgboost réglé",
+   "entraînement (s)": 0.141,
+   "lot de 5 000 comptes (s)": 0.024,
+   "un compte (ms)": 6.17,
+   "taille (Ko)": 231.4,
+   "mémoire de pointe à l'entraînement (Mo)": 2.6,
+   "énergie d'un entraînement (Wh)": 0.00098,
+   "PR-AUC (25 plis)": 0.7803
+  }
+ ],
+ "equivalents_en_performance": [
+  "régression logistique (calibrée)",
+  "xgboost réglé"
+ ],
+ "P4_retenu": "xgboost réglé",
+ "budgets": {
+  "lot_mensuel_s": 60.0,
+  "un_compte_ms": 50.0
+ },
+ "budgets_respectes": {
+  "régression logistique (calibrée)": true,
+  "forêt aléatoire réglée": true,
+  "xgboost réglé": true
+ },
+ "poste": "mesures sur la machine qui exécute l'outil",
+ "date": "2026-10-03 11:34"
+}

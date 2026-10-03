@@ -119,21 +119,49 @@ def run_existant(nom: str, etiquettes: dict[str, str], nom_run: str | None = Non
     return None if trouves.empty else str(trouves.iloc[0]["run_id"])
 
 
-def empreinte_code() -> str:
-    """Fingerprint of the code that produces models: the package and the tools.
+# The code that PRODUCES results (bloc 7.0 bis, refined 03/10/2026): data preparation,
+# variables, models, evaluation, and the configuration. Left out on purpose: tracking and
+# packaging (packaging/), serving and monitoring (industrialisation/, monitoring/), the
+# notebook helpers, and figures (features/graphiques.py) - changing them changes no figure.
+PERIMETRE_RESULTATS = ("config.py", "donnees", "features", "modelisation", "evaluation")
+HORS_PERIMETRE = ("features/graphiques.py",)
+
+
+def fichiers_du_perimetre(origine: str | None = None) -> list:
+    """The source files whose change may change a result produced by `origine`.
+
+    The package's result-producing code, plus the tool that produced the result - and
+    no other tool: correcting MLflow logging, a figure or an unrelated tool no longer
+    invalidates fifteen minutes of recorded computations.
+    """
+    paquet = RACINE / "src" / "churn_saas"
+    fichiers = []
+    for element in PERIMETRE_RESULTATS:
+        chemin = paquet / element
+        fichiers += [chemin] if chemin.is_file() else sorted(chemin.rglob("*.py"))
+    # `__init__.py` files only list what a package exports: adding a figure to an
+    # interface changes no result (it invalidated every recorded result once, 03/10/2026).
+    fichiers = [
+        f
+        for f in fichiers
+        if f.relative_to(paquet).as_posix() not in HORS_PERIMETRE and f.name != "__init__.py"
+    ]
+    if origine and (RACINE / origine).is_file():
+        fichiers.append(RACINE / origine)
+    return sorted(fichiers)
+
+
+def empreinte_code(origine: str | None = None) -> str:
+    """Fingerprint of the code that produces a result (see `fichiers_du_perimetre`).
 
     A commit identifies committed code only; this fingerprint also tells two runs apart
-    when the working tree holds uncommitted changes.
+    when the working tree holds uncommitted changes. Line endings are normalised, so a
+    Windows checkout and a Linux one agree.
     """
     import hashlib
 
     condense = hashlib.sha256()
-    for fichier in sorted(
-        [
-            *RACINE.joinpath("src", "churn_saas").rglob("*.py"),
-            *RACINE.joinpath("tools").glob("*.py"),
-        ]
-    ):
+    for fichier in fichiers_du_perimetre(origine):
         condense.update(fichier.relative_to(RACINE).as_posix().encode())
         condense.update(fichier.read_bytes().replace(b"\r\n", b"\n"))
     return condense.hexdigest()[:16]
@@ -206,7 +234,7 @@ def etiquettes_tracabilite(
     except (OSError, subprocess.CalledProcessError):
         etiquettes["commit"] = "inconnu"
     etiquettes["n_jobs"] = str(N_JOBS)
-    etiquettes["empreinte_code"] = empreinte_code()
+    etiquettes["empreinte_code"] = empreinte_code(origine)
     etiquettes["empreinte_protocole"] = empreinte_protocole()
     try:
         import tomllib
@@ -295,6 +323,47 @@ def journaliser(
         return execution.info.run_id
 
 
+def dependances_du_modele(modele: Any) -> list[str]:
+    """The packages a logged model needs, pinned to the installed versions (optimisation B2).
+
+    Left to infer them, MLflow exports the whole uv project and then looks for pip at every
+    logged model: 1 to 5 s each on the development laptop, with a warning when pip is
+    absent from a uv environment. The model's needs are known: the libraries its pipeline
+    is made of, at the versions the lock file installed.
+    """
+    from importlib.metadata import PackageNotFoundError, version
+
+    paquets = ["scikit-learn", "pandas", "numpy", "scipy", "cloudpickle"]
+    if "xgboost" in repr(modele).lower():
+        paquets.append("xgboost-cpu")
+    epingles = []
+    for paquet in paquets:
+        try:
+            epingles.append(f"{paquet}=={version(paquet)}")
+        except PackageNotFoundError:
+            continue
+    return epingles
+
+
+def environnement_du_modele(modele: Any) -> dict:
+    """The model's full environment, declared - so MLflow infers nothing at all (B2).
+
+    Declaring the pip requirements alone was not enough: MLflow still built a conda file
+    around them and looked for pip's own version, absent from a uv environment - 10 s on
+    the development laptop at the first logged model, and the "Failed to resolve installed
+    pip version" warning at every one. With the whole environment given, it looks for
+    nothing (0.4 s instead of 3.4 s here for the first model).
+    """
+    import sys
+
+    version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    return {
+        "name": "churn-saas",
+        "channels": ["conda-forge"],
+        "dependencies": [f"python={version}", "pip", {"pip": dependances_du_modele(modele)}],
+    }
+
+
 def journaliser_modele(modele: Any, X_exemple: pd.DataFrame, nom: str = "modele") -> None:
     """Log a fitted pipeline - preprocessing included - with its signature and an example.
 
@@ -322,6 +391,7 @@ def journaliser_modele(modele: Any, X_exemple: pd.DataFrame, nom: str = "modele"
         signature=signature,
         input_example=X_exemple.head(3),
         serialization_format="cloudpickle",
+        conda_env=environnement_du_modele(modele),
     )
 
 

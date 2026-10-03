@@ -142,14 +142,66 @@ def test_la_duree_est_estimee_a_partir_des_temps_mesures():
     assert annoncer_duree(10, 5).startswith("Durée estimée")
 
 
-def _chaine(*options: str) -> dict:
+def _chaine_rapide(monkeypatch, forcer: bool = False) -> dict:
+    """The chain, in this process, with a dummy protocol evaluation (optimisation A2).
+
+    What these tests check is the RELAUNCH logic - identity, reuse, --forcer, registry -
+    not the 25-fold evaluation, which the protocol's own tests and the non-regression
+    figures cover. Run in-process, with an instant evaluation, a chain execution takes
+    about a second instead of six in a subprocess.
+    """
+    import churn_saas.evaluation as evaluation
+    from churn_saas.evaluation import ResultatProtocole
+
+    def evaluation_factice(construire_modele, X, y, probabiliste=True):
+        par_pli = pd.DataFrame(
+            {
+                "PR-AUC": [0.79] * 25,
+                "ROC-AUC": [0.89] * 25,
+                "rappel haut": [0.33] * 25,
+                "précision haut": [0.92] * 25,
+                "Brier": [0.13] * 25,
+                "erreur de calibration": [0.11] * 25,
+            }
+        )
+        return ResultatProtocole(par_pli, pd.Series(np.linspace(0, 1, len(X)), index=X.index))
+
+    monkeypatch.setattr(evaluation, "evaluer_selon_protocole", evaluation_factice)
+    return _outil_chaine().executer(avec_grille=False, rapide=True, forcer=forcer)
+
+
+@exige_mlflow
+def test_relancer_la_chaine_reutilise_l_execution_identique(monkeypatch):
+    """Same code, data, protocol and options: the second execution computes and registers
+    nothing - the same control as the replay tool (A1)."""
+    pytest.importorskip("mlflow")
+    from churn_saas.packaging import configurer_suivi
+
+    mlflow = configurer_suivi()
+    premiere, seconde = _chaine_rapide(monkeypatch), _chaine_rapide(monkeypatch)
+    assert premiere["nouvelle_version"] and not premiere["reutilisee"]
+    assert seconde["reutilisee"] and not seconde["nouvelle_version"]
+    assert seconde["execution"] == premiere["execution"]
+    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
+    assert len(runs) == 2  # one parent, one child: nothing added by the second execution
+
+    forcee = _chaine_rapide(monkeypatch, forcer=True)
+    assert forcee["execution"] != premiere["execution"] and not forcee["reutilisee"]
+    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
+    assert len(runs) == 2 and forcee["version_registre"] == premiere["version_registre"]
+
+
+@exige_mlflow
+def test_la_chaine_rapide_tourne_de_bout_en_bout():
+    """One real end-to-end run, in a subprocess, as a user launches it - the in-process
+    tests above replace the computation, this one does not."""
     import json
     import subprocess
 
     from churn_saas.config import RACINE
 
     sortie = subprocess.run(
-        [sys.executable, str(RACINE / "tools" / "pipeline_mlflow.py"), "--rapide", *options],
+        [sys.executable, str(RACINE / "tools" / "pipeline_mlflow.py"), "--rapide"],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -157,40 +209,24 @@ def _chaine(*options: str) -> dict:
         timeout=300,
     )
     assert sortie.returncode == 0, sortie.stderr[-800:]
-    return json.loads(sortie.stdout[sortie.stdout.index("{") :])
+    bilan = json.loads(sortie.stdout[sortie.stdout.index("{") :])
+    assert bilan["registre_identique_au_modele_en_memoire"]
 
 
 @exige_mlflow
-def test_relancer_la_chaine_reutilise_l_execution_identique():
-    """Same code, data, protocol and options: the second execution computes and registers
-    nothing - the same control as the replay tool (A1)."""
-    pytest.importorskip("mlflow")
-    from churn_saas.packaging import configurer_suivi
-
-    mlflow = configurer_suivi()
-    premiere, seconde = _chaine(), _chaine()
-    assert premiere["nouvelle_version"] and not premiere["reutilisee"]
-    assert seconde["reutilisee"] and not seconde["nouvelle_version"]
-    assert seconde["execution"] == premiere["execution"]
-    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
-    assert len(runs) == 2  # one parent, one child: nothing added by the second execution
-
-
-@exige_mlflow
-def test_forcer_la_chaine_remplace_sans_dupliquer():
-    pytest.importorskip("mlflow")
-    from churn_saas.packaging import configurer_suivi
-
-    mlflow = configurer_suivi()
-    premiere, forcee = _chaine(), _chaine("--forcer")
-    assert forcee["execution"] != premiere["execution"] and not forcee["reutilisee"]
-    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
-    assert len(runs) == 2 and forcee["version_registre"] == premiere["version_registre"]
-
-
-@exige_mlflow
-def test_relancer_le_retracage_ne_cree_pas_de_doublon():
+def test_relancer_le_retracage_ne_cree_pas_de_doublon(monkeypatch):
+    """The replay logic, with an instant reference computation (optimisation A2)."""
     mlflow = pytest.importorskip("mlflow")
+    import types
+
+    plis = {"PR-AUC": [0.79] * 25, "ROC-AUC": [0.89] * 25}
+    factice = types.ModuleType("resultats_reference")
+    factice.calculer = lambda: {
+        "baselines": {
+            n: {"par_pli": plis} for n in ("naïve", "règle métier", "régression logistique")
+        }
+    }
+    monkeypatch.setitem(sys.modules, "resultats_reference", factice)
 
     from churn_saas.config import RACINE
     from churn_saas.packaging import configurer_suivi
@@ -317,3 +353,124 @@ def test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele():
     )
     assert recherche.n_jobs == 1
     assert recherche.estimator.get_params()["modele__n_jobs"] == config.N_JOBS
+
+
+def test_les_dependances_du_modele_sont_declarees_et_epinglees():
+    """B2: declared rather than inferred by a uv export at every logged model."""
+    from churn_saas.modelisation import construire_baseline
+    from churn_saas.packaging import dependances_du_modele
+
+    X = pd.DataFrame({"a": [1.0, 2.0], "b": ["x", "y"]})
+    dependances = dependances_du_modele(construire_baseline(X))
+    assert any(d.startswith("scikit-learn==") for d in dependances)
+    assert all("==" in d for d in dependances)
+    assert not any(d.startswith("xgboost") for d in dependances)
+
+
+@exige_mlflow
+def test_journaliser_un_modele_ne_cherche_pas_la_version_de_pip(caplog):
+    """The uv environment has no pip: inferring the conda file made MLflow look for it,
+    slowly, with a warning at every logged model (B2, completed)."""
+    import logging
+
+    from churn_saas.modelisation import construire_baseline
+    from churn_saas.packaging import experience, journaliser_modele
+
+    X = pd.DataFrame({"a": np.linspace(0, 1, 60), "b": ["x", "y"] * 30})
+    y = pd.Series([0, 1] * 30)
+    modele = construire_baseline(X).fit(X, y)
+    with caplog.at_level(logging.WARNING), experience("churn-saas/pip"):
+        journaliser_modele(modele, X)
+    assert not any("pip version" in r.getMessage() for r in caplog.records)
+
+
+@exige_mlflow
+def test_une_execution_incomplete_n_est_pas_reutilisee(monkeypatch):
+    """Carnet 07, on the laptop: an execution interrupted earlier had been closed as
+    FINISHED with no child run. Reused, it made the comparison read an empty table
+    (KeyError). An incomplete execution is now replaced, and a failed one is FAILED."""
+    from churn_saas.packaging import configurer_suivi
+
+    mlflow = configurer_suivi()
+    premiere = _chaine_rapide(monkeypatch)
+    for run_id in mlflow.search_runs(
+        experiment_names=["churn-saas/phase7-chaine-mlflow"],
+        filter_string=f"tags.mlflow.parentRunId = '{premiere['execution']}'",
+    )["run_id"]:
+        mlflow.MlflowClient().delete_run(run_id)  # the parent stays, alone and FINISHED
+
+    seconde = _chaine_rapide(monkeypatch)
+    assert not seconde["reutilisee"] and seconde["execution"] != premiere["execution"]
+
+
+@exige_mlflow
+def test_une_execution_en_echec_est_marquee_failed(monkeypatch):
+    import churn_saas.evaluation as evaluation
+    from churn_saas.packaging import configurer_suivi
+
+    mlflow = configurer_suivi()
+
+    def echec(*args, **kwargs):
+        raise RuntimeError("évaluation interrompue")
+
+    monkeypatch.setattr(evaluation, "evaluer_selon_protocole", echec)
+    with pytest.raises(RuntimeError):
+        _outil_chaine().executer(avec_grille=False, rapide=True)
+    parents = mlflow.search_runs(
+        experiment_names=["churn-saas/phase7-chaine-mlflow"],
+        filter_string="tags.execution = 'parent'",
+    )
+    assert set(parents["status"]) == {"FAILED"}
+
+
+# --- Refined execution identity (03/10/2026): only the code that produces results ------------
+def test_le_perimetre_de_l_identite_est_le_code_qui_produit_les_resultats():
+    """Correcting MLflow logging, a figure or another tool invalidated every recorded
+    result three times in a day (15 minutes of recomputation each, identical figures).
+    The identity now covers the result-producing code and the producing tool only."""
+    from churn_saas.config import RACINE
+    from churn_saas.packaging import fichiers_du_perimetre
+
+    perimetre = {
+        f.relative_to(RACINE).as_posix() for f in fichiers_du_perimetre("tools/selection_modele.py")
+    }
+    for dedans in (
+        "src/churn_saas/config.py",
+        "src/churn_saas/modelisation/reglage.py",
+        "src/churn_saas/evaluation/protocole.py",
+        "src/churn_saas/features/pipeline.py",
+        "src/churn_saas/donnees/gold.py",
+        "tools/selection_modele.py",
+    ):
+        assert dedans in perimetre, dedans
+    for dehors in (
+        "src/churn_saas/packaging/suivi.py",
+        "src/churn_saas/features/graphiques.py",
+        "src/churn_saas/industrialisation/scoring.py",
+        "tools/pipeline_mlflow.py",
+        "tools/selection_variables.py",
+    ):
+        assert dehors not in perimetre, dehors
+
+
+def test_l_empreinte_ne_bouge_qu_avec_le_code_du_perimetre(tmp_path, monkeypatch):
+    """Same fingerprint after touching a file outside the perimeter; a new one after
+    touching a file inside it."""
+    import shutil
+
+    import churn_saas.packaging.suivi as suivi
+    from churn_saas.config import RACINE
+
+    copie = tmp_path / "depot"
+    shutil.copytree(RACINE / "src", copie / "src")
+    shutil.copytree(RACINE / "tools", copie / "tools")
+    monkeypatch.setattr(suivi, "RACINE", copie)
+    avant = suivi.empreinte_code("tools/selection_modele.py")
+    (copie / "src/churn_saas/packaging/suivi.py").write_text("# journalisation modifiée\n")
+    (copie / "tools/pipeline_mlflow.py").write_text("# autre outil modifié\n")
+    with open(copie / "src/churn_saas/features/__init__.py", "a", encoding="utf-8") as f:
+        f.write("\n# nouvelle figure exportée\n")
+    assert suivi.empreinte_code("tools/selection_modele.py") == avant
+    with open(copie / "src/churn_saas/modelisation/reglage.py", "a", encoding="utf-8") as f:
+        f.write("\n# réglage modifié\n")
+    assert suivi.empreinte_code("tools/selection_modele.py") != avant

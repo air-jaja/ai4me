@@ -237,20 +237,62 @@ def test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal(tmp_path):
     assert contenu.startswith("# Catalogue des tests")
 
 
+# Optimisation A1 (03/10/2026): the encoding of a tool's output does not depend on what it
+# computes. `--help` prints its (accented) description through the same reconfigured
+# streams in 0.04 s, where the real runs took up to 7 s each - about 19 s for the whole
+# check. What `--help` does not exercise - the reconfiguration itself, and the error
+# stream - is covered by the static test below and by the real refusal of a second test
+# evaluation (test_les_erreurs_des_outils_s_ecrivent_aussi_en_utf8).
 OUTILS_ET_ARGUMENTS = {
-    "catalogue_tests.py": ["--sortie", "{tmp}/TESTS.md"],
-    "registre_ecarts.py": ["--sortie", "{tmp}/REGISTRE.md"],
-    "ressources_calcul.py": ["--sortie", "{tmp}/SOBRIETE.md"],
-    "materialiser.py": ["--manifeste", "{tmp}/manifeste.json", "--dossier", "{tmp}/processed"],
+    "catalogue_tests.py": ["--help"],
+    "registre_ecarts.py": ["--help"],
+    "ressources_calcul.py": ["--help"],
+    "materialiser.py": ["--help"],
     "campagne_tests.py": ["--lister"],
-    "resultats_reference.py": ["--sortie", "{tmp}/reference.json"],
+    "resultats_reference.py": ["--help"],
     "pipeline_mlflow.py": ["--help"],
-    "retracer_mlflow.py": ["--phase", "6"],
-    "nettoyer_mlflow.py": [],
+    "retracer_mlflow.py": ["--help"],
+    "nettoyer_mlflow.py": ["--help"],
+    "selection_variables.py": ["--help"],
+    "comparaison_explicabilite.py": ["--help"],
+    "reglage_modele.py": ["--help"],
+    "modele_servi.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],
 }
+
+
+@pytest.mark.parametrize("outil", sorted(OUTILS_ET_ARGUMENTS))
+def test_chaque_outil_reconfigure_ses_deux_sorties_avant_tout(outil):
+    """Static half of the encoding check: `main()` forces stdout AND stderr to UTF-8 before
+    parsing its arguments - so `--help` and a real run go through the same streams."""
+    import ast
+
+    arbre = ast.parse((RACINE / "tools" / outil).read_text(encoding="utf-8"))
+    main = next(n for n in arbre.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+    appels = [ast.unparse(n) for n in ast.walk(main) if isinstance(n, ast.Call)]
+    for flux in ("stdout", "stderr"):
+        assert any(f"sys.{flux}.reconfigure(encoding='utf-8')" in a for a in appels), (
+            f"{outil} : main() ne force pas sys.{flux} en UTF-8."
+        )
+    lecture = [
+        n
+        for n in ast.walk(main)
+        if isinstance(n, ast.Call)
+        and ast.unparse(n.func).endswith(("parse_args", "parse_known_args"))
+    ]
+    if lecture:
+        debut_lecture = min(n.lineno for n in lecture)
+        for flux in ("stdout", "stderr"):
+            premiere = min(
+                n.lineno
+                for n in ast.walk(main)
+                if isinstance(n, ast.Call) and ast.unparse(n.func) == f"sys.{flux}.reconfigure"
+            )
+            assert premiere < debut_lecture, (
+                f"{outil} : sys.{flux} doit être reconfiguré avant la lecture des arguments."
+            )
 
 
 def test_chaque_outil_est_couvert_par_le_controle_d_encodage():
@@ -377,3 +419,34 @@ def test_aucun_fichier_de_modele_n_est_versionne_hors_de_models():
         text=True,
     ).stdout.splitlines()
     assert "notebooks/essai.joblib" in ignores, "Un .joblib hors de models/ ne serait pas ignoré."
+
+
+def test_le_notebook_de_certification_lit_les_calculs_de_la_phase_5_sans_les_refaire():
+    """B1: sections 8.A to 8.C read tools/selection_variables.py's recorded results. A
+    notebook committed from an older working copy brought the computations back once
+    (11 minutes here, 15 to 20 on the laptop) without any test noticing."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    code = "\n".join(c.source for c in nb.cells if c.cell_type == "code")
+    assert "_phase5.en_objets(_phase5.executer())" in code
+    recalculs = [
+        f
+        for f in (
+            "comparer_jeux(",
+            "importances_par_permutation(",
+            "ablation_par_groupe(",
+            "tester_permutation(",
+            "courbe_apprentissage(",
+            "confirmer_retraits(",
+        )
+        if f in code
+    ]
+    assert not recalculs, f"Calculs de la phase 5 refaits dans le notebook : {recalculs}"
+
+
+def test_la_session_de_tests_n_utilise_jamais_le_dossier_temporaire_partage(tmp_path):
+    """Windows: the shared %TEMP%\\pytest-of-<user> tree made every campaign fail at the
+    very end (PermissionError on `pytest-current`), all tests having passed. Every session now
+    works in a unique directory of its own (tests/conftest.py), which pytest never scans."""
+    assert "pytest-of-" not in str(tmp_path), tmp_path

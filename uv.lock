@@ -607,6 +607,7 @@ dev = [
     { name = "nbformat" },
     { name = "pre-commit" },
     { name = "pytest" },
+    { name = "pyyaml" },
     { name = "ruff" },
 ]
 explicabilite = [
@@ -676,6 +677,7 @@ dev = [
     { name = "nbformat", specifier = ">=5.10" },
     { name = "pre-commit", specifier = ">=3.7" },
     { name = "pytest", specifier = ">=8.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", specifier = ">=0.5" },
 ]
 explicabilite = [{ name = "shap", specifier = ">=0.46" }]

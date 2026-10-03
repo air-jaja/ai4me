@@ -520,3 +520,62 @@ def tracer_baselines(par_pli: dict[str, pd.DataFrame], metrique: str = "PR-AUC")
     ax.set_title(f"Les trois références : {metrique}")
     fig.tight_layout()
     return fig
+
+
+def tracer_facteurs_compares(parts: pd.DataFrame, n: int = 10) -> Figure:
+    """Share of each model's attribution per variable, for the n most important on average.
+
+    `parts` has one column per model (SHAP shares summing to 1). Shares rather than raw
+    SHAP values: the families explain on different scales (log-odds, probability).
+    """
+    ordre = parts.mean(axis=1).sort_values(ascending=False).head(n).index[::-1]
+    fig, ax = plt.subplots(figsize=(8.5, 0.45 * n + 1.2))
+    hauteur = 0.8 / len(parts.columns)
+    couleurs = [PALETTE["principal"], PALETTE["accent"], PALETTE.get("neutre", "#7a7a7a")]
+    for k, modele in enumerate(parts.columns):
+        positions = [i + (k - (len(parts.columns) - 1) / 2) * hauteur for i in range(len(ordre))]
+        ax.barh(
+            positions,
+            parts.loc[ordre, modele],
+            height=hauteur,
+            color=couleurs[k % len(couleurs)],
+            label=modele,
+        )
+    ax.set_yticks(range(len(ordre)), ordre)
+    ax.set_xlabel("Part de l'attribution totale du modèle (SHAP)")
+    ax.legend(loc="lower right", frameon=False)
+    ax.set_title("Sur quoi chaque modèle s'appuie-t-il ?", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_courbe_validation(points: pd.DataFrame, retenu: float) -> Figure:
+    """Training and validation PR-AUC along the regularisation C (rule S2).
+
+    `points` holds one row per value of C, with its training and validation PR-AUC. The
+    gap between the two curves is what overfitting would widen; a flat validation curve
+    says the regularisation hardly matters.
+    """
+    fig, ax = plt.subplots(figsize=(7, 3.8))
+    ax.plot(
+        points["C"],
+        points["PR-AUC entraînement"],
+        marker="o",
+        color=PALETTE["accent"],
+        label="entraînement",
+    )
+    ax.plot(
+        points["C"],
+        points["PR-AUC validation"],
+        marker="o",
+        color=PALETTE["principal"],
+        label="validation (25 plis)",
+    )
+    ax.axvline(retenu, color="#7a7a7a", linestyle=":", label=f"retenu par P1 (C = {retenu:g})")
+    ax.set_xscale("log")
+    ax.set_xlabel("C (plus petit = plus régularisé)")
+    ax.set_ylabel("PR-AUC")
+    ax.legend(frameon=False)
+    ax.set_title("Courbe de validation de la régression logistique", fontsize=11)
+    fig.tight_layout()
+    return fig
