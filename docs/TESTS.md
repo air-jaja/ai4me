@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**657 cas de test** issus de 357 fonctions, répartis sur 23 fichiers.
+**658 cas de test** issus de 358 fonctions, répartis sur 23 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -43,7 +43,7 @@ soutenance.
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
 | [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 102 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
-| [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 10 |
+| [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 11 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
@@ -493,8 +493,9 @@ soutenance.
 | 6 | `test_l_api_joint_mlflow_sur_le_port_ou_il_ecoute` | _(sans description)_ | — |
 | 7 | `test_les_fichiers_montes_et_construits_existent` | _(sans description)_ | — |
 | 8 | `test_chaque_image_est_epinglee` | _(sans description)_ | — |
-| 9 | `test_le_serveur_mlflow_a_la_version_du_client` | The server and the client must speak the same MLflow version: a 3.16 client writing to a 3.1 server can fail on objects the server does not know (logged models). | — |
+| 9 | `test_le_serveur_mlflow_a_la_version_du_client` | The server and the client must speak the same MLflow version: a 3.16 client writing to a 3.1 server can fail on objects the server does not know (logged models). | Expected to fail until 03/10/2026 (register D-06); aligned since. |
 | 10 | `test_docker_compose_valide_le_fichier` | Docker's own reading of the file, with the example environment. | — |
+| 11 | `test_chaque_controle_de_sante_laisse_un_delai_de_grace` | On the development laptop the first start of PostgreSQL took about 40 s (create the database, stop, restart); with 5 checks of 5 s and no grace period, `db` was declared unhealthy and every service depending on it refused to start. | — |
 
 ### test_industrialisation.py
 

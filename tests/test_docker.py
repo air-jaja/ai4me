@@ -130,14 +130,10 @@ def test_chaque_image_est_epinglee():
     assert not flottantes, f"Images non épinglées : {flottantes}"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Écart connu (registre D-06) : image du serveur MLflow à "
-    "aligner sur le client du verrou, en phase 10.",
-)
 def test_le_serveur_mlflow_a_la_version_du_client():
     """The server and the client must speak the same MLflow version: a 3.16 client writing
-    to a 3.1 server can fail on objects the server does not know (logged models)."""
+    to a 3.1 server can fail on objects the server does not know (logged models). Expected
+    to fail until 03/10/2026 (register D-06); aligned since."""
     image = re.search(
         r"FROM ghcr\.io/mlflow/mlflow:v?([\d.]+)",
         (RACINE / "docker" / "mlflow.Dockerfile").read_text(encoding="utf-8"),
@@ -160,3 +156,15 @@ def test_docker_compose_valide_le_fichier(tmp_path):
         timeout=60,
     )
     assert sortie.returncode == 0, sortie.stderr[-800:]
+
+
+def test_chaque_controle_de_sante_laisse_un_delai_de_grace():
+    """On the development laptop the first start of PostgreSQL took about 40 s (create the
+    database, stop, restart); with 5 checks of 5 s and no grace period, `db` was declared
+    unhealthy and every service depending on it refused to start."""
+    sans_delai = [
+        nom
+        for nom, service in _compose()["services"].items()
+        if "healthcheck" in service and "start_period" not in service["healthcheck"]
+    ]
+    assert not sans_delai, f"Contrôle de santé sans start_period : {sans_delai}"

@@ -54,7 +54,11 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME} -h localhost -p 5432"]
       interval: 5s
-      retries: 5
+      retries: 10
+      # First start: PostgreSQL creates its database, stops, then restarts - about 40 s on
+      # the development laptop (Docker Desktop, WSL2). Without this grace period the 25 s of
+      # checks ran out first, `db` was declared unhealthy and `mlflow` refused to start.
+      start_period: 60s
 
   mlflow:
     # Image construite localement : l'image officielle ne contient aucun pilote
