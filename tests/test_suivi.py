@@ -365,3 +365,20 @@ def test_les_dependances_du_modele_sont_declarees_et_epinglees():
     assert any(d.startswith("scikit-learn==") for d in dependances)
     assert all("==" in d for d in dependances)
     assert not any(d.startswith("xgboost") for d in dependances)
+
+
+@exige_mlflow
+def test_journaliser_un_modele_ne_cherche_pas_la_version_de_pip(caplog):
+    """The uv environment has no pip: inferring the conda file made MLflow look for it,
+    slowly, with a warning at every logged model (B2, completed)."""
+    import logging
+
+    from churn_saas.modelisation import construire_baseline
+    from churn_saas.packaging import experience, journaliser_modele
+
+    X = pd.DataFrame({"a": np.linspace(0, 1, 60), "b": ["x", "y"] * 30})
+    y = pd.Series([0, 1] * 30)
+    modele = construire_baseline(X).fit(X, y)
+    with caplog.at_level(logging.WARNING), experience("churn-saas/pip"):
+        journaliser_modele(modele, X)
+    assert not any("pip version" in r.getMessage() for r in caplog.records)

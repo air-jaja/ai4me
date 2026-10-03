@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**617 cas de test** issus de 331 fonctions, répartis sur 22 fichiers.
+**618 cas de test** issus de 332 fonctions, répartis sur 22 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -48,7 +48,7 @@ soutenance.
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 | [test_resultats_reference.py](#test_resultats_referencepy) | `test_resultats_reference.py` | — | — | 5 |
-| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 20 |
+| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 21 |
 
 ---
 
@@ -582,3 +582,4 @@ soutenance.
 | 18 | `test_l_autolog_est_coupe_apres_l_entrainement_trace_meme_en_cas_d_erreur` | Left on, autolog patched the 25 fits of the protocol evaluation too, and on Windows its threads on top of the forests' exhausted the process ("can't start new thread"). | — |
 | 19 | `test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele` | One layer, inside the forest and by threads: the search itself spawns no worker process. | Worker processes broke on Windows under autolog (a task they could not unpickle: MemoryError, BrokenProcessPool). |
 | 20 | `test_les_dependances_du_modele_sont_declarees_et_epinglees` | B2: declared rather than inferred by a uv export at every logged model. | — |
+| 21 | `test_journaliser_un_modele_ne_cherche_pas_la_version_de_pip` | The uv environment has no pip: inferring the conda file made MLflow look for it, slowly, with a warning at every logged model (B2, completed). | — |

@@ -317,6 +317,25 @@ def dependances_du_modele(modele: Any) -> list[str]:
     return epingles
 
 
+def environnement_du_modele(modele: Any) -> dict:
+    """The model's full environment, declared - so MLflow infers nothing at all (B2).
+
+    Declaring the pip requirements alone was not enough: MLflow still built a conda file
+    around them and looked for pip's own version, absent from a uv environment - 10 s on
+    the development laptop at the first logged model, and the "Failed to resolve installed
+    pip version" warning at every one. With the whole environment given, it looks for
+    nothing (0.4 s instead of 3.4 s here for the first model).
+    """
+    import sys
+
+    version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    return {
+        "name": "churn-saas",
+        "channels": ["conda-forge"],
+        "dependencies": [f"python={version}", "pip", {"pip": dependances_du_modele(modele)}],
+    }
+
+
 def journaliser_modele(modele: Any, X_exemple: pd.DataFrame, nom: str = "modele") -> None:
     """Log a fitted pipeline - preprocessing included - with its signature and an example.
 
@@ -344,7 +363,7 @@ def journaliser_modele(modele: Any, X_exemple: pd.DataFrame, nom: str = "modele"
         signature=signature,
         input_example=X_exemple.head(3),
         serialization_format="cloudpickle",
-        pip_requirements=dependances_du_modele(modele),
+        conda_env=environnement_du_modele(modele),
     )
 
 
