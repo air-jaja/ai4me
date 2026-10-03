@@ -130,25 +130,28 @@ HORS_PERIMETRE = ("features/graphiques.py",)
 def fichiers_du_perimetre(origine: str | None = None) -> list:
     """The source files whose change may change a result produced by `origine`.
 
-    The package's result-producing code, plus the tool that produced the result - and
-    no other tool: correcting MLflow logging, a figure or an unrelated tool no longer
-    invalidates fifteen minutes of recorded computations.
+    Refined on 03/10/2026, a second time: the package files the producing tool ACTUALLY
+    uses - its import graph, through every import statement and down to the submodule that
+    defines each imported name - plus the tool itself and the tools it loads. Adding the
+    decision rule to `evaluation/` no longer invalidates phase 5's computations, which never
+    import it; changing a function they do import still does. Without a tool (or for an
+    unknown one), the conservative fallback: every result-producing package.
     """
+    from .dependances import modules_utilises
+
+    if origine and (RACINE / origine).is_file():
+        outil = RACINE / origine
+        return sorted(modules_utilises(outil) | {outil})
     paquet = RACINE / "src" / "churn_saas"
     fichiers = []
     for element in PERIMETRE_RESULTATS:
         chemin = paquet / element
         fichiers += [chemin] if chemin.is_file() else sorted(chemin.rglob("*.py"))
-    # `__init__.py` files only list what a package exports: adding a figure to an
-    # interface changes no result (it invalidated every recorded result once, 03/10/2026).
-    fichiers = [
+    return sorted(
         f
         for f in fichiers
         if f.relative_to(paquet).as_posix() not in HORS_PERIMETRE and f.name != "__init__.py"
-    ]
-    if origine and (RACINE / origine).is_file():
-        fichiers.append(RACINE / origine)
-    return sorted(fichiers)
+    )
 
 
 def empreinte_code(origine: str | None = None) -> str:
@@ -383,6 +386,12 @@ def journaliser_modele(modele: Any, X_exemple: pd.DataFrame, nom: str = "modele"
     from mlflow import sklearn as mlflow_sklearn
     from mlflow.models import infer_signature
 
+    from .dependances import decrire_modele
+
+    descriptif = decrire_modele(modele)
+    mlflow.set_tags(
+        {f"modele.{k}": str(v) for k, v in descriptif.items() if k != "hyperparametres_cles"}
+    )
     exemple = pd.concat([X_exemple[X_exemple.isna().any(axis=1)].head(25), X_exemple.head(25)])
     signature = infer_signature(exemple, modele.predict_proba(exemple)[:, 1])
     mlflow_sklearn.log_model(

@@ -1,0 +1,449 @@
+{
+ "source": "resultats/scores_test.csv (lecture unique de restitution du 2026-10-03 13:32) ; le jeu de test n'est pas relu",
+ "metriques": {
+  "PR-AUC": {
+   "valeur": 0.7612,
+   "intervalle_95": [
+    0.7097,
+    0.8068
+   ]
+  },
+  "ROC-AUC": {
+   "valeur": 0.8815,
+   "intervalle_95": [
+    0.8585,
+    0.9032
+   ]
+  },
+  "erreur de calibration": {
+   "valeur": 0.0364,
+   "intervalle_95": [
+    0.0271,
+    0.0624
+   ]
+  }
+ },
+ "ecart_validation_croisee_test": {
+  "PR-AUC validation croisée (25 plis, champion calibré)": 0.7934,
+  "PR-AUC validation croisée imbriquée": 0.7931,
+  "PR-AUC test": 0.7612,
+  "écart": 0.0322,
+  "validation croisée dans l'intervalle du test": true
+ },
+ "calibration": {
+  "predit": [
+   0.006395605202498486,
+   0.022495668669008196,
+   0.04574875492166595,
+   0.07857360315045239,
+   0.1269091008686842,
+   0.1962421886379024,
+   0.3062226756021523,
+   0.46376621189748385,
+   0.6356986437686166,
+   0.89628728864033
+  ],
+  "observe": [
+   0.0,
+   0.02,
+   0.05,
+   0.1,
+   0.13,
+   0.1,
+   0.42,
+   0.5,
+   0.6,
+   0.88
+  ]
+ },
+ "matrices": {
+  "métier (28 comptes, valeur nette)": {
+   "vrais positifs": 18,
+   "faux positifs": 10,
+   "faux négatifs": 262,
+   "vrais négatifs": 710,
+   "précision": 0.6429,
+   "rappel": 0.0643,
+   "comptes signalés": 28
+  },
+  "protocole (10 % les plus risqués)": {
+   "vrais positifs": 88,
+   "faux positifs": 12,
+   "faux négatifs": 192,
+   "vrais négatifs": 708,
+   "précision": 0.88,
+   "rappel": 0.3143,
+   "comptes signalés": 100
+  }
+ },
+ "mrr": {
+  "métier": {
+   "exposé": {
+    "€ par mois (test)": 814442.0,
+    "intervalle_95": [
+     567825.0,
+     1087280.0
+    ],
+    "€ par mois (extrapolé au portefeuille)": 4072210.0
+   },
+   "couvert": {
+    "€ par mois (test)": 462833.0,
+    "intervalle_95": [
+     233374.0,
+     739763.0
+    ],
+    "€ par mois (extrapolé au portefeuille)": 2314164.0
+   },
+   "préservé": {
+    "€ par mois (test)": 115708.0,
+    "intervalle_95": [
+     58344.0,
+     184941.0
+    ],
+    "€ par mois (extrapolé au portefeuille)": 578541.0
+   },
+   "part couverte": 0.5683
+  },
+  "protocole": {
+   "exposé": {
+    "€ par mois (test)": 814442.0,
+    "intervalle_95": [
+     567825.0,
+     1087280.0
+    ],
+    "€ par mois (extrapolé au portefeuille)": 4072210.0
+   },
+   "couvert": {
+    "€ par mois (test)": 231428.0,
+    "intervalle_95": [
+     113755.0,
+     381917.0
+    ],
+    "€ par mois (extrapolé au portefeuille)": 1157140.0
+   },
+   "préservé": {
+    "€ par mois (test)": 57857.0,
+    "intervalle_95": [
+     28439.0,
+     95479.0
+    ],
+    "€ par mois (extrapolé au portefeuille)": 289285.0
+   },
+   "part couverte": 0.2842
+  },
+  "extrapolation": "x 5 (portefeuille de 5000 comptes) : ordre de grandeur, pas une mesure"
+ },
+ "equite": [
+  {
+   "segment": "secteur",
+   "modalité": "Commerce",
+   "comptes": 162,
+   "départs": 50,
+   "taux de départ": 0.3086,
+   "signalés": 13,
+   "rappel": 0.2,
+   "intervalle du rappel": [
+    0.1,
+    0.32
+   ],
+   "précision": 0.7692,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "secteur",
+   "modalité": "Finance",
+   "comptes": 170,
+   "départs": 43,
+   "taux de départ": 0.2529,
+   "signalés": 11,
+   "rappel": 0.2326,
+   "intervalle du rappel": [
+    0.093,
+    0.3721
+   ],
+   "précision": 0.9091,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "secteur",
+   "modalité": "Industrie",
+   "comptes": 150,
+   "départs": 42,
+   "taux de départ": 0.28,
+   "signalés": 18,
+   "rappel": 0.381,
+   "intervalle du rappel": [
+    0.2381,
+    0.5238
+   ],
+   "précision": 0.8889,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "secteur",
+   "modalité": "Public",
+   "comptes": 59,
+   "départs": 18,
+   "taux de départ": 0.3051,
+   "signalés": 5,
+   "rappel": 0.2778,
+   "intervalle du rappel": [
+    0.0556,
+    0.5
+   ],
+   "précision": 1.0,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "secteur",
+   "modalité": "Santé",
+   "comptes": 123,
+   "départs": 29,
+   "taux de départ": 0.2358,
+   "signalés": 11,
+   "rappel": 0.3448,
+   "intervalle du rappel": [
+    0.1724,
+    0.5172
+   ],
+   "précision": 0.9091,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "secteur",
+   "modalité": "Tech",
+   "comptes": 168,
+   "départs": 51,
+   "taux de départ": 0.3036,
+   "signalés": 23,
+   "rappel": 0.451,
+   "intervalle du rappel": [
+    0.3137,
+    0.5882
+   ],
+   "précision": 1.0,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "secteur",
+   "modalité": "non renseigné",
+   "comptes": 54,
+   "départs": 15,
+   "taux de départ": 0.2778,
+   "signalés": 9,
+   "rappel": 0.4,
+   "intervalle du rappel": [
+    0.1333,
+    0.6667
+   ],
+   "précision": 0.6667,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "secteur",
+   "modalité": "Éducation",
+   "comptes": 114,
+   "départs": 32,
+   "taux de départ": 0.2807,
+   "signalés": 10,
+   "rappel": 0.25,
+   "intervalle du rappel": [
+    0.125,
+    0.4062
+   ],
+   "précision": 0.8,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "pays",
+   "modalité": "Allemagne",
+   "comptes": 93,
+   "départs": 21,
+   "taux de départ": 0.2258,
+   "signalés": 7,
+   "rappel": 0.2381,
+   "intervalle du rappel": [
+    0.0952,
+    0.4286
+   ],
+   "précision": 0.7143,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "pays",
+   "modalité": "Belgique",
+   "comptes": 95,
+   "départs": 24,
+   "taux de départ": 0.2526,
+   "signalés": 11,
+   "rappel": 0.3333,
+   "intervalle du rappel": [
+    0.1667,
+    0.5
+   ],
+   "précision": 0.7273,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "pays",
+   "modalité": "Canada",
+   "comptes": 76,
+   "départs": 26,
+   "taux de départ": 0.3421,
+   "signalés": 9,
+   "rappel": 0.3462,
+   "intervalle du rappel": [
+    0.1923,
+    0.5385
+   ],
+   "précision": 1.0,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "pays",
+   "modalité": "Espagne",
+   "comptes": 81,
+   "départs": 20,
+   "taux de départ": 0.2469,
+   "signalés": 8,
+   "rappel": 0.35,
+   "intervalle du rappel": [
+    0.15,
+    0.55
+   ],
+   "précision": 0.875,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "pays",
+   "modalité": "France",
+   "comptes": 538,
+   "départs": 145,
+   "taux de départ": 0.2695,
+   "signalés": 54,
+   "rappel": 0.3448,
+   "intervalle du rappel": [
+    0.269,
+    0.4276
+   ],
+   "précision": 0.9259,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "pays",
+   "modalité": "Suisse",
+   "comptes": 82,
+   "départs": 33,
+   "taux de départ": 0.4024,
+   "signalés": 7,
+   "rappel": 0.1515,
+   "intervalle du rappel": [
+    0.0303,
+    0.2727
+   ],
+   "précision": 0.7143,
+   "concluant": true,
+   "critère respecté": false
+  },
+  {
+   "segment": "pays",
+   "modalité": "non renseigné",
+   "comptes": 35,
+   "départs": 11,
+   "taux de départ": 0.3143,
+   "signalés": 4,
+   "rappel": 0.3636,
+   "intervalle du rappel": [
+    0.0909,
+    0.6364
+   ],
+   "précision": 1.0,
+   "concluant": false,
+   "critère respecté": null
+  },
+  {
+   "segment": "taille_entreprise",
+   "modalité": "ETI",
+   "comptes": 197,
+   "départs": 41,
+   "taux de départ": 0.2081,
+   "signalés": 17,
+   "rappel": 0.4146,
+   "intervalle du rappel": [
+    0.2683,
+    0.561
+   ],
+   "précision": 1.0,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "taille_entreprise",
+   "modalité": "GE",
+   "comptes": 81,
+   "départs": 17,
+   "taux de départ": 0.2099,
+   "signalés": 5,
+   "rappel": 0.2941,
+   "intervalle du rappel": [
+    0.1176,
+    0.5294
+   ],
+   "précision": 1.0,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "taille_entreprise",
+   "modalité": "PME",
+   "comptes": 396,
+   "départs": 125,
+   "taux de départ": 0.3157,
+   "signalés": 41,
+   "rappel": 0.28,
+   "intervalle du rappel": [
+    0.2,
+    0.36
+   ],
+   "précision": 0.8537,
+   "concluant": true,
+   "critère respecté": true
+  },
+  {
+   "segment": "taille_entreprise",
+   "modalité": "TPE",
+   "comptes": 326,
+   "départs": 97,
+   "taux de départ": 0.2975,
+   "signalés": 37,
+   "rappel": 0.3196,
+   "intervalle du rappel": [
+    0.2268,
+    0.4229
+   ],
+   "précision": 0.8378,
+   "concluant": true,
+   "critère respecté": true
+  }
+ ],
+ "equite_synthese": {
+  "segments concluants": 18,
+  "segments non concluants": 1,
+  "segments concluants hors critère": [
+   "pays = Suisse"
+  ]
+ }
+}

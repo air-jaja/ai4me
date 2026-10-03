@@ -1,0 +1,231 @@
+{
+ "motif": "rapport de validation phase 9, aucune décision",
+ "date": "2026-10-03 13:32",
+ "modele": "champion évalué (5 copies calibrées, sigmoïde) — décision i",
+ "comptes": 1000,
+ "capacite_ramenee": 28,
+ "empreinte_comptes_test": "c0e443d62fa63a85b1b81d974c8e5ea9e34abf4eaae231fe34fbf116cfb3349c",
+ "importance_permutation": [
+  {
+   "variable": "derniere_connexion_jours",
+   "baisse moyenne de PR-AUC": 0.1407616125,
+   "borne basse 95 %": 0.1154013602,
+   "borne haute 95 %": 0.1675764953,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "anciennete_mois",
+   "baisse moyenne de PR-AUC": 0.0530904304,
+   "borne basse 95 %": 0.0378731409,
+   "borne haute 95 %": 0.070240603,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "nb_integrations",
+   "baisse moyenne de PR-AUC": 0.0432192876,
+   "borne basse 95 %": 0.0279276912,
+   "borne haute 95 %": 0.0553325375,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "tickets_support_90j",
+   "baisse moyenne de PR-AUC": 0.0418502806,
+   "borne basse 95 %": 0.0257168729,
+   "borne haute 95 %": 0.0568367293,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "retards_paiement_12m",
+   "baisse moyenne de PR-AUC": 0.0346278329,
+   "borne basse 95 %": 0.0174304275,
+   "borne haute 95 %": 0.0507718655,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "csat",
+   "baisse moyenne de PR-AUC": 0.0306277903,
+   "borne basse 95 %": 0.0169941605,
+   "borne haute 95 %": 0.0470440779,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "plan",
+   "baisse moyenne de PR-AUC": 0.0198038316,
+   "borne basse 95 %": 0.0095555334,
+   "borne haute 95 %": 0.0277841313,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "delai_reponse_support_h",
+   "baisse moyenne de PR-AUC": 0.0140104244,
+   "borne basse 95 %": 0.0069077281,
+   "borne haute 95 %": 0.0206682634,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "sieges_souscrits",
+   "baisse moyenne de PR-AUC": 0.005046433,
+   "borne basse 95 %": 0.001452653,
+   "borne haute 95 %": 0.009666154,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "taux_adoption_pct",
+   "baisse moyenne de PR-AUC": 0.004850331,
+   "borne basse 95 %": -0.0049009761,
+   "borne haute 95 %": 0.0155915963,
+   "apport démontré sur le test": false
+  },
+  {
+   "variable": "revenu_mensuel_recurrent_eur",
+   "baisse moyenne de PR-AUC": 0.0023949615,
+   "borne basse 95 %": 0.0002767265,
+   "borne haute 95 %": 0.0052134106,
+   "apport démontré sur le test": true
+  },
+  {
+   "variable": "utilisateurs_actifs",
+   "baisse moyenne de PR-AUC": 0.0021803333,
+   "borne basse 95 %": -0.0028500181,
+   "borne haute 95 %": 0.0070028272,
+   "apport démontré sur le test": false
+  },
+  {
+   "variable": "secteur",
+   "baisse moyenne de PR-AUC": 0.0015217545,
+   "borne basse 95 %": -0.0023957854,
+   "borne haute 95 %": 0.006024259,
+   "apport démontré sur le test": false
+  },
+  {
+   "variable": "taille_entreprise",
+   "baisse moyenne de PR-AUC": 0.0009171953,
+   "borne basse 95 %": -0.0024790911,
+   "borne haute 95 %": 0.0056558614,
+   "apport démontré sur le test": false
+  },
+  {
+   "variable": "fonctionnalites_utilisees",
+   "baisse moyenne de PR-AUC": 6.27987e-05,
+   "borne basse 95 %": -0.0001336606,
+   "borne haute 95 %": 0.0002724107,
+   "apport démontré sur le test": false
+  },
+  {
+   "variable": "connexions_30j",
+   "baisse moyenne de PR-AUC": -4.98944e-05,
+   "borne basse 95 %": -0.0006765901,
+   "borne haute 95 %": 0.0003982242,
+   "apport démontré sur le test": false
+  },
+  {
+   "variable": "heures_usage_30j",
+   "baisse moyenne de PR-AUC": -0.0002306195,
+   "borne basse 95 %": -0.003379385,
+   "borne haute 95 %": 0.0024059741,
+   "apport démontré sur le test": false
+  },
+  {
+   "variable": "jour_souscription",
+   "baisse moyenne de PR-AUC": -0.0011478644,
+   "borne basse 95 %": -0.0040751797,
+   "borne haute 95 %": 0.0017592822,
+   "apport démontré sur le test": false
+  }
+ ],
+ "explications_locales": {
+  "plus forte valeur espérée": {
+   "client_id": "CLI-004433",
+   "probabilite": 0.830775,
+   "depart_reel": 1,
+   "base_cotes": -0.6753,
+   "contributions_cotes": {
+    "derniere_connexion_jours": 1.974,
+    "plan": -0.7681,
+    "nb_integrations": 0.6697,
+    "taux_adoption_pct": 0.6253,
+    "tickets_support_90j": -0.5859,
+    "anciennete_mois": 0.4513
+   },
+   "valeurs": {
+    "derniere_connexion_jours": "45.0",
+    "plan": "Enterprise",
+    "nb_integrations": "0.0",
+    "taux_adoption_pct": "0.0",
+    "tickets_support_90j": "0.0",
+    "anciennete_mois": "6.0"
+   }
+  },
+  "à la limite de la liste": {
+   "client_id": "CLI-001795",
+   "probabilite": 0.407261,
+   "depart_reel": 1,
+   "base_cotes": -0.6753,
+   "contributions_cotes": {
+    "csat": 0.6823,
+    "nb_integrations": 0.6697,
+    "tickets_support_90j": 0.5753,
+    "derniere_connexion_jours": -0.3508,
+    "retards_paiement_12m": -0.2908,
+    "anciennete_mois": 0.2633
+   },
+   "valeurs": {
+    "csat": "2.0",
+    "nb_integrations": "0.0",
+    "tickets_support_90j": "5.0",
+    "derniere_connexion_jours": "1.0",
+    "retards_paiement_12m": "nan",
+    "anciennete_mois": "8.0"
+   }
+  },
+  "faux positif traité": {
+   "client_id": "CLI-000778",
+   "probabilite": 0.616117,
+   "depart_reel": 0,
+   "base_cotes": -0.6753,
+   "contributions_cotes": {
+    "plan": -0.7681,
+    "anciennete_mois": 0.7333,
+    "csat": 0.6823,
+    "nb_integrations": 0.6697,
+    "utilisateurs_actifs": -0.611,
+    "revenu_mensuel_recurrent_eur": 0.4968
+   },
+   "valeurs": {
+    "plan": "Enterprise",
+    "anciennete_mois": "3.0",
+    "csat": "2.0",
+    "nb_integrations": "0.0",
+    "utilisateurs_actifs": "219.0",
+    "revenu_mensuel_recurrent_eur": "44906.77"
+   }
+  }
+ },
+ "calibration": {
+  "predit": [
+   0.006395605202498486,
+   0.022495668669008196,
+   0.04574875492166595,
+   0.07857360315045239,
+   0.1269091008686842,
+   0.1962421886379024,
+   0.3062226756021523,
+   0.46376621189748385,
+   0.6356986437686166,
+   0.89628728864033
+  ],
+  "observe": [
+   0.0,
+   0.02,
+   0.05,
+   0.1,
+   0.13,
+   0.1,
+   0.42,
+   0.5,
+   0.6,
+   0.88
+  ]
+ },
+ "historique": []
+}

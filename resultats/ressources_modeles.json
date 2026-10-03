@@ -1,35 +1,38 @@
 {
- "identite_execution": "637caf768bcf67c0",
+ "identite_execution": "06a345b3353683e0",
  "mesures": [
   {
    "modèle": "régression logistique (calibrée)",
-   "entraînement (s)": 0.241,
-   "lot de 5 000 comptes (s)": 0.083,
-   "un compte (ms)": 33.61,
+   "entraînement (s)": 0.483,
+   "lot de 5 000 comptes (s)": 0.08,
+   "un compte (ms)": 36.32,
    "taille (Ko)": 27.2,
    "mémoire de pointe à l'entraînement (Mo)": 2.9,
-   "énergie d'un entraînement (Wh)": 0.00168,
-   "PR-AUC (25 plis)": 0.7936
+   "énergie d'un entraînement (Wh)": 0.00335,
+   "PR-AUC (25 plis)": 0.7936,
+   "famille": "regression_logistique"
   },
   {
    "modèle": "forêt aléatoire réglée",
-   "entraînement (s)": 0.5,
-   "lot de 5 000 comptes (s)": 0.074,
-   "un compte (ms)": 18.54,
+   "entraînement (s)": 0.473,
+   "lot de 5 000 comptes (s)": 0.076,
+   "un compte (ms)": 17.73,
    "taille (Ko)": 2682.1,
    "mémoire de pointe à l'entraînement (Mo)": 2.8,
-   "énergie d'un entraînement (Wh)": 0.00347,
-   "PR-AUC (25 plis)": 0.7738
+   "énergie d'un entraînement (Wh)": 0.00329,
+   "PR-AUC (25 plis)": 0.7738,
+   "famille": "foret_aleatoire"
   },
   {
    "modèle": "xgboost réglé",
-   "entraînement (s)": 0.141,
-   "lot de 5 000 comptes (s)": 0.024,
-   "un compte (ms)": 6.17,
+   "entraînement (s)": 0.122,
+   "lot de 5 000 comptes (s)": 0.021,
+   "un compte (ms)": 6.42,
    "taille (Ko)": 231.4,
    "mémoire de pointe à l'entraînement (Mo)": 2.6,
-   "énergie d'un entraînement (Wh)": 0.00098,
-   "PR-AUC (25 plis)": 0.7803
+   "énergie d'un entraînement (Wh)": 0.00085,
+   "PR-AUC (25 plis)": 0.7803,
+   "famille": "xgboost"
   }
  ],
  "equivalents_en_performance": [
@@ -47,5 +50,5 @@
   "xgboost réglé": true
  },
  "poste": "mesures sur la machine qui exécute l'outil",
- "date": "2026-10-03 11:34"
+ "date": "2026-10-03 15:41"
 }

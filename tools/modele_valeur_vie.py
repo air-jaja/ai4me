@@ -37,6 +37,7 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
     )
     from churn_saas.packaging import (
         FicheModele,
+        decrire_modele,
         etiquettes_tracabilite,
         identite_execution,
         sauvegarder_modele,
@@ -82,6 +83,7 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
         "r2_log_moyen": {n: round(float(scores[n].mean()), 4) for n in scores},
         "seuil_un_ecart_type": round(float(scores["régression linéaire"].std()), 4),
         "modele_retenu": retenu,
+        "descriptif_modele": decrire_modele(modele),
         "comptes": int(garder.sum()),
         "artefact": chemin.relative_to(RACINE).as_posix(),
         "date": time.strftime("%Y-%m-%d %H:%M"),

@@ -17,6 +17,7 @@ from typing import Any
 import joblib
 
 from ..config import MODELES
+from .dependances import decrire_modele
 
 
 @dataclass
@@ -53,7 +54,13 @@ def sauvegarder_modele(modele: Any, fiche: FicheModele, dossier: Path | str = MO
     # Trailing newline: a versioned text file without one is rewritten at every commit
     # by `end-of-file-fixer`, failing the hook for a file whose content never changed.
     (dossier / f"{base}.json").write_text(
-        json.dumps(asdict(fiche), indent=2, ensure_ascii=False) + "\n",
+        json.dumps(
+            asdict(fiche) | {"descriptif": decrire_modele(modele)},
+            indent=2,
+            ensure_ascii=False,
+            default=str,
+        )
+        + "\n",
         encoding="utf-8",
         newline="\n",
     )

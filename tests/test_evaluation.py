@@ -8,6 +8,7 @@ from churn_saas.evaluation.impact import resume_impact
 from churn_saas.evaluation.metriques import intervalle_confiance_rappel
 
 
+@pytest.mark.phase9
 def test_seuil_decroit_avec_la_valeur_du_compte():
     """The rational action threshold must fall as account value rises.
 
@@ -19,6 +20,7 @@ def test_seuil_decroit_avec_la_valeur_du_compte():
     assert seuils.iloc[-1] < 0.01  # large account: act on even a tiny risk
 
 
+@pytest.mark.phase9
 def test_classement_insensible_a_l_efficacite_de_retention():
     """Core argument of section 9: u is a common factor, it does not change the order."""
     proba = pd.Series([0.10, 0.50, 0.30])
@@ -28,6 +30,7 @@ def test_classement_insensible_a_l_efficacite_de_retention():
     )
 
 
+@pytest.mark.phase9
 def test_sensibilite_confirme_la_stabilite_de_la_liste():
     """The handled shortlist must stay identical across retention-effectiveness values.
 
@@ -39,6 +42,7 @@ def test_sensibilite_confirme_la_stabilite_de_la_liste():
     assert (rapport["part_commune_pct"] == 100.0).all()
 
 
+@pytest.mark.phase9
 def test_la_capacite_borne_le_nombre_de_comptes_traites():
     """The shortlist must never exceed team capacity.
 
@@ -258,3 +262,60 @@ def test_le_motif_du_conseiller_vient_des_contributions():
     explication = expliquer_par_contributions(modele, X, X.index[0], n_facteurs=2)
     assert len(explication) == 2 and explication["contribution"].abs().is_monotonic_decreasing
     assert motif_lisible(explication, n=2).startswith("Facteurs principaux : ")
+
+
+# --- Phase 9 · Rules R3 and R4 -------------------------------------------------------------------
+@pytest.mark.phase9
+def test_un_compte_est_rentable_exactement_au_dessus_de_son_seuil():
+    """R3: net expected value > 0 <=> p > p* = cost / (cost + efficacy x V); the treated
+    accounts are profitable ones, within capacity."""
+    from churn_saas.evaluation import appliquer_regle
+
+    p = pd.Series([0.9, 0.5, 0.05, 0.6, 0.01])
+    valeur = pd.Series([10_000.0, 500.0, 50_000.0, 100.0, 1_000.0])
+    table = appliquer_regle(p, valeur, capacite=2, efficacite_retention=0.25, cout_contact=135.0)
+    assert ((table["valeur_nette_eur"] > 0) == (table["proba_churn"] > table["seuil_compte"])).all()
+    assert table["a_traiter"].sum() <= 2 and table.loc[table["a_traiter"], "rentable"].all()
+
+
+@pytest.mark.phase9
+def test_l_efficacite_ne_change_pas_l_ordre_mais_le_nombre_de_comptes_rentables():
+    from churn_saas.evaluation import part_rentable_selon_hypotheses
+
+    generateur = __import__("numpy").random.default_rng(0)
+    p = pd.Series(generateur.uniform(0, 0.5, 300))
+    valeur = pd.Series(generateur.lognormal(7, 1.5, 300))
+    table = part_rentable_selon_hypotheses(p, valeur, (0.15, 0.40), 0.3, capacite=30)
+    faible, forte = table[table["efficacité"] == 0.15], table[table["efficacité"] == 0.40]
+    assert forte["comptes rentables"].min() >= faible["comptes rentables"].max()
+
+
+@pytest.mark.phase9
+def test_la_stabilite_vaut_un_pour_un_modele_deterministe():
+    """R4's measure: a model insensitive to resampling keeps exactly the same list."""
+    import numpy as np
+
+    from churn_saas.evaluation import stabilite_liste
+
+    class Constant:
+        def __init__(self, X):
+            pass
+
+        def fit(self, X, y):
+            return self
+
+        def predict_proba(self, X):
+            score = np.linspace(0.01, 0.99, len(X))
+            return np.column_stack([1 - score, score])
+
+    X = pd.DataFrame({"a": range(100)})
+    resultat = stabilite_liste(
+        Constant,
+        X,
+        pd.Series([0, 1] * 50),
+        pd.Series([1000.0] * 100),
+        capacite=10,
+        repetitions=5,
+        graine=0,
+    )
+    assert resultat["jaccard_moyen"] == 1.0

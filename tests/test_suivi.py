@@ -458,6 +458,7 @@ def test_l_empreinte_ne_bouge_qu_avec_le_code_du_perimetre(tmp_path, monkeypatch
     touching a file inside it."""
     import shutil
 
+    import churn_saas.packaging.dependances as dependances
     import churn_saas.packaging.suivi as suivi
     from churn_saas.config import RACINE
 
@@ -465,6 +466,8 @@ def test_l_empreinte_ne_bouge_qu_avec_le_code_du_perimetre(tmp_path, monkeypatch
     shutil.copytree(RACINE / "src", copie / "src")
     shutil.copytree(RACINE / "tools", copie / "tools")
     monkeypatch.setattr(suivi, "RACINE", copie)
+    monkeypatch.setattr(dependances, "RACINE", copie)
+    monkeypatch.setattr(dependances, "PAQUET", copie / "src" / "churn_saas")
     avant = suivi.empreinte_code("tools/selection_modele.py")
     (copie / "src/churn_saas/packaging/suivi.py").write_text("# journalisation modifiée\n")
     (copie / "tools/pipeline_mlflow.py").write_text("# autre outil modifié\n")
@@ -474,3 +477,50 @@ def test_l_empreinte_ne_bouge_qu_avec_le_code_du_perimetre(tmp_path, monkeypatch
     with open(copie / "src/churn_saas/modelisation/reglage.py", "a", encoding="utf-8") as f:
         f.write("\n# réglage modifié\n")
     assert suivi.empreinte_code("tools/selection_modele.py") != avant
+
+
+# --- Identity from the import graph, model descriptor (03/10/2026) -----------------------------
+@pytest.mark.phase9
+def test_le_perimetre_d_un_outil_suit_ses_imports_reels():
+    """Phase 5's computations never import the decision rule: adding it to evaluation/
+    invalidated them anyway, under the package-level perimeter. The import graph tells."""
+    from churn_saas.config import RACINE
+    from churn_saas.packaging import fichiers_du_perimetre
+
+    def perimetre(outil):
+        return {f.relative_to(RACINE).as_posix() for f in fichiers_du_perimetre(outil)}
+
+    phase5 = perimetre("tools/selection_variables.py")
+    assert "src/churn_saas/evaluation/decision.py" not in phase5
+    assert {
+        "src/churn_saas/features/selection.py",
+        "src/churn_saas/modelisation/validation.py",
+        "src/churn_saas/config.py",
+    } <= phase5
+    assert "src/churn_saas/evaluation/decision.py" in perimetre("tools/regle_decision.py")
+    # a tool loaded dynamically is followed: the decision rule uses the served model's tool
+    assert "tools/modele_servi.py" in perimetre("tools/regle_decision.py")
+    assert not any("packaging" in f for f in phase5)
+
+
+@pytest.mark.phase9
+def test_l_empreinte_d_un_outil_ignore_les_modules_qu_il_n_importe_pas(tmp_path, monkeypatch):
+    import shutil
+
+    import churn_saas.packaging.dependances as dependances
+    import churn_saas.packaging.suivi as suivi
+    from churn_saas.config import RACINE
+
+    copie = tmp_path / "depot"
+    shutil.copytree(RACINE / "src", copie / "src")
+    shutil.copytree(RACINE / "tools", copie / "tools")
+    monkeypatch.setattr(suivi, "RACINE", copie)
+    monkeypatch.setattr(dependances, "RACINE", copie)
+    monkeypatch.setattr(dependances, "PAQUET", copie / "src" / "churn_saas")
+    avant = suivi.empreinte_code("tools/selection_variables.py")
+    with open(copie / "src/churn_saas/evaluation/decision.py", "a", encoding="utf-8") as f:
+        f.write("\n# règle de décision modifiée\n")
+    assert suivi.empreinte_code("tools/selection_variables.py") == avant
+    with open(copie / "src/churn_saas/modelisation/validation.py", "a", encoding="utf-8") as f:
+        f.write("\n# validation modifiée\n")
+    assert suivi.empreinte_code("tools/selection_variables.py") != avant

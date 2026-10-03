@@ -61,6 +61,7 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
     from churn_saas.packaging import (
         CLES_MLFLOW,
         configurer_suivi,
+        decrire_modele,
         etiquettes_tracabilite,
         identite_execution,
     )
@@ -144,6 +145,8 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
         "comparaison": comparaison.to_dict(orient="records"),
         "par_pli": {nom: [round(float(v), 10) for v in valeurs] for nom, valeurs in scores.items()},
         "modele_retenu": retenu,
+        "descriptifs": {nom: decrire_modele(regle(nom)(X)) for nom in familles}
+        | {REGRESSION: decrire_modele(construire_baseline(X))},
         "calibration": {
             "methodes": calibrations,
             "methode_retenue": methode,

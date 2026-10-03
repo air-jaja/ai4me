@@ -85,6 +85,7 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
     from churn_saas.modelisation import construire_baseline, construire_calibre
     from churn_saas.packaging import (
         FicheModele,
+        decrire_modele,
         etiquettes_tracabilite,
         identite_execution,
         sauvegarder_modele,
@@ -187,6 +188,7 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
     bilan = {
         "identite_execution": identite,
         "decision": "P4 option c et jeu de test option i, décidées par le porteur le 03/10/2026",
+        "descriptif_modele": decrire_modele(servi),
         "hyperparametres": hyperparametres,
         "mesures": tableau,
         "equivalence": equivalence,

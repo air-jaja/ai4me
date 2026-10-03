@@ -128,6 +128,7 @@ churn-saas-cisia/
     │   ├── artefacts.py          sérialisation, fiche modèle, versioning
     │   ├── model_card.py         génération depuis le gabarit
     │   ├── modelcard_template.md gabarit Hugging Face
+    │   ├── dependances.py        graphe d'imports des outils (identité), descriptif lu sur le modèle
     │   └── suivi.py              MLflow — expériences et registre de modèles
     │
     ├── industrialisation/  6. SERVICES D'INDUSTRIALISATION

@@ -579,3 +579,128 @@ def tracer_courbe_validation(points: pd.DataFrame, retenu: float) -> Figure:
     ax.set_title("Courbe de validation de la régression logistique", fontsize=11)
     fig.tight_layout()
     return fig
+
+
+def tracer_seuils(seuils: list[float] | pd.Series) -> Figure:
+    """Distribution of the per-account rational thresholds (rule R3), on a log scale."""
+    import numpy as np
+
+    seuils = np.asarray(seuils, dtype=float)
+    fig, ax = plt.subplots(figsize=(7, 3.6))
+    ax.hist(
+        seuils,
+        bins=np.logspace(np.log10(seuils.min()), np.log10(seuils.max()), 40),
+        color=PALETTE["principal"],
+    )
+    ax.axvline(
+        float(np.median(seuils)),
+        color=PALETTE["accent"],
+        linestyle="--",
+        label=f"médiane {np.median(seuils):.3f}",
+    )
+    ax.set_xscale("log")
+    ax.set_xlabel("Seuil de probabilité au-delà duquel contacter le compte est rentable")
+    ax.set_ylabel("Comptes")
+    ax.legend(frameon=False)
+    ax.set_title("Un seuil par compte : il dépend de ce que le compte rapporte", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_niveaux_mrr(mrr: dict) -> Figure:
+    """Exposed, covered and preserved monthly recurring revenue (rule R8), with intervals,
+    for each operating point. `mrr` maps a point to its three levels."""
+    niveaux = ("exposé", "couvert", "préservé")
+    points = [p for p in mrr if isinstance(mrr[p], dict)]
+    fig, ax = plt.subplots(figsize=(7.5, 3.8))
+    largeur = 0.8 / len(points)
+    couleurs = [PALETTE["principal"], PALETTE["accent"]]
+    for k, point in enumerate(points):
+        valeurs = [mrr[point][n]["€ par mois (test)"] / 1000 for n in niveaux]
+        bas = [
+            v - mrr[point][n]["intervalle_95"][0] / 1000
+            for v, n in zip(valeurs, niveaux, strict=True)
+        ]
+        haut = [
+            mrr[point][n]["intervalle_95"][1] / 1000 - v
+            for v, n in zip(valeurs, niveaux, strict=True)
+        ]
+        positions = [i + (k - (len(points) - 1) / 2) * largeur for i in range(len(niveaux))]
+        ax.bar(
+            positions,
+            valeurs,
+            width=largeur,
+            yerr=[bas, haut],
+            capsize=3,
+            color=couleurs[k % 2],
+            label=point,
+        )
+    ax.set_xticks(range(len(niveaux)), niveaux)
+    ax.set_ylabel("k€ de revenu récurrent par mois (jeu de test)")
+    ax.legend(frameon=False)
+    ax.set_title("Revenu exposé, couvert par la liste, préservé par l'action", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_equite(lignes: list[dict], rappel_global: float, ratio: float) -> Figure:
+    """Recall by segment with its interval, against the global recall and the fairness
+    threshold (rule R9). Inconclusive segments are drawn hollow."""
+    table = pd.DataFrame(lignes)
+    table = table[table["intervalle du rappel"].notna()].reset_index(drop=True)
+    etiquettes = table["segment"] + " · " + table["modalité"]
+    fig, ax = plt.subplots(figsize=(8, 0.32 * len(table) + 1.4))
+    for i, ligne in table.iterrows():
+        bas, haut = ligne["intervalle du rappel"]
+        couleur = (
+            PALETTE["principal"] if ligne["critère respecté"] is not False else PALETTE["accent"]
+        )
+        ax.plot([bas, haut], [i, i], color=couleur)
+        ax.plot(
+            ligne["rappel"],
+            i,
+            "o",
+            color=couleur,
+            markerfacecolor=couleur if ligne["concluant"] else "white",
+        )
+    ax.axvline(rappel_global, color="#555555", label=f"rappel global {rappel_global:.2f}")
+    ax.axvline(
+        ratio * rappel_global,
+        color="#999999",
+        linestyle=":",
+        label=f"seuil d'équité ({ratio:g} × global)",
+    )
+    ax.set_yticks(range(len(table)), etiquettes)
+    ax.set_xlabel("Rappel au point protocole (intervalle à 95 %)")
+    ax.legend(frameon=False, loc="lower right")
+    ax.set_title("Le modèle détecte-t-il les départs aussi bien dans chaque segment ?", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_importance_test(importances: list[dict]) -> Figure:
+    """Permutation importance on the test part (rule R10): mean drop of PR-AUC and its
+    interval; variables whose interval reaches zero are drawn hollow."""
+    table = pd.DataFrame(importances).sort_values("baisse moyenne de PR-AUC")
+    fig, ax = plt.subplots(figsize=(7.5, 0.32 * len(table) + 1.2))
+    for i, (_, ligne) in enumerate(table.iterrows()):
+        ax.plot(
+            [ligne["borne basse 95 %"], ligne["borne haute 95 %"]],
+            [i, i],
+            color=PALETTE["principal"],
+        )
+        ax.plot(
+            ligne["baisse moyenne de PR-AUC"],
+            i,
+            "o",
+            color=PALETTE["principal"],
+            markerfacecolor=PALETTE["principal"]
+            if ligne["apport démontré sur le test"]
+            else "white",
+        )
+    ax.axvline(0, color="#999999", linestyle=":")
+    ax.set_yticks(range(len(table)), table["variable"])
+    ax.set_xlabel("Baisse de PR-AUC quand la variable est mélangée (test, 30 répétitions)")
+    ax.set_title("Importance par permutation sur le jeu de test", fontsize=11)
+    fig.tight_layout()
+    return fig

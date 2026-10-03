@@ -1,5 +1,6 @@
 """Activity 5 - artefacts and model card."""
 
+import pytest
 from sklearn.dummy import DummyClassifier
 
 from churn_saas.packaging.artefacts import FicheModele, charger_modele, sauvegarder_modele
@@ -44,3 +45,30 @@ def test_les_champs_absents_prennent_leur_valeur_par_defaut():
     An unsubstituted placeholder shipped to a jury reads as an unfinished deliverable."""
     carte = generer_model_card({"model_id": "x"})
     assert "[More Information Needed]" in carte
+
+
+@pytest.mark.phase9
+def test_le_descriptif_est_lu_sur_l_objet_et_ecrit_dans_la_fiche(tmp_path):
+    """What a card says about its model comes from the model: family, exact class,
+    calibration and copies - for a calibrated regression as served in phase 8."""
+    import json
+
+    import numpy as np
+    import pandas as pd
+
+    from churn_saas.modelisation import construire_baseline, construire_calibre, construire_candidat
+    from churn_saas.packaging import FicheModele, charger_modele, decrire_modele, sauvegarder_modele
+
+    X = pd.DataFrame({"a": np.linspace(0, 1, 120), "b": ["x", "y", "z"] * 40})
+    y = pd.Series([0, 1] * 60)
+    calibre = construire_calibre(construire_baseline, "sigmoid")(X).fit(X, y)
+    descriptif = decrire_modele(calibre)
+    assert descriptif["famille"] == "regression_logistique"
+    assert descriptif["estimateur"] == "sklearn.linear_model.LogisticRegression"
+    assert (descriptif["calibration"], descriptif["copies"]) == ("sigmoid", 5)
+    assert decrire_modele(construire_candidat(X))["famille"] == "foret_aleatoire"
+
+    chemin = sauvegarder_modele(calibre, FicheModele(nom="essai", version="0.1"), tmp_path)
+    fiche = json.loads(chemin.with_suffix(".json").read_text(encoding="utf-8"))
+    recharge, _ = charger_modele(chemin)
+    assert fiche["descriptif"]["famille"] == decrire_modele(recharge)["famille"]
