@@ -1,5 +1,5 @@
 {
- "identite_execution": "1873f1f054789a52",
+ "identite_execution": "714180664082f097",
  "regles": "R1 à R5 validées le 03/10/2026 (commit « decision(phase 9) »)",
  "echantillon": "partie d'entraînement, scorée par le modèle servi",
  "comptes": 4000,
@@ -4155,6 +4155,6 @@
   "taille_liste": 112
  },
  "stabilite_conforme": true,
- "duree_s": 19.2,
- "date": "2026-10-03 15:42"
+ "duree_s": 58.0,
+ "date": "2026-10-03 19:58"
 }
