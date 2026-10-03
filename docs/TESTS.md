@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**597 cas de test** issus de 326 fonctions, répartis sur 22 fichiers.
+**599 cas de test** issus de 328 fonctions, répartis sur 22 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -48,7 +48,7 @@ soutenance.
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 | [test_resultats_reference.py](#test_resultats_referencepy) | `test_resultats_reference.py` | — | — | 5 |
-| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 17 |
+| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 19 |
 
 ---
 
@@ -577,3 +577,5 @@ soutenance.
 | 15 | `test_la_matrice_de_confusion_ne_change_pas_le_moteur_graphique` | Built without pyplot: in a notebook it must not switch the inline backend, and in a script it must not open Tk. | whose figures, destroyed by another thread at exit, made pipeline_mlflow.py print "main thread is not in main loop" on Windows. |
 | 16 | `test_l_identite_change_avec_le_code_les_donnees_le_protocole_ou_les_options` | _(sans description)_ | — |
 | 17 | `test_le_parallelisme_ne_change_pas_l_empreinte_du_protocole` | N_JOBS changes durations, never results: it must not change the identity. | — |
+| 18 | `test_l_autolog_est_coupe_apres_l_entrainement_trace_meme_en_cas_d_erreur` | Left on, autolog patched the 25 fits of the protocol evaluation too, and on Windows its threads on top of the forests' exhausted the process ("can't start new thread"). | — |
+| 19 | `test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele` | N_JOBS fits at once, each forest on one core: a parallel search over parallel forests would run up to N_JOBS x N_JOBS tasks. | — |

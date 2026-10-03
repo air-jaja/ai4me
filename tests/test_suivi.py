@@ -268,3 +268,51 @@ def test_le_parallelisme_ne_change_pas_l_empreinte_du_protocole(monkeypatch):
     assert empreinte_protocole() == avant
     monkeypatch.setattr(config, "PART_HAUT_CLASSEMENT", 0.2)
     assert empreinte_protocole() != avant
+
+
+# --- The traced runs: autolog for the traced fit only, one parallel layer -------------------
+def _outil_chaine():
+    from churn_saas.config import RACINE
+
+    specification = importlib.util.spec_from_file_location(
+        "pipeline_mlflow", RACINE / "tools" / "pipeline_mlflow.py"
+    )
+    outil = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(outil)
+    return outil
+
+
+@exige_mlflow
+def test_l_autolog_est_coupe_apres_l_entrainement_trace_meme_en_cas_d_erreur():
+    """Left on, autolog patched the 25 fits of the protocol evaluation too, and on Windows
+    its threads on top of the forests' exhausted the process ("can't start new thread")."""
+    mlflow = pytest.importorskip("mlflow")
+    autologging_is_disabled = pytest.importorskip(
+        "mlflow.utils.autologging_utils"
+    ).autologging_is_disabled
+
+    outil = _outil_chaine()
+    activer = lambda: mlflow.sklearn.autolog(log_models=False, silent=True)  # noqa: E731
+    assert outil.ajuster_sous_autolog(mlflow, activer, lambda: "ajusté") == "ajusté"
+    assert autologging_is_disabled("sklearn")
+
+    def echoue():
+        raise ValueError("entraînement en échec")
+
+    with pytest.raises(ValueError):
+        outil.ajuster_sous_autolog(mlflow, activer, echoue)
+    assert autologging_is_disabled("sklearn")
+
+
+def test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele():
+    """N_JOBS fits at once, each forest on one core: a parallel search over parallel
+    forests would run up to N_JOBS x N_JOBS tasks."""
+    from churn_saas import config
+    from churn_saas.modelisation import construire_candidat, grille_hyperparametres
+
+    X = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": ["x", "y", "x"]})
+    recherche = _outil_chaine().construire_recherche(
+        X, config, construire_candidat, grille_hyperparametres
+    )
+    assert recherche.n_jobs == config.N_JOBS
+    assert recherche.estimator.get_params()["modele__n_jobs"] == 1

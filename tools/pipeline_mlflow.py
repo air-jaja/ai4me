@@ -47,6 +47,34 @@ def _desactiver_autologs(mlflow) -> None:
     mlflow.xgboost.autolog(disable=True)
 
 
+def ajuster_sous_autolog(mlflow, activer, ajuster):
+    """Autolog for the traced fit ONLY, switched off whatever happens.
+
+    Left on, it also patched the 25 fits and predictions of the protocol evaluation that
+    follows: each one logged into the run, and on Windows the threads it spawned on top of
+    the forests' own exhausted the process ("RuntimeError: can't start new thread").
+    """
+    activer()
+    try:
+        return ajuster()
+    finally:
+        _desactiver_autologs(mlflow)
+
+
+def construire_recherche(X, config, construire_candidat, grille_hyperparametres):
+    """The forest's grid search, with ONE parallel layer: N_JOBS fits at once, each forest
+    on a single core. The 7.0 bis fix had missed this tool: the search ran parallel forests."""
+    from sklearn.model_selection import GridSearchCV, StratifiedKFold
+
+    return GridSearchCV(
+        construire_candidat(X).set_params(modele__n_jobs=1),
+        grille_hyperparametres()["candidat"],
+        scoring="average_precision",
+        cv=StratifiedKFold(config.PLIS_VALIDATION, shuffle=True, random_state=config.GRAINE),
+        n_jobs=config.N_JOBS,
+    )
+
+
 def _matrice_confusion(y, score, part: float):
     """Confusion matrix at the top `part` of the ranking, as a figure.
 
@@ -88,7 +116,7 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
     import mlflow.sklearn
     import mlflow.xgboost
     import pandas as pd
-    from sklearn.model_selection import GridSearchCV, StratifiedKFold
+    from sklearn.base import clone
     from sklearn.pipeline import Pipeline
     from xgboost import XGBClassifier
 
@@ -131,7 +159,7 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
         "part_haut_classement": config.PART_HAUT_CLASSEMENT,
     }
 
-    def tracer(nom: str, fabrique, mode: str, ajuster=None):
+    def tracer(nom: str, fabrique, mode: str, ajuster=None, activer=lambda: None):
         """One run: fit on the training part, protocol metrics, pipeline logged."""
         debut = time.perf_counter()
         with mlflow.start_run(run_name=nom, nested=True) as run:
@@ -141,9 +169,12 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
                 )
             )
             mlflow.log_params({f"protocole_{k}": v for k, v in protocole.items()})
-            modele = ajuster() if ajuster else fabrique(X).fit(X, y)
+            modele = ajuster_sous_autolog(
+                mlflow, activer, ajuster or (lambda: fabrique(X).fit(X, y))
+            )
+            # The protocol runs folds one after the other: the model itself may use N_JOBS.
             protocole_ = evaluer_selon_protocole(
-                (lambda _X: modele.best_estimator_)
+                (lambda _X: clone(modele.best_estimator_).set_params(modele__n_jobs=config.N_JOBS))
                 if hasattr(modele, "best_estimator_")
                 else fabrique,
                 X,
@@ -197,10 +228,15 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
             runs = {}
 
             # 1. Random forest, autolog. Models are logged by hand, whole pipeline included.
-            mlflow.sklearn.autolog(log_models=False, silent=True)
+            def autolog_sklearn(**options):
+                return lambda: mlflow.sklearn.autolog(log_models=False, silent=True, **options)
+
             if not rapide:
                 runs["forêt · autolog"] = tracer(
-                    "foret · sklearn.autolog", construire_candidat, "autolog"
+                    "foret · sklearn.autolog",
+                    construire_candidat,
+                    "autolog",
+                    activer=autolog_sklearn(),
                 )
             _desactiver_autologs(mlflow)
 
@@ -220,15 +256,19 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
                                 subsample=0.8,
                                 scale_pos_weight=poids,
                                 random_state=config.GRAINE,
-                                n_jobs=-1,
+                                n_jobs=config.N_JOBS,
                             ),
                         ),
                     ]
                 )
 
-            mlflow.xgboost.autolog(log_models=False, silent=True)
             if not rapide:
-                runs["xgboost · autolog"] = tracer("xgboost · xgboost.autolog", xgboost, "autolog")
+                runs["xgboost · autolog"] = tracer(
+                    "xgboost · xgboost.autolog",
+                    xgboost,
+                    "autolog",
+                    activer=lambda: mlflow.xgboost.autolog(log_models=False, silent=True),
+                )
             _desactiver_autologs(mlflow)
 
             # 3. Logistic regression, by hand, with its confusion matrix.
@@ -253,20 +293,17 @@ def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = Fals
             if avec_grille and not rapide:
 
                 def grille():
-                    recherche = GridSearchCV(
-                        construire_candidat(X),
-                        grille_hyperparametres()["candidat"],
-                        scoring="average_precision",
-                        cv=StratifiedKFold(
-                            config.PLIS_VALIDATION, shuffle=True, random_state=config.GRAINE
-                        ),
-                        n_jobs=config.N_JOBS,
+                    recherche = construire_recherche(
+                        X, config, construire_candidat, grille_hyperparametres
                     )
                     return recherche.fit(X, y)
 
-                mlflow.sklearn.autolog(log_models=False, silent=True, max_tuning_runs=10)
                 runs["grille forêt · GridSearchCV"] = tracer(
-                    "grille foret · GridSearchCV autolog", construire_candidat, "autolog", grille
+                    "grille foret · GridSearchCV autolog",
+                    construire_candidat,
+                    "autolog",
+                    grille,
+                    activer=autolog_sklearn(max_tuning_runs=10),
                 )
                 _desactiver_autologs(mlflow)
 
