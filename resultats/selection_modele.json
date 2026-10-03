@@ -1,5 +1,5 @@
 {
-  "identite_execution": "e509cf057b01699d",
+  "identite_execution": "12d596e92e346633",
   "regles": "B1 à B3 validées le 02/10/2026 (commit « decision(phase 7) »)",
   "reglages": {
     "forêt aléatoire": {
@@ -147,5 +147,5 @@
     "methode_retenue": "sigmoid",
     "objectif_atteint": true
   },
-  "duree_s": 191.0
+  "duree_s": 226.2
 }

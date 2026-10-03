@@ -51,6 +51,9 @@ def _identite(etiquettes: dict) -> dict[str, str]:
     return etiquettes | {"retrace": "true", "identite_execution": identite}
 
 
+BASELINES = ("naïve", "règle métier", "régression logistique")
+
+
 def retracer_phase6(mlflow, etiquettes, forcer: bool = False) -> dict[str, float]:
     """The three baselines, from the reference file's own computation."""
     import pandas as pd
@@ -62,11 +65,14 @@ def retracer_phase6(mlflow, etiquettes, forcer: bool = False) -> dict[str, float
 
     experience = nom_experience("phase6-baselines")
     activer_experience(experience)
-    moyennes = {}
+    # Look first, compute only what is missing: a replay already recorded costs no
+    # computation at all (optimisation A2).
+    deja = {nom: _deja_retrace(experience, nom, etiquettes, forcer) for nom in BASELINES}
+    moyennes = {nom: v for nom, v in deja.items() if v is not None}
+    if len(moyennes) == len(BASELINES):
+        return moyennes
     for nom, valeurs in calculer()["baselines"].items():
-        deja = _deja_retrace(experience, nom, etiquettes, forcer)
-        if deja is not None:
-            moyennes[nom] = deja
+        if nom in moyennes:
             continue
         with mlflow.start_run(run_name=nom):
             mlflow.set_tags(_identite(etiquettes))

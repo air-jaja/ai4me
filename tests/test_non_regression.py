@@ -1546,3 +1546,24 @@ def test_le_modele_de_valeur_retenu_suit_la_regle_b5():
 
     bilan = json.loads(chemin.read_text(encoding="utf-8"))
     assert choisir_modele_valeur(pd.DataFrame(bilan["r2_log_par_pli"])) == bilan["modele_retenu"]
+
+
+# --- Optimisation B1 · The recorded phase 5 results say what the frozen figures say -------------
+def test_les_resultats_enregistres_de_la_phase_5_concordent_avec_les_chiffres_figes():
+    """The notebook now READS phase 5's computations from resultats/selection_variables.json.
+    Whatever identity they were recorded under, they must agree with the figures frozen
+    above - otherwise the notebook would show stale results."""
+    chemin = RACINE / "resultats" / "selection_variables.json"
+    if not chemin.exists():
+        pytest.skip("Calculs de la phase 5 pas encore enregistrés (tools/selection_variables.py).")
+    bilan = json.loads(chemin.read_text(encoding="utf-8"))
+    assert bilan["permutation"]["score"] == pytest.approx(0.789, abs=0.01)
+    assert bilan["permutation"]["p_valeur"] < 0.05
+    assert bilan["adverse"]["auc"] < 0.6
+    apport = pd.DataFrame(bilan["apports"]["Régression logistique"])
+    assert (apport["brutes + construites"] - apport["brutes"]).mean() == pytest.approx(
+        -0.001, abs=0.005
+    )
+    final = pd.DataFrame(bilan["final"]["Régression logistique"])
+    assert final.filter(like="retenues").iloc[:, 0].mean() == pytest.approx(0.793, abs=0.01)
+    assert sorted(bilan["candidates_au_retrait"]) == ["pays", "usage_par_actif"]

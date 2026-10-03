@@ -306,12 +306,84 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
         tr.write("\n  Taux d'exécution : 100 % — tous les cas ont tourné.\n", green=True)
 
 
+@pytest.fixture(scope="session")
+def _magasin_mlflow_vierge(tmp_path_factory):
+    """An empty MLflow store, migrated ONCE per session (optimisation A2).
+
+    Creating a SQLite store runs MLflow's schema migrations: 0.6 to 1.5 s here, more on
+    Windows, paid by every test that touched MLflow. Copying an already migrated, empty
+    store costs 0.03 s. None when MLflow is not installed (the CI).
+    """
+    import importlib.util
+
+    if importlib.util.find_spec("mlflow") is None:
+        return None
+    mlflow = importlib.import_module("mlflow")  # optional: the `suivi` group, not dev
+
+    chemin = tmp_path_factory.mktemp("mlflow_vierge") / "mlflow.db"
+    mlflow.MlflowClient(tracking_uri=f"sqlite:///{chemin.as_posix()}").search_experiments()
+    return chemin
+
+
 @pytest.fixture(autouse=True)
-def suivi_mlflow_isole(tmp_path, monkeypatch):
+def suivi_mlflow_isole(tmp_path, monkeypatch, request):
     """No test ever writes into the project's MLflow store.
 
-    Every test, and every tool a test launches as a subprocess, sees a temporary store
-    through MLFLOW_TRACKING_URI - which the project's configuration reads first.
+    Every test, and every tool a test launches as a subprocess, sees its own temporary
+    store through MLFLOW_TRACKING_URI - which the project's configuration reads first. The
+    store is a copy of an empty, already migrated one; it is only prepared for the tests
+    of the files that use MLflow, so the others pay nothing.
     """
-    monkeypatch.setenv("MLFLOW_TRACKING_URI", f"sqlite:///{(tmp_path / 'mlflow.db').as_posix()}")
+    import shutil
+
+    magasin = tmp_path / "mlflow.db"
+    if Path(request.node.fspath).name in FICHIERS_AVEC_MLFLOW:
+        vierge = request.getfixturevalue("_magasin_mlflow_vierge")
+        if vierge is not None:
+            shutil.copy(vierge, magasin)
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", f"sqlite:///{magasin.as_posix()}")
     monkeypatch.setenv("MLFLOW_ENABLE_ARTIFACTS_PROGRESS_BAR", "false")
+
+
+# Test files that create MLflow runs; the others get an (unused) path but no store.
+FICHIERS_AVEC_MLFLOW = {"test_suivi.py", "test_non_regression.py", "test_materialisation.py"}
+
+
+# --- Optimisation A3: the preparation chain, computed once per argument set and session ----
+def _memoriser_la_chaine() -> None:
+    """Tests re-ran the whole preparation chain 14 times on the same files (5.4 s here).
+
+    Installed when conftest loads, before the test modules import `executer_pipeline`, so
+    they all receive the memoised version. Each caller gets a DEEP COPY: a test that alters
+    its result cannot leak into another. The key includes the files' modification times: a
+    changed file is never served from the cache.
+    """
+    import copy
+    import functools
+    import os
+
+    import churn_saas.features as features
+    import churn_saas.features.pipeline as pipeline
+
+    original = pipeline.executer_pipeline
+    memoire: dict = {}
+
+    @functools.wraps(original)
+    def executer_pipeline(*args, **kwargs):
+        def horodatage(valeur):
+            return (
+                os.path.getmtime(valeur)
+                if isinstance(valeur, (str, os.PathLike)) and os.path.exists(valeur)
+                else None
+            )
+
+        cle = repr((args, sorted(kwargs.items()), [horodatage(a) for a in args]))
+        if cle not in memoire:
+            memoire[cle] = original(*args, **kwargs)
+        return copy.deepcopy(memoire[cle])
+
+    pipeline.executer_pipeline = executer_pipeline
+    features.executer_pipeline = executer_pipeline
+
+
+_memoriser_la_chaine()

@@ -142,14 +142,66 @@ def test_la_duree_est_estimee_a_partir_des_temps_mesures():
     assert annoncer_duree(10, 5).startswith("Durée estimée")
 
 
-def _chaine(*options: str) -> dict:
+def _chaine_rapide(monkeypatch, forcer: bool = False) -> dict:
+    """The chain, in this process, with a dummy protocol evaluation (optimisation A2).
+
+    What these tests check is the RELAUNCH logic - identity, reuse, --forcer, registry -
+    not the 25-fold evaluation, which the protocol's own tests and the non-regression
+    figures cover. Run in-process, with an instant evaluation, a chain execution takes
+    about a second instead of six in a subprocess.
+    """
+    import churn_saas.evaluation as evaluation
+    from churn_saas.evaluation import ResultatProtocole
+
+    def evaluation_factice(construire_modele, X, y, probabiliste=True):
+        par_pli = pd.DataFrame(
+            {
+                "PR-AUC": [0.79] * 25,
+                "ROC-AUC": [0.89] * 25,
+                "rappel haut": [0.33] * 25,
+                "précision haut": [0.92] * 25,
+                "Brier": [0.13] * 25,
+                "erreur de calibration": [0.11] * 25,
+            }
+        )
+        return ResultatProtocole(par_pli, pd.Series(np.linspace(0, 1, len(X)), index=X.index))
+
+    monkeypatch.setattr(evaluation, "evaluer_selon_protocole", evaluation_factice)
+    return _outil_chaine().executer(avec_grille=False, rapide=True, forcer=forcer)
+
+
+@exige_mlflow
+def test_relancer_la_chaine_reutilise_l_execution_identique(monkeypatch):
+    """Same code, data, protocol and options: the second execution computes and registers
+    nothing - the same control as the replay tool (A1)."""
+    pytest.importorskip("mlflow")
+    from churn_saas.packaging import configurer_suivi
+
+    mlflow = configurer_suivi()
+    premiere, seconde = _chaine_rapide(monkeypatch), _chaine_rapide(monkeypatch)
+    assert premiere["nouvelle_version"] and not premiere["reutilisee"]
+    assert seconde["reutilisee"] and not seconde["nouvelle_version"]
+    assert seconde["execution"] == premiere["execution"]
+    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
+    assert len(runs) == 2  # one parent, one child: nothing added by the second execution
+
+    forcee = _chaine_rapide(monkeypatch, forcer=True)
+    assert forcee["execution"] != premiere["execution"] and not forcee["reutilisee"]
+    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
+    assert len(runs) == 2 and forcee["version_registre"] == premiere["version_registre"]
+
+
+@exige_mlflow
+def test_la_chaine_rapide_tourne_de_bout_en_bout():
+    """One real end-to-end run, in a subprocess, as a user launches it - the in-process
+    tests above replace the computation, this one does not."""
     import json
     import subprocess
 
     from churn_saas.config import RACINE
 
     sortie = subprocess.run(
-        [sys.executable, str(RACINE / "tools" / "pipeline_mlflow.py"), "--rapide", *options],
+        [sys.executable, str(RACINE / "tools" / "pipeline_mlflow.py"), "--rapide"],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -157,40 +209,24 @@ def _chaine(*options: str) -> dict:
         timeout=300,
     )
     assert sortie.returncode == 0, sortie.stderr[-800:]
-    return json.loads(sortie.stdout[sortie.stdout.index("{") :])
+    bilan = json.loads(sortie.stdout[sortie.stdout.index("{") :])
+    assert bilan["registre_identique_au_modele_en_memoire"]
 
 
 @exige_mlflow
-def test_relancer_la_chaine_reutilise_l_execution_identique():
-    """Same code, data, protocol and options: the second execution computes and registers
-    nothing - the same control as the replay tool (A1)."""
-    pytest.importorskip("mlflow")
-    from churn_saas.packaging import configurer_suivi
-
-    mlflow = configurer_suivi()
-    premiere, seconde = _chaine(), _chaine()
-    assert premiere["nouvelle_version"] and not premiere["reutilisee"]
-    assert seconde["reutilisee"] and not seconde["nouvelle_version"]
-    assert seconde["execution"] == premiere["execution"]
-    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
-    assert len(runs) == 2  # one parent, one child: nothing added by the second execution
-
-
-@exige_mlflow
-def test_forcer_la_chaine_remplace_sans_dupliquer():
-    pytest.importorskip("mlflow")
-    from churn_saas.packaging import configurer_suivi
-
-    mlflow = configurer_suivi()
-    premiere, forcee = _chaine(), _chaine("--forcer")
-    assert forcee["execution"] != premiere["execution"] and not forcee["reutilisee"]
-    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
-    assert len(runs) == 2 and forcee["version_registre"] == premiere["version_registre"]
-
-
-@exige_mlflow
-def test_relancer_le_retracage_ne_cree_pas_de_doublon():
+def test_relancer_le_retracage_ne_cree_pas_de_doublon(monkeypatch):
+    """The replay logic, with an instant reference computation (optimisation A2)."""
     mlflow = pytest.importorskip("mlflow")
+    import types
+
+    plis = {"PR-AUC": [0.79] * 25, "ROC-AUC": [0.89] * 25}
+    factice = types.ModuleType("resultats_reference")
+    factice.calculer = lambda: {
+        "baselines": {
+            n: {"par_pli": plis} for n in ("naïve", "règle métier", "régression logistique")
+        }
+    }
+    monkeypatch.setitem(sys.modules, "resultats_reference", factice)
 
     from churn_saas.config import RACINE
     from churn_saas.packaging import configurer_suivi
@@ -317,3 +353,15 @@ def test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele():
     )
     assert recherche.n_jobs == 1
     assert recherche.estimator.get_params()["modele__n_jobs"] == config.N_JOBS
+
+
+def test_les_dependances_du_modele_sont_declarees_et_epinglees():
+    """B2: declared rather than inferred by a uv export at every logged model."""
+    from churn_saas.modelisation import construire_baseline
+    from churn_saas.packaging import dependances_du_modele
+
+    X = pd.DataFrame({"a": [1.0, 2.0], "b": ["x", "y"]})
+    dependances = dependances_du_modele(construire_baseline(X))
+    assert any(d.startswith("scikit-learn==") for d in dependances)
+    assert all("==" in d for d in dependances)
+    assert not any(d.startswith("xgboost") for d in dependances)

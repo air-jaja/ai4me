@@ -295,6 +295,28 @@ def journaliser(
         return execution.info.run_id
 
 
+def dependances_du_modele(modele: Any) -> list[str]:
+    """The packages a logged model needs, pinned to the installed versions (optimisation B2).
+
+    Left to infer them, MLflow exports the whole uv project and then looks for pip at every
+    logged model: 1 to 5 s each on the development laptop, with a warning when pip is
+    absent from a uv environment. The model's needs are known: the libraries its pipeline
+    is made of, at the versions the lock file installed.
+    """
+    from importlib.metadata import PackageNotFoundError, version
+
+    paquets = ["scikit-learn", "pandas", "numpy", "scipy", "cloudpickle"]
+    if "xgboost" in repr(modele).lower():
+        paquets.append("xgboost-cpu")
+    epingles = []
+    for paquet in paquets:
+        try:
+            epingles.append(f"{paquet}=={version(paquet)}")
+        except PackageNotFoundError:
+            continue
+    return epingles
+
+
 def journaliser_modele(modele: Any, X_exemple: pd.DataFrame, nom: str = "modele") -> None:
     """Log a fitted pipeline - preprocessing included - with its signature and an example.
 
@@ -322,6 +344,7 @@ def journaliser_modele(modele: Any, X_exemple: pd.DataFrame, nom: str = "modele"
         signature=signature,
         input_example=X_exemple.head(3),
         serialization_format="cloudpickle",
+        pip_requirements=dependances_du_modele(modele),
     )
 
 
