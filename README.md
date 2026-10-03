@@ -129,7 +129,8 @@ churn-saas-cisia/
     │   ├── model_card.py         génération depuis le gabarit
     │   ├── modelcard_template.md gabarit Hugging Face
     │   ├── dependances.py        graphe d'imports des outils (identité), descriptif lu sur le modèle
-    │   └── suivi.py              MLflow — expériences et registre de modèles
+    │   ├── suivi.py              MLflow — expériences et registre de modèles
+    │   └── versions.py           version X.Y.Z, alias champion et précédent, retour arrière
     │
     ├── industrialisation/  6. SERVICES D'INDUSTRIALISATION
     │   ├── scoring.py            lot mensuel — décide, voit tout le portefeuille

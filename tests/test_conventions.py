@@ -260,6 +260,7 @@ OUTILS_ET_ARGUMENTS = {
     "regle_decision.py": ["--help"],
     "restitution_test.py": ["--help"],
     "validation_phase9.py": ["--help"],
+    "promouvoir.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],

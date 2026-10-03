@@ -42,6 +42,15 @@ from .suivi import (
     tracer_donnees,
     uri_suivi,
 )
+from .versions import (
+    a_conserver,
+    charger_champion,
+    incrementer,
+    lire_aliases,
+    majeure,
+    retour_arriere,
+)
+from .versions import promouvoir as promouvoir_modele
 
 __all__ = [
     "FicheModele",
@@ -50,6 +59,14 @@ __all__ = [
     "generer_model_card",
     "empreinte_entrainement",
     "enregistrer_au_registre",
+    # Versioning and rollback (phase 10)
+    "incrementer",
+    "majeure",
+    "promouvoir_modele",
+    "retour_arriere",
+    "charger_champion",
+    "lire_aliases",
+    "a_conserver",
     # What a result depends on, what a model is (03/10/2026)
     "modules_utilises",
     "decrire_modele",
