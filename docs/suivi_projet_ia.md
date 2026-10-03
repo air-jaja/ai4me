@@ -597,12 +597,18 @@ de confusion, `GridSearchCV`), comparaison par `search_runs()` sur les métrique
 enregistrée en `challenger`, rechargée et utilisée pour scorer l'échantillon ; phases 5 et 6 retracées, run
 « données » à chaque matérialisation. Carnet `07_suivi_mlflow.ipynb`, choix § 7 quater.
 
+**Règles de la suite de la phase 7, validées le 02/10 avant tout résultat** (choix § 7 quinquies) : sélection
+par gain apparié supérieur à un écart-type, le plus simple à égalité ; calibration choisie dans les plis ; grille
+XGBoost de 24 combinaisons ; évaluation unique sur le test avec intervalles par bootstrap ; modèle de valeur
+client linéaire contre forêt. SHAP décidé après la sélection.
+
 **Bloc 7.0 bis — fiabilité des relances, 02/10.** Artefacts à un emplacement absolu, à côté du magasin (ils
 suivaient le dossier courant) ; outils **idempotents** : chaque exécution de la chaîne est un run parent et la
 comparaison ne lit qu'elle, une nouvelle version n'est enregistrée que si le code, les données ou la configuration
 ont changé, retraçage et run « données » sans doublon ; parallélisme piloté par `config.N_JOBS` (cœurs mesurés
 moins un, une seule couche) ; durée annoncée avant chaque lancement ; étiquettes du poste sur chaque run ;
-`make mlflow-nettoyer`.
+`make mlflow-nettoyer`. **Contrôle commun (A1)** : une seule identité d'exécution (code, données, protocole,
+options) pour le retraçage et la chaîne ; le retraçage gardait sinon des chiffres périmés après un changement de code.
 
 > **De quoi s'agit-il ?** « Entraîner » un modèle, c'est lui présenter des milliers d'exemples passés dont
 > on connaît l'issue, afin qu'il repère les régularités. La **validation croisée** consiste à répéter

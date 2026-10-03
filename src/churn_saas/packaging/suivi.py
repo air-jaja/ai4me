@@ -139,6 +139,49 @@ def empreinte_code() -> str:
     return condense.hexdigest()[:16]
 
 
+def empreinte_protocole() -> str:
+    """Fingerprint of the evaluation protocol and decision rules read from the configuration.
+
+    The seed, the folds, the top share, the thresholds, the selection rules: change any of
+    them and every measured result may change. N_JOBS is left out on purpose - with fixed
+    seeds it changes durations, never results.
+    """
+    import hashlib
+    import json
+
+    from .. import config
+
+    noms = sorted(
+        n
+        for n in dir(config)
+        if n.isupper()
+        and n not in {"N_JOBS"}
+        and isinstance(getattr(config, n), (int, float, str, tuple, list))
+        and not str(getattr(config, n)).startswith(("sqlite:", "file:"))
+    )
+    contenu = json.dumps({n: getattr(config, n) for n in noms}, sort_keys=True, default=str)
+    return hashlib.sha256(contenu.encode()).hexdigest()[:16]
+
+
+def identite_execution(etiquettes: dict[str, str], **parametres: object) -> str:
+    """One identity for a tracked computation, shared by every MLflow tool.
+
+    Same code, same data, same protocol, same tool options: the same results. Both
+    `retracer_mlflow.py` and `pipeline_mlflow.py` skip a computation whose identity is
+    already recorded, and replay it only with --forcer (bloc 7.0 bis, A1).
+    """
+    import hashlib
+    import json
+
+    composantes = {
+        "empreinte_code": etiquettes.get("empreinte_code", ""),
+        "empreinte_gold": etiquettes.get("empreinte_gold", ""),
+        "empreinte_protocole": etiquettes.get("empreinte_protocole", ""),
+        "parametres": {k: str(v) for k, v in sorted(parametres.items())},
+    }
+    return hashlib.sha256(json.dumps(composantes, sort_keys=True).encode()).hexdigest()[:16]
+
+
 def etiquettes_tracabilite(
     phase: str, origine: str, manifeste: dict | None = None, **autres: str
 ) -> dict[str, str]:
@@ -164,6 +207,7 @@ def etiquettes_tracabilite(
         etiquettes["commit"] = "inconnu"
     etiquettes["n_jobs"] = str(N_JOBS)
     etiquettes["empreinte_code"] = empreinte_code()
+    etiquettes["empreinte_protocole"] = empreinte_protocole()
     try:
         import tomllib
 
@@ -335,7 +379,7 @@ def enregistrer(
 
 # What makes two models "the same": the code that built them (fingerprint of the sources,
 # valid with or without uncommitted changes), the data, and the configuration.
-CLES_IDENTITE_MODELE = ("empreinte_code", "empreinte_gold", "configuration")
+CLES_IDENTITE_MODELE = ("empreinte_code", "empreinte_gold", "empreinte_protocole", "configuration")
 
 
 def enregistrer_si_nouveau(

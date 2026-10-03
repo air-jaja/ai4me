@@ -15,10 +15,13 @@ from .suivi import (
     configurer_suivi,
     durees_des_runs,
     emplacement_artefacts,
+    empreinte_code,
+    empreinte_protocole,
     enregistrer,
     enregistrer_si_nouveau,
     etiquettes_tracabilite,
     experience,
+    identite_execution,
     journaliser,
     journaliser_modele,
     journaliser_protocole,
@@ -55,4 +58,8 @@ __all__ = [
     "enregistrer_si_nouveau",
     "CLES_IDENTITE_MODELE",
     "durees_des_runs",
+    # A1: one execution identity shared by every MLflow tool
+    "empreinte_protocole",
+    "empreinte_code",
+    "identite_execution",
 ]

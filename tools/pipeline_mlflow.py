@@ -70,7 +70,7 @@ def _matrice_confusion(y, score, part: float):
     return fig, seuil
 
 
-def executer(avec_grille: bool = True, rapide: bool = False) -> dict:
+def executer(avec_grille: bool = True, rapide: bool = False, forcer: bool = False) -> dict:
     """The tracked runs, compared within this execution only.
 
     `rapide` keeps the logistic regression only: the tests use it to rerun the chain
@@ -110,15 +110,16 @@ def executer(avec_grille: bool = True, rapide: bool = False) -> dict:
         configurer_suivi,
         enregistrer_si_nouveau,
         etiquettes_tracabilite,
+        identite_execution,
         journaliser_modele,
         journaliser_protocole,
         nom_experience,
+        run_existant,
     )
 
     configurer_suivi()
     activer_experience(nom_experience(EXPERIENCE))
     foret = 0 if rapide else 26 + 26 + (206 if avec_grille else 0)  # XGBoost counted as forests
-    print(annoncer_duree(entrainements_lr=26, entrainements_foret=foret), flush=True)
     resultat = executer_pipeline(config.FICHIER_COMPLET, config.FICHIER_CATALOGUE)
     parties = parties_du_decoupage(resultat)
     X, y = parties.X_entrainement, parties.y_entrainement.astype(int)
@@ -159,94 +160,123 @@ def executer(avec_grille: bool = True, rapide: bool = False) -> dict:
             mlflow.log_metric("duree_s", time.perf_counter() - debut)
             return run.info.run_id, final, protocole_
 
-    horodatage = time.strftime("%Y-%m-%d %H:%M:%S")
-    parent = mlflow.start_run(run_name=f"chaine {horodatage}")
-    mlflow.set_tags(
-        etiquettes_tracabilite("7.0", "tools/pipeline_mlflow.py", manifeste, execution="parent")
+    # A1: one identity per computation - code, data, protocol, options - shared with
+    # retracer_mlflow.py. An identical execution already recorded is reused, not redone.
+    etiquettes = etiquettes_tracabilite("7.0", "tools/pipeline_mlflow.py", manifeste)
+    identite = identite_execution(
+        etiquettes, outil="pipeline", avec_grille=avec_grille and not rapide, rapide=rapide
     )
-    try:
-        _desactiver_autologs(mlflow)
-        runs = {}
+    existante = run_existant(
+        nom_experience(EXPERIENCE), {"identite_execution": identite, "execution": "parent"}
+    )
+    if existante and forcer:
+        client = mlflow.MlflowClient()
+        enfants = mlflow.search_runs(
+            experiment_names=[nom_experience(EXPERIENCE)],
+            filter_string=f"tags.mlflow.parentRunId = '{existante}'",
+        )
+        for run_id in [*enfants["run_id"], existante]:
+            client.delete_run(run_id)
+        existante = None
+    runs = {}
+    if existante:
+        print(
+            f"Exécution identique déjà enregistrée ({existante[:8]}) : rien n'est recalculé. "
+            "--forcer pour la rejouer.",
+            flush=True,
+        )
+        parent_id = existante
+    else:
+        print(annoncer_duree(entrainements_lr=26, entrainements_foret=foret), flush=True)
+        horodatage = time.strftime("%Y-%m-%d %H:%M:%S")
+        parent = mlflow.start_run(run_name=f"chaine {horodatage}")
+        parent_id = parent.info.run_id
+        mlflow.set_tags(etiquettes | {"execution": "parent", "identite_execution": identite})
+        try:
+            _desactiver_autologs(mlflow)
+            runs = {}
 
-        # 1. Random forest, autolog. Models are logged by hand, whole pipeline included.
-        mlflow.sklearn.autolog(log_models=False, silent=True)
-        if not rapide:
-            runs["forêt · autolog"] = tracer(
-                "foret · sklearn.autolog", construire_candidat, "autolog"
-            )
-        _desactiver_autologs(mlflow)
-
-        # 2. XGBoost, autolog. scale_pos_weight plays the role of class_weight.
-        poids = float((y == 0).sum() / (y == 1).sum())
-
-        def xgboost(Xf):
-            return Pipeline(
-                [
-                    ("preparation", construire_preprocesseur(Xf)),
-                    (
-                        "modele",
-                        XGBClassifier(
-                            n_estimators=300,
-                            max_depth=4,
-                            learning_rate=0.05,
-                            subsample=0.8,
-                            scale_pos_weight=poids,
-                            random_state=config.GRAINE,
-                            n_jobs=-1,
-                        ),
-                    ),
-                ]
-            )
-
-        mlflow.xgboost.autolog(log_models=False, silent=True)
-        if not rapide:
-            runs["xgboost · autolog"] = tracer("xgboost · xgboost.autolog", xgboost, "autolog")
-        _desactiver_autologs(mlflow)
-
-        # 3. Logistic regression, by hand, with its confusion matrix.
-        rid, lr, prot = tracer("regression logistique · manuel", construire_baseline, "manuelle")
-        with mlflow.start_run(run_id=rid, nested=True):
-            etape = lr.named_steps[list(lr.named_steps)[-1]]
-            mlflow.log_params(
-                {
-                    k: v
-                    for k, v in etape.get_params().items()
-                    if isinstance(v, (int, float, str, type(None)))
-                }
-            )
-            figure, seuil = _matrice_confusion(y, prot.hors_pli, config.PART_HAUT_CLASSEMENT)
-            mlflow.log_figure(figure, "matrice_confusion_haut_10pct.png")
-            mlflow.log_metric("seuil_haut_10pct", seuil)
-        runs["régression logistique · manuel"] = (rid, lr, prot)
-
-        # 4. GridSearchCV on the forest, autolog (bounded child runs).
-        if avec_grille and not rapide:
-
-            def grille():
-                recherche = GridSearchCV(
-                    construire_candidat(X),
-                    grille_hyperparametres()["candidat"],
-                    scoring="average_precision",
-                    cv=StratifiedKFold(
-                        config.PLIS_VALIDATION, shuffle=True, random_state=config.GRAINE
-                    ),
-                    n_jobs=config.N_JOBS,
+            # 1. Random forest, autolog. Models are logged by hand, whole pipeline included.
+            mlflow.sklearn.autolog(log_models=False, silent=True)
+            if not rapide:
+                runs["forêt · autolog"] = tracer(
+                    "foret · sklearn.autolog", construire_candidat, "autolog"
                 )
-                return recherche.fit(X, y)
-
-            mlflow.sklearn.autolog(log_models=False, silent=True, max_tuning_runs=10)
-            runs["grille forêt · GridSearchCV"] = tracer(
-                "grille foret · GridSearchCV autolog", construire_candidat, "autolog", grille
-            )
             _desactiver_autologs(mlflow)
 
-    finally:
-        mlflow.end_run()
+            # 2. XGBoost, autolog. scale_pos_weight plays the role of class_weight.
+            poids = float((y == 0).sum() / (y == 1).sum())
+
+            def xgboost(Xf):
+                return Pipeline(
+                    [
+                        ("preparation", construire_preprocesseur(Xf)),
+                        (
+                            "modele",
+                            XGBClassifier(
+                                n_estimators=300,
+                                max_depth=4,
+                                learning_rate=0.05,
+                                subsample=0.8,
+                                scale_pos_weight=poids,
+                                random_state=config.GRAINE,
+                                n_jobs=-1,
+                            ),
+                        ),
+                    ]
+                )
+
+            mlflow.xgboost.autolog(log_models=False, silent=True)
+            if not rapide:
+                runs["xgboost · autolog"] = tracer("xgboost · xgboost.autolog", xgboost, "autolog")
+            _desactiver_autologs(mlflow)
+
+            # 3. Logistic regression, by hand, with its confusion matrix.
+            rid, lr, prot = tracer(
+                "regression logistique · manuel", construire_baseline, "manuelle"
+            )
+            with mlflow.start_run(run_id=rid, nested=True):
+                etape = lr.named_steps[list(lr.named_steps)[-1]]
+                mlflow.log_params(
+                    {
+                        k: v
+                        for k, v in etape.get_params().items()
+                        if isinstance(v, (int, float, str, type(None)))
+                    }
+                )
+                figure, seuil = _matrice_confusion(y, prot.hors_pli, config.PART_HAUT_CLASSEMENT)
+                mlflow.log_figure(figure, "matrice_confusion_haut_10pct.png")
+                mlflow.log_metric("seuil_haut_10pct", seuil)
+            runs["régression logistique · manuel"] = (rid, lr, prot)
+
+            # 4. GridSearchCV on the forest, autolog (bounded child runs).
+            if avec_grille and not rapide:
+
+                def grille():
+                    recherche = GridSearchCV(
+                        construire_candidat(X),
+                        grille_hyperparametres()["candidat"],
+                        scoring="average_precision",
+                        cv=StratifiedKFold(
+                            config.PLIS_VALIDATION, shuffle=True, random_state=config.GRAINE
+                        ),
+                        n_jobs=config.N_JOBS,
+                    )
+                    return recherche.fit(X, y)
+
+                mlflow.sklearn.autolog(log_models=False, silent=True, max_tuning_runs=10)
+                runs["grille forêt · GridSearchCV"] = tracer(
+                    "grille foret · GridSearchCV autolog", construire_candidat, "autolog", grille
+                )
+                _desactiver_autologs(mlflow)
+
+        finally:
+            mlflow.end_run()
 
     # Comparison on the common out-of-fold keys only (decision D4).
     tableau = mlflow.search_runs(
         experiment_names=[nom_experience(EXPERIENCE)],
-        filter_string=f"tags.mlflow.parentRunId = '{parent.info.run_id}' and metrics.pr_auc_cv > 0",
+        filter_string=f"tags.mlflow.parentRunId = '{parent_id}' and metrics.pr_auc_cv > 0",
         order_by=["metrics.pr_auc_cv DESC"],
     )
     colonnes = [
@@ -263,8 +293,12 @@ def executer(avec_grille: bool = True, rapide: bool = False) -> dict:
     # Registry: challenger, then load and score the sample (functional check, D5).
     version, nouvelle_version = enregistrer_si_nouveau(meilleur["run_id"])
     modele_registre = charger()
-    nom_meilleur = next(n for n, (r, _, _) in runs.items() if r == meilleur["run_id"])
-    en_memoire = runs[nom_meilleur][1]
+    if runs:
+        nom_meilleur = next(n for n, (r, _, _) in runs.items() if r == meilleur["run_id"])
+        en_memoire = runs[nom_meilleur][1]
+    else:  # reused execution: the best run's own logged model stands for the one in memory
+        nom_meilleur = meilleur["tags.mlflow.runName"]
+        en_memoire = mlflow.sklearn.load_model(f"runs:/{meilleur['run_id']}/modele")
     brut = pd.read_csv(config.FICHIER_ECHANTILLON, dtype=str, encoding="utf-8-sig")
     catalogue = pd.read_csv(config.FICHIER_CATALOGUE, dtype=str, encoding="utf-8-sig")
     entree = typer_pour_modele(
@@ -277,7 +311,8 @@ def executer(avec_grille: bool = True, rapide: bool = False) -> dict:
         "meilleur": nom_meilleur,
         "version_registre": version,
         "nouvelle_version": nouvelle_version,
-        "execution": parent.info.run_id,
+        "execution": parent_id,
+        "reutilisee": not runs,
         "comptes_scores": int(len(entree)),
         "registre_identique_au_modele_en_memoire": bool(
             abs(proba_registre - proba_memoire).max() < 1e-9
@@ -299,6 +334,9 @@ def main(argv: list[str] | None = None) -> int:
     analyseur.add_argument(
         "--rapide", action="store_true", help="régression logistique seule (essais, tests)"
     )
+    analyseur.add_argument(
+        "--forcer", action="store_true", help="rejouer une exécution identique déjà enregistrée"
+    )
     arguments = analyseur.parse_args(argv)
     try:
         import mlflow  # noqa: F401
@@ -308,7 +346,9 @@ def main(argv: list[str] | None = None) -> int:
             f"MLflow ou XGBoost absent ({erreur.name}) : installer les groupes suivi et boosting."
         )
         return 0
-    bilan = executer(avec_grille=not arguments.sans_grille, rapide=arguments.rapide)
+    bilan = executer(
+        avec_grille=not arguments.sans_grille, rapide=arguments.rapide, forcer=arguments.forcer
+    )
     print(json.dumps(bilan, ensure_ascii=False, indent=2))
     return 0 if bilan["registre_identique_au_modele_en_memoire"] else 1
 

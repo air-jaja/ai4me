@@ -142,29 +142,50 @@ def test_la_duree_est_estimee_a_partir_des_temps_mesures():
     assert annoncer_duree(10, 5).startswith("Durée estimée")
 
 
-@exige_mlflow
-def test_relancer_la_chaine_ne_cree_pas_de_nouvelle_version():
-    """Same code, same data, same configuration: the second execution registers nothing."""
+def _chaine(*options: str) -> dict:
     import json
     import subprocess
 
     from churn_saas.config import RACINE
 
-    bilans = []
-    for _ in range(2):
-        sortie = subprocess.run(
-            [sys.executable, str(RACINE / "tools" / "pipeline_mlflow.py"), "--rapide"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            cwd=RACINE,
-            timeout=300,
-        )
-        assert sortie.returncode == 0, sortie.stderr[-800:]
-        bilans.append(json.loads(sortie.stdout[sortie.stdout.index("{") :]))
-    assert bilans[0]["nouvelle_version"] and not bilans[1]["nouvelle_version"]
-    assert bilans[0]["version_registre"] == bilans[1]["version_registre"]
-    assert bilans[0]["execution"] != bilans[1]["execution"]
+    sortie = subprocess.run(
+        [sys.executable, str(RACINE / "tools" / "pipeline_mlflow.py"), "--rapide", *options],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        cwd=RACINE,
+        timeout=300,
+    )
+    assert sortie.returncode == 0, sortie.stderr[-800:]
+    return json.loads(sortie.stdout[sortie.stdout.index("{") :])
+
+
+@exige_mlflow
+def test_relancer_la_chaine_reutilise_l_execution_identique():
+    """Same code, data, protocol and options: the second execution computes and registers
+    nothing - the same control as the replay tool (A1)."""
+    pytest.importorskip("mlflow")
+    from churn_saas.packaging import configurer_suivi
+
+    mlflow = configurer_suivi()
+    premiere, seconde = _chaine(), _chaine()
+    assert premiere["nouvelle_version"] and not premiere["reutilisee"]
+    assert seconde["reutilisee"] and not seconde["nouvelle_version"]
+    assert seconde["execution"] == premiere["execution"]
+    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
+    assert len(runs) == 2  # one parent, one child: nothing added by the second execution
+
+
+@exige_mlflow
+def test_forcer_la_chaine_remplace_sans_dupliquer():
+    pytest.importorskip("mlflow")
+    from churn_saas.packaging import configurer_suivi
+
+    mlflow = configurer_suivi()
+    premiere, forcee = _chaine(), _chaine("--forcer")
+    assert forcee["execution"] != premiere["execution"] and not forcee["reutilisee"]
+    runs = mlflow.search_runs(experiment_names=["churn-saas/phase7-chaine-mlflow"])
+    assert len(runs) == 2 and forcee["version_registre"] == premiere["version_registre"]
 
 
 @exige_mlflow
@@ -179,12 +200,19 @@ def test_relancer_le_retracage_ne_cree_pas_de_doublon():
     )
     outil = importlib.util.module_from_spec(specification)
     specification.loader.exec_module(outil)
-    etiquettes = {"phase": "6", "empreinte_gold": "essai"}
+    etiquettes = {"phase": "6", "empreinte_gold": "essai", "empreinte_code": "c1"}
     premier = outil.retracer_phase6(configurer_suivi(), etiquettes)
     second = outil.retracer_phase6(configurer_suivi(), etiquettes)
     assert premier == second
-    runs = mlflow.search_runs(experiment_names=["churn-saas/phase6-baselines"])
-    assert len(runs) == 3
+    assert len(mlflow.search_runs(experiment_names=["churn-saas/phase6-baselines"])) == 3
+
+    # A change of code is a different identity: replayed, not kept in silence (A1).
+    outil.retracer_phase6(configurer_suivi(), etiquettes | {"empreinte_code": "c2"})
+    assert len(mlflow.search_runs(experiment_names=["churn-saas/phase6-baselines"])) == 6
+
+    # --forcer replaces the identical runs without duplicating them.
+    outil.retracer_phase6(configurer_suivi(), etiquettes | {"empreinte_code": "c2"}, forcer=True)
+    assert len(mlflow.search_runs(experiment_names=["churn-saas/phase6-baselines"])) == 6
 
 
 @exige_mlflow
@@ -217,3 +245,26 @@ def test_la_matrice_de_confusion_ne_change_pas_le_moteur_graphique():
     )
     assert isinstance(figure, Figure) and 0 < seuil < 1
     assert matplotlib.get_backend() == avant
+
+
+def test_l_identite_change_avec_le_code_les_donnees_le_protocole_ou_les_options():
+    from churn_saas.packaging import identite_execution
+
+    base = {"empreinte_code": "a", "empreinte_gold": "g", "empreinte_protocole": "p"}
+    reference = identite_execution(base, outil="x", option=1)
+    assert identite_execution(base, outil="x", option=1) == reference
+    for cle in base:
+        assert identite_execution(base | {cle: "autre"}, outil="x", option=1) != reference
+    assert identite_execution(base, outil="x", option=2) != reference
+
+
+def test_le_parallelisme_ne_change_pas_l_empreinte_du_protocole(monkeypatch):
+    """N_JOBS changes durations, never results: it must not change the identity."""
+    from churn_saas import config
+    from churn_saas.packaging import empreinte_protocole
+
+    avant = empreinte_protocole()
+    monkeypatch.setattr(config, "N_JOBS", config.N_JOBS + 7)
+    assert empreinte_protocole() == avant
+    monkeypatch.setattr(config, "PART_HAUT_CLASSEMENT", 0.2)
+    assert empreinte_protocole() != avant

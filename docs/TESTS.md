@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**564 cas de test** issus de 306 fonctions, répartis sur 22 fichiers.
+**568 cas de test** issus de 310 fonctions, répartis sur 22 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -41,14 +41,14 @@ soutenance.
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 88 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 89 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 7 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 14 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 | [test_resultats_reference.py](#test_resultats_referencepy) | `test_resultats_reference.py` | — | — | 5 |
-| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 14 |
+| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 17 |
 
 ---
 
@@ -434,6 +434,7 @@ soutenance.
 | 42 | `test_la_regression_doit_etre_calibree_en_phase_7` | Calibration error 0.11, over the 0.05 threshold fixed beforehand: phase 7 calibrates. | The class weighting that helps ranking pushes the probabilities up. |
 | 43 | `test_le_jeu_vu_par_mlflow_est_celui_du_manifeste` | The data run attaches the gold with the manifest's own fingerprint as digest. | — |
 | 44 | `test_les_baselines_retracees_sont_les_references_figees` | Phase 6 replayed into MLflow gives back, to the digit, the recorded reference. | — |
+| 45 | `test_les_regles_de_la_phase_7_n_ont_pas_bouge_depuis_leur_validation` | B1 to B5 were validated on 02/10/2026, before tuning, comparison, calibration and the test evaluation. | Changing one after the results is precisely what rule 8 forbids: it must go through this test, hence through a reviewed, dated change. |
 
 ### test_campagnes.py
 
@@ -553,7 +554,10 @@ soutenance.
 | 8 | `test_les_artefacts_vont_a_cote_du_magasin_en_usage` | Never in a `mlruns/` relative to the current directory: beside the store in use. | here the test's temporary one, so no test writes into the project. |
 | 9 | `test_le_parallelisme_se_regle_par_la_configuration` | _(sans description)_ | — |
 | 10 | `test_la_duree_est_estimee_a_partir_des_temps_mesures` | _(sans description)_ | — |
-| 11 | `test_relancer_la_chaine_ne_cree_pas_de_nouvelle_version` | Same code, same data, same configuration: the second execution registers nothing. | — |
-| 12 | `test_relancer_le_retracage_ne_cree_pas_de_doublon` | _(sans description)_ | — |
-| 13 | `test_une_meme_version_des_donnees_n_a_qu_un_run` | _(sans description)_ | — |
-| 14 | `test_la_matrice_de_confusion_ne_change_pas_le_moteur_graphique` | Built without pyplot: in a notebook it must not switch the inline backend, and in a script it must not open Tk. | whose figures, destroyed by another thread at exit, made pipeline_mlflow.py print "main thread is not in main loop" on Windows. |
+| 11 | `test_relancer_la_chaine_reutilise_l_execution_identique` | Same code, data, protocol and options: the second execution computes and registers nothing. | the same control as the replay tool (A1). |
+| 12 | `test_forcer_la_chaine_remplace_sans_dupliquer` | _(sans description)_ | — |
+| 13 | `test_relancer_le_retracage_ne_cree_pas_de_doublon` | _(sans description)_ | — |
+| 14 | `test_une_meme_version_des_donnees_n_a_qu_un_run` | _(sans description)_ | — |
+| 15 | `test_la_matrice_de_confusion_ne_change_pas_le_moteur_graphique` | Built without pyplot: in a notebook it must not switch the inline backend, and in a script it must not open Tk. | whose figures, destroyed by another thread at exit, made pipeline_mlflow.py print "main thread is not in main loop" on Windows. |
+| 16 | `test_l_identite_change_avec_le_code_les_donnees_le_protocole_ou_les_options` | _(sans description)_ | — |
+| 17 | `test_le_parallelisme_ne_change_pas_l_empreinte_du_protocole` | N_JOBS changes durations, never results: it must not change the identity. | — |

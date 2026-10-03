@@ -1440,3 +1440,23 @@ def test_les_baselines_retracees_sont_les_references_figees():
     retrace = outil.retracer_phase6(configurer_suivi(), {"phase": "6"})
     for nom, baseline in _reference()["baselines"].items():
         assert retrace[nom] == pytest.approx(baseline["moyenne"]["PR-AUC"], abs=1e-9)
+
+
+# --- Phase 7 · The decision rules validated before any comparison (rule 8) ---------------------
+def test_les_regles_de_la_phase_7_n_ont_pas_bouge_depuis_leur_validation():
+    """B1 to B5 were validated on 02/10/2026, before tuning, comparison, calibration and the
+    test evaluation. Changing one after the results is precisely what rule 8 forbids: it
+    must go through this test, hence through a reviewed, dated change."""
+    from churn_saas import config
+    from churn_saas.modelisation import grille_hyperparametres
+
+    assert config.ORDRE_DE_SIMPLICITE == ("régression logistique", "forêt aléatoire", "xgboost")
+    assert config.METHODES_CALIBRATION == ("sigmoid", "isotonic")
+    assert config.SEUIL_ERREUR_CALIBRATION == 0.05
+    assert (config.TIRAGES_BOOTSTRAP, config.NIVEAU_CONFIANCE) == (1000, 0.95)
+    assert config.MODELES_VALEUR_VIE == ("régression linéaire", "forêt de régression")
+    grille = grille_hyperparametres()["xgboost"]
+    combinaisons = 1
+    for valeurs in grille.values():
+        combinaisons *= len(valeurs)
+    assert combinaisons == 24

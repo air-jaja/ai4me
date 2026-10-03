@@ -51,6 +51,13 @@ def grille_hyperparametres() -> dict[str, dict[str, list]]:
             "modele__min_samples_leaf": [1, 5, 20],
             "modele__class_weight": [None, "balanced"],
         },
+        # B3 (02/10/2026): bounded like the forest's - 3 x 2 x 2 x 2 = 24 combinations.
+        "xgboost": {
+            "modele__max_depth": [3, 4, 6],
+            "modele__learning_rate": [0.05, 0.1],
+            "modele__n_estimators": [200, 400],
+            "modele__min_child_weight": [1, 5],
+        },
     }
 
 

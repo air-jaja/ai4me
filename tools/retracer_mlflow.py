@@ -10,6 +10,7 @@ checks the replayed figures equal the frozen ones.
 
 Rerunning it changes nothing (bloc 7.0 bis): a run already replayed - same name, same gold
 fingerprint, same phase - is skipped. `--forcer` deletes those runs and replays them.
+"Identical" means the shared execution identity: code, data, protocol, phase (A1).
 """
 
 from __future__ import annotations
@@ -24,13 +25,16 @@ RACINE = Path(__file__).resolve().parents[1]
 
 
 def _deja_retrace(experience: str, nom_run: str, etiquettes: dict, forcer: bool) -> float | None:
-    """PR-AUC of an identical replay already recorded; deletes it instead when forcing."""
-    from churn_saas.packaging import configurer_suivi, run_existant
+    """PR-AUC of an identical replay already recorded; deletes it instead when forcing.
 
-    cles = {"retrace": "true", "phase": etiquettes.get("phase", "")}
-    if "empreinte_gold" in etiquettes:
-        cles["empreinte_gold"] = etiquettes["empreinte_gold"]
-    existant = run_existant(experience, cles, nom_run)
+    "Identical" is the shared execution identity - code, data, protocol and replayed phase
+    (A1). A change of code or protocol therefore replays the run instead of keeping the
+    old figures in silence, which the first version of this tool did.
+    """
+    from churn_saas.packaging import configurer_suivi, identite_execution, run_existant
+
+    identite = identite_execution(etiquettes, outil="retracer", phase=etiquettes.get("phase"))
+    existant = run_existant(experience, {"identite_execution": identite}, nom_run)
     if existant is None:
         return None
     mlflow = configurer_suivi()
@@ -38,6 +42,13 @@ def _deja_retrace(experience: str, nom_run: str, etiquettes: dict, forcer: bool)
         mlflow.MlflowClient().delete_run(existant)
         return None
     return float(mlflow.get_run(existant).data.metrics["pr_auc_cv"])
+
+
+def _identite(etiquettes: dict) -> dict[str, str]:
+    from churn_saas.packaging import identite_execution
+
+    identite = identite_execution(etiquettes, outil="retracer", phase=etiquettes.get("phase"))
+    return etiquettes | {"retrace": "true", "identite_execution": identite}
 
 
 def retracer_phase6(mlflow, etiquettes, forcer: bool = False) -> dict[str, float]:
@@ -58,7 +69,7 @@ def retracer_phase6(mlflow, etiquettes, forcer: bool = False) -> dict[str, float
             moyennes[nom] = deja
             continue
         with mlflow.start_run(run_name=nom):
-            mlflow.set_tags(etiquettes | {"retrace": "true"})
+            mlflow.set_tags(_identite(etiquettes))
             par_pli = pd.DataFrame(valeurs["par_pli"]).astype(float)
             moyennes[nom] = journaliser_protocole(par_pli)["pr_auc_cv"]
     return moyennes
@@ -92,7 +103,7 @@ def retracer_phase5(mlflow, etiquettes, X, y, forcer: bool = False) -> dict[str,
         scores = comparer_jeux(fabrique, X, y, jeux)
         for jeu, valeurs in scores.items():
             with mlflow.start_run(run_name=f"{modele} · {jeu}"):
-                mlflow.set_tags(etiquettes | {"retrace": "true", "jeu_de_variables": jeu})
+                mlflow.set_tags(_identite(etiquettes) | {"jeu_de_variables": jeu})
                 mlflow.log_param("variables", len(jeux[jeu]))
                 mlflow.log_metric("pr_auc_cv", float(valeurs.mean()))
                 mlflow.log_metric("pr_auc_cv_ecart_type", float(valeurs.std()))
