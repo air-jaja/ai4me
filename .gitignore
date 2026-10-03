@@ -65,3 +65,6 @@ reports/execution/
 # regenerated at each run, never versioned (pickles too). models/ is already ignored above.
 *.joblib
 *.pkl
+
+# Operational lists name real accounts: never versioned.
+sorties/

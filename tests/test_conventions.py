@@ -261,6 +261,7 @@ OUTILS_ET_ARGUMENTS = {
     "restitution_test.py": ["--help"],
     "validation_phase9.py": ["--help"],
     "promouvoir.py": ["--help"],
+    "liste_operationnelle.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],

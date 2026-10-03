@@ -12,10 +12,17 @@ would be wrong (notebook section 10).
 """
 
 from .entrepot import construire_moteur, creer_schema, ecrire_scores, lire_derniers_scores
+from .liste import FORMULATIONS, LIBELLES, construire_liste, motif, tranche
 from .scoring import controler_lot, preparer, scorer_lot_mensuel
 from .service import reponse_scoring_unitaire
 
 __all__ = [
+    # Operational list for the account managers (phase 10)
+    "construire_liste",
+    "motif",
+    "tranche",
+    "LIBELLES",
+    "FORMULATIONS",
     "preparer",
     "scorer_lot_mensuel",
     "controler_lot",

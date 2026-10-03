@@ -133,6 +133,7 @@ churn-saas-cisia/
     │   └── versions.py           version X.Y.Z, alias champion et précédent, retour arrière
     │
     ├── industrialisation/  6. SERVICES D'INDUSTRIALISATION
+    │   ├── liste.py              liste opérationnelle : libellés métier, motifs rédigés
     │   ├── scoring.py            lot mensuel — décide, voit tout le portefeuille
     │   ├── service.py            appel unitaire — ne décide pas
     │   ├── api.py                service HTTP FastAPI (/health, /ready, /score)
