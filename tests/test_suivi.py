@@ -468,6 +468,8 @@ def test_l_empreinte_ne_bouge_qu_avec_le_code_du_perimetre(tmp_path, monkeypatch
     avant = suivi.empreinte_code("tools/selection_modele.py")
     (copie / "src/churn_saas/packaging/suivi.py").write_text("# journalisation modifiée\n")
     (copie / "tools/pipeline_mlflow.py").write_text("# autre outil modifié\n")
+    with open(copie / "src/churn_saas/features/__init__.py", "a", encoding="utf-8") as f:
+        f.write("\n# nouvelle figure exportée\n")
     assert suivi.empreinte_code("tools/selection_modele.py") == avant
     with open(copie / "src/churn_saas/modelisation/reglage.py", "a", encoding="utf-8") as f:
         f.write("\n# réglage modifié\n")

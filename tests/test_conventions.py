@@ -256,6 +256,7 @@ OUTILS_ET_ARGUMENTS = {
     "selection_variables.py": ["--help"],
     "comparaison_explicabilite.py": ["--help"],
     "reglage_modele.py": ["--help"],
+    "modele_servi.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],

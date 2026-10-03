@@ -139,7 +139,13 @@ def fichiers_du_perimetre(origine: str | None = None) -> list:
     for element in PERIMETRE_RESULTATS:
         chemin = paquet / element
         fichiers += [chemin] if chemin.is_file() else sorted(chemin.rglob("*.py"))
-    fichiers = [f for f in fichiers if f.relative_to(paquet).as_posix() not in HORS_PERIMETRE]
+    # `__init__.py` files only list what a package exports: adding a figure to an
+    # interface changes no result (it invalidated every recorded result once, 03/10/2026).
+    fichiers = [
+        f
+        for f in fichiers
+        if f.relative_to(paquet).as_posix() not in HORS_PERIMETRE and f.name != "__init__.py"
+    ]
     if origine and (RACINE / origine).is_file():
         fichiers.append(RACINE / origine)
     return sorted(fichiers)

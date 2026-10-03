@@ -1635,3 +1635,26 @@ def test_le_reglage_ne_remplace_pas_le_champion():
     table = pd.DataFrame(reglage["P2_comparaison"])
     assert not table["gain significatif"].any()
     assert reglage["P2_remplacer_le_champion"] is False
+
+
+# --- Phase 8 · Decision c: the served model is equivalent to the evaluated champion -----------
+def test_le_modele_servi_est_equivalent_au_champion_evalue():
+    """One calibrated copy instead of five (decision c, option i - the test part is not read
+    again): same PR-AUC (paired gain -0.0001, threshold 0.019), same calibration, same
+    rankings (rank correlation 0.9999), within the per-account budget, about 5 times faster."""
+    chemin = RACINE / "resultats" / "modele_servi.json"
+    if not chemin.exists():
+        pytest.skip("Modèle servi pas encore construit (tools/modele_servi.py).")
+    bilan = json.loads(chemin.read_text(encoding="utf-8"))
+    equivalence = bilan["equivalence"]
+    assert equivalence["équivalent en performance"] and equivalence["calibration conforme"]
+    assert equivalence["corrélation de rang des probabilités"] > 0.999
+    assert equivalence["budget d'un compte respecté"] and equivalence["budget du lot respecté"]
+    assert equivalence["accélération d'un compte"] > 3
+    hyper = bilan["hyperparametres"]
+    assert (hyper["C"], hyper["class_weight"], hyper["calibration"], hyper["copies calibrées"]) == (
+        1.0,
+        "balanced",
+        "sigmoid",
+        1,
+    )

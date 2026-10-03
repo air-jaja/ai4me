@@ -1,5 +1,5 @@
 {
- "identite_execution": "9179538e9c835dcf",
+ "identite_execution": "637caf768bcf67c0",
  "grille": [
   {
    "C": 0.01,
@@ -638,6 +638,6 @@
   }
  ],
  "P2_remplacer_le_champion": false,
- "duree_s": 123.5,
- "date": "2026-10-03 12:52"
+ "duree_s": 145.0,
+ "date": "2026-10-03 14:09"
 }
