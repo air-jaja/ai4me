@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**655 cas de test** issus de 355 fonctions, répartis sur 23 fichiers.
+**657 cas de test** issus de 357 fonctions, répartis sur 23 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,12 +37,12 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 228 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 229 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
 | [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 102 |
-| [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 7 |
+| [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
 | [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 10 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
@@ -328,6 +328,7 @@ soutenance.
 | 12 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
 | 13 | `test_aucun_fichier_de_modele_n_est_versionne_hors_de_models` | Models live under models/ with their card, written by an absolute path; a model file elsewhere comes from a relative path (the legacy notebook wrote two into notebooks/). | Tracked or not yet ignored, it must not reach the repository. |
 | 14 | `test_le_notebook_de_certification_lit_les_calculs_de_la_phase_5_sans_les_refaire` | B1: sections 8.A to 8.C read tools/selection_variables.py's recorded results. | A notebook committed from an older working copy brought the computations back once (11 minutes here, 15 to 20 on the laptop) without any test noticing. |
+| 15 | `test_la_session_de_tests_n_utilise_jamais_le_dossier_temporaire_partage` | Windows: the shared %TEMP%\pytest-of-<user> tree made every campaign fail at the very end (PermissionError on `pytest-current`), all tests having passed. | Every session now works in a unique directory of its own (tests/conftest.py), which pytest never scans. |
 
 ### Stockage et cache des figures
 
@@ -474,6 +475,7 @@ soutenance.
 | 5 | `test_les_tests_courants_selectionnent_des_tests` | A campaign whose current level selects nothing would pass without testing anything. | — |
 | 6 | `test_un_test_ne_porte_qu_un_marqueur_d_activite` | Two activity markers on one test would run it in both the current and the earlier level of the same campaign. | — |
 | 7 | `test_les_marqueurs_precedents_sont_declares` | _(sans description)_ | — |
+| 8 | `test_un_ko_dit_ce_qui_a_echoue` | A campaign once reported three KO although every test had passed: pytest had broken while cleaning its temporary folder. | The verdict now names the kind of failure. |
 
 ### test_docker.py
 

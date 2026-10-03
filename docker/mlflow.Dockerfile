@@ -7,7 +7,7 @@
 #
 # Trois lignes suffisent, et cette couche se construit en quelques secondes.
 
-FROM ghcr.io/mlflow/mlflow:v3.1.1
+FROM ghcr.io/mlflow/mlflow:v3.16.1
 
 # Version épinglée, et identique à celle du verrou du projet : le service et le code
 # parlent ainsi à PostgreSQL par le même pilote. Une version flottante ici produirait

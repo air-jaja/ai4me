@@ -616,7 +616,7 @@
     "écart entraînement - validation": 0.0050777076
    }
   ],
-  "S5_erreur_calibration": 0.03176652899817599,
+  "S5_erreur_calibration": 0.03176652899847768,
   "S5_conforme": true
  },
  "P2_comparaison": [
@@ -638,6 +638,6 @@
   }
  ],
  "P2_remplacer_le_champion": false,
- "duree_s": 145.0,
- "date": "2026-10-03 14:09"
+ "duree_s": 69.0,
+ "date": "2026-10-03 11:34"
 }

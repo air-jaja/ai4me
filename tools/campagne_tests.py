@@ -48,6 +48,23 @@ def commandes(niveau: str, campagne: dict) -> list[tuple[str, list[str]]]:
     }[niveau]
 
 
+# pytest's exit codes. A KO must say WHAT failed: tests that fail and a session that breaks
+# after every test passed call for different actions (the second one is the environment).
+CODES_PYTEST = {
+    0: "OK",
+    1: "KO (tests en échec)",
+    2: "KO (session interrompue)",
+    3: "KO (erreur interne de pytest, souvent en fin de session : voir docs/DEPANNAGE.md)",
+    4: "KO (commande pytest invalide)",
+    5: "KO (aucun test sélectionné)",
+}
+
+
+def verdict(code: int) -> str:
+    """What a pytest exit code means, in one phrase."""
+    return CODES_PYTEST.get(code, f"KO (code {code})")
+
+
 def main(argv: list[str] | None = None) -> int:
     # A Windows terminal hands a piped child process cp1252, whatever the document holds:
     # the tool's output must not depend on who runs it - its errors on stderr included,
@@ -76,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"\nCampagne {bilan} : "
         + ", ".join(
-            f"{libelle} {'OK' if code == 0 else 'KO'}"
+            f"{libelle} {verdict(code)}"
             for (libelle, _), code in zip(commandes(arguments.niveau, campagne), codes, strict=True)
         )
     )

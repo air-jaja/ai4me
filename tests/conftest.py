@@ -306,6 +306,35 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
         tr.write("\n  Taux d'exécution : 100 % — tous les cas ont tourné.\n", green=True)
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_configure(config):
+    """Each test session gets its own temporary directory, removed at the end.
+
+    By default pytest numbers its directories under %TEMP%\pytest-of-<user> and, at the
+    end of every session, scans them through the `pytest-current` link. On Windows that
+    scan crashed every campaign AFTER all tests had passed (PermissionError, WinError 5,
+    on `pytest-current`): a link whose target is still being deleted - a file held open,
+    a pytest launched in parallel by VS Code - cannot even be read. With a directory of
+    its own (`--basetemp`), a session never touches that shared tree. Runs first, so
+    pytest's own temporary-path factory sees the setting. An explicit --basetemp wins.
+    """
+    import tempfile
+
+    if config.option.basetemp is None:
+        config.option.basetemp = tempfile.mkdtemp(prefix="pytest-ai4me-")
+        config._dossier_temporaire_de_session = config.option.basetemp
+
+
+def pytest_unconfigure(config):
+    """Remove the session's directory; a file still held open (Windows) is left behind
+    rather than failing a session whose tests all passed."""
+    import shutil
+
+    dossier = getattr(config, "_dossier_temporaire_de_session", None)
+    if dossier:
+        shutil.rmtree(dossier, ignore_errors=True)
+
+
 @pytest.fixture(scope="session")
 def _magasin_mlflow_vierge(tmp_path_factory):
     """An empty MLflow store, migrated ONCE per session (optimisation A2).

@@ -443,3 +443,10 @@ def test_le_notebook_de_certification_lit_les_calculs_de_la_phase_5_sans_les_ref
         if f in code
     ]
     assert not recalculs, f"Calculs de la phase 5 refaits dans le notebook : {recalculs}"
+
+
+def test_la_session_de_tests_n_utilise_jamais_le_dossier_temporaire_partage(tmp_path):
+    """Windows: the shared %TEMP%\\pytest-of-<user> tree made every campaign fail at the
+    very end (PermissionError on `pytest-current`), all tests having passed. Every session now
+    works in a unique directory of its own (tests/conftest.py), which pytest never scans."""
+    assert "pytest-of-" not in str(tmp_path), tmp_path
