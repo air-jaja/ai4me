@@ -305,8 +305,9 @@ def test_l_autolog_est_coupe_apres_l_entrainement_trace_meme_en_cas_d_erreur():
 
 
 def test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele():
-    """N_JOBS fits at once, each forest on one core: a parallel search over parallel
-    forests would run up to N_JOBS x N_JOBS tasks."""
+    """One layer, inside the forest and by threads: the search itself spawns no worker
+    process. Worker processes broke on Windows under autolog (a task they could not
+    unpickle: MemoryError, BrokenProcessPool)."""
     from churn_saas import config
     from churn_saas.modelisation import construire_candidat, grille_hyperparametres
 
@@ -314,5 +315,5 @@ def test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele():
     recherche = _outil_chaine().construire_recherche(
         X, config, construire_candidat, grille_hyperparametres
     )
-    assert recherche.n_jobs == config.N_JOBS
-    assert recherche.estimator.get_params()["modele__n_jobs"] == 1
+    assert recherche.n_jobs == 1
+    assert recherche.estimator.get_params()["modele__n_jobs"] == config.N_JOBS

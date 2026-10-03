@@ -1,8 +1,9 @@
 """Tuning and calibration of the candidate models (phase 7, rules B2 and B3).
 
 `regler` searches a bounded grid on stratified folds, scored on PR-AUC, with ONE parallel
-layer: the search runs N_JOBS fits at once, each model on a single core - a parallel
-search over parallel models would oversubscribe the machine.
+layer, inside the model and by threads: combinations are evaluated one after the other,
+each model using N_JOBS threads. Worker processes would each receive a pickled copy of the
+task, which broke on Windows (MemoryError, BrokenProcessPool); threads share memory.
 
 `construire_calibre` wraps a model factory in a calibration step (B2): the calibrator is
 learnt inside each training fold by an inner cross-validation, never on the rows it is
@@ -35,14 +36,16 @@ def regler(
 ) -> ResultatReglage:
     """Grid search on PR-AUC over stratified folds; one parallel layer."""
     modele = construire_modele(X)
-    if "modele__n_jobs" in modele.get_params():
-        modele.set_params(modele__n_jobs=1)
+    # Only models that use threads: a logistic regression's n_jobs is ignored since
+    # scikit-learn 1.8, and setting it raises a FutureWarning.
+    if modele.get_params().get("modele__n_jobs") is not None:
+        modele.set_params(modele__n_jobs=N_JOBS)
     recherche = GridSearchCV(
         modele,
         grille,
         scoring="average_precision",
         cv=StratifiedKFold(PLIS_VALIDATION, shuffle=True, random_state=GRAINE),
-        n_jobs=N_JOBS,
+        n_jobs=1,
     ).fit(X, pd.Series(y).astype(int))
     colonnes = [f"param_{p}" for p in grille] + ["mean_test_score", "std_test_score"]
     tableau = (

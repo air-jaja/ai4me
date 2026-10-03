@@ -62,16 +62,22 @@ def ajuster_sous_autolog(mlflow, activer, ajuster):
 
 
 def construire_recherche(X, config, construire_candidat, grille_hyperparametres):
-    """The forest's grid search, with ONE parallel layer: N_JOBS fits at once, each forest
-    on a single core. The 7.0 bis fix had missed this tool: the search ran parallel forests."""
+    """The forest's grid search, with ONE parallel layer - inside the forest, by threads.
+
+    The combinations are evaluated one after the other, each forest building its trees on
+    N_JOBS threads. The previous layout - N_JOBS worker PROCESSES, each fed a pickled copy of
+    the task - broke on Windows under MLflow's autolog: a worker could not unpickle its task
+    (MemoryError, then BrokenProcessPool). Threads share memory: nothing is pickled, no
+    process is spawned, and the forest's tree building releases the GIL, so the cores stay
+    busy."""
     from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
     return GridSearchCV(
-        construire_candidat(X).set_params(modele__n_jobs=1),
+        construire_candidat(X).set_params(modele__n_jobs=config.N_JOBS),
         grille_hyperparametres()["candidat"],
         scoring="average_precision",
         cv=StratifiedKFold(config.PLIS_VALIDATION, shuffle=True, random_state=config.GRAINE),
-        n_jobs=config.N_JOBS,
+        n_jobs=1,
     )
 
 

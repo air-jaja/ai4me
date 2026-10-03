@@ -1,5 +1,5 @@
 {
-  "identite_execution": "11df963cb7ad9255",
+  "identite_execution": "cd63a48cba6d6b33",
   "regle": "B5 validée le 02/10/2026 (commit « decision(phase 7) »)",
   "r2_log_par_pli": {
     "régression linéaire": [
@@ -25,5 +25,5 @@
   "modele_retenu": "forêt de régression",
   "comptes": 4000,
   "artefact": "models/valeur_vie_client_v1.0_20261003.joblib",
-  "date": "2026-10-03 02:32"
+  "date": "2026-10-03 04:54"
 }

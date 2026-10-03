@@ -578,4 +578,4 @@ soutenance.
 | 16 | `test_l_identite_change_avec_le_code_les_donnees_le_protocole_ou_les_options` | _(sans description)_ | — |
 | 17 | `test_le_parallelisme_ne_change_pas_l_empreinte_du_protocole` | N_JOBS changes durations, never results: it must not change the identity. | — |
 | 18 | `test_l_autolog_est_coupe_apres_l_entrainement_trace_meme_en_cas_d_erreur` | Left on, autolog patched the 25 fits of the protocol evaluation too, and on Windows its threads on top of the forests' exhausted the process ("can't start new thread"). | — |
-| 19 | `test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele` | N_JOBS fits at once, each forest on one core: a parallel search over parallel forests would run up to N_JOBS x N_JOBS tasks. | — |
+| 19 | `test_la_grille_de_la_chaine_n_a_qu_une_couche_parallele` | One layer, inside the forest and by threads: the search itself spawns no worker process. | Worker processes broke on Windows under autolog (a task they could not unpickle: MemoryError, BrokenProcessPool). |
