@@ -37,6 +37,7 @@ RACINE = Path(__file__).resolve().parents[1]
 DESTINATION = RACINE / "resultats" / "modele_servi.json"
 SELECTION = RACINE / "resultats" / "selection_modele.json"
 EVALUATION = RACINE / "resultats" / "evaluation_finale.json"
+REFERENCE_ECHANTILLON = RACINE / "resultats" / "scores_echantillon_reference.csv"
 
 
 def construire_servi(construire_baseline, methode: str, config):
@@ -76,6 +77,7 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
     sys.path.insert(0, str(RACINE / "src"))
     warnings.simplefilter("ignore")
     import numpy as np
+    import pandas as pd
     from scipy.stats import spearmanr
 
     from churn_saas import config
@@ -184,7 +186,7 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
         variables=list(X.columns),
         responsable_validation="porteur du projet",
     )
-    chemin = sauvegarder_modele(servi, fiche)
+    chemin = sauvegarder_modele(servi, fiche, entrainement=(X, y), lignage=etiquettes)
     bilan = {
         "identite_execution": identite,
         "decision": "P4 option c et jeu de test option i, décidées par le porteur le 03/10/2026",
@@ -198,6 +200,22 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
         "artefact": chemin.relative_to(RACINE).as_posix(),
         "date": time.strftime("%Y-%m-%d %H:%M"),
     }
+    # Reference scores of the sample file (phase 10): reloading this model, or rebuilding it
+    # from code and data, must give exactly these probabilities. A functional check, not an
+    # evaluation: the 50 accounts were seen in training or belong to the test part.
+    from churn_saas.donnees import typer_pour_modele
+    from churn_saas.industrialisation.scoring import preparer
+
+    brut = pd.read_csv(config.FICHIER_ECHANTILLON, dtype=str, encoding="utf-8-sig")
+    catalogue = pd.read_csv(config.FICHIER_CATALOGUE, dtype=str, encoding="utf-8-sig")
+    entree = preparer(brut, catalogue=catalogue).drop(columns=["churn"], errors="ignore")
+    pd.DataFrame(
+        {
+            "client_id": brut["client_id"].to_numpy(),
+            "proba": servi.predict_proba(typer_pour_modele(entree))[:, 1],
+        }
+    ).to_csv(REFERENCE_ECHANTILLON, index=False, float_format="%.12f", lineterminator="\n")
+    bilan["scores_echantillon_reference"] = REFERENCE_ECHANTILLON.relative_to(RACINE).as_posix()
     sortie.write_text(
         json.dumps(bilan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n"
     )

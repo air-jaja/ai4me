@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**687 cas de test** issus de 370 fonctions, répartis sur 23 fichiers.
+**693 cas de test** issus de 374 fonctions, répartis sur 24 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -34,16 +34,17 @@ soutenance.
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
-| [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 4 |
+| [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 247 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 249 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
 | [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 107 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
 | [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 11 |
+| [test_exploitation.py](#test_exploitationpy) | `test_exploitation.py` | — | — | 3 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
@@ -279,6 +280,7 @@ soutenance.
 | 2 | `test_la_fiche_modele_est_remplie_depuis_le_contexte` | The card must be generated from training metadata, not hand-written. | Generation is what prevents the card and the artefact from drifting apart. |
 | 3 | `test_les_champs_absents_prennent_leur_valeur_par_defaut` | A missing field must fall back to the template default, never to an empty slot. | An unsubstituted placeholder shipped to a jury reads as an unfinished deliverable. |
 | 4 | `test_le_descriptif_est_lu_sur_l_objet_et_ecrit_dans_la_fiche` | What a card says about its model comes from the model: family, exact class, calibration and copies. | for a calibrated regression as served in phase 8. |
+| 5 | `test_un_modele_ne_s_enregistre_pas_sans_sa_carte_d_identite` | Training rows are mandatory; the card holds the file's hash, the rows' fingerprint and the input contract; the registry keeps one line per model file. | — |
 
 ### Dérive et règles d'alerte
 
@@ -318,8 +320,8 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×94)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×94)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×95)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×95)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×10)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_est_execute_en_entier_sans_erreur` | The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026). | Outputs in the repository are only worth something if they are trustworthy: either the notebook carries none, or it carries ONE complete run, top to bottom - execution counts 1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the code in order does not produce) - with no error, and no path of the machine it ran on. |
@@ -506,6 +508,18 @@ soutenance.
 | 9 | `test_le_serveur_mlflow_a_la_version_du_client` | The server and the client must speak the same MLflow version: a 3.16 client writing to a 3.1 server can fail on objects the server does not know (logged models). | Expected to fail until 03/10/2026 (register D-06); aligned since. |
 | 10 | `test_docker_compose_valide_le_fichier` | Docker's own reading of the file, with the example environment. | — |
 | 11 | `test_chaque_controle_de_sante_laisse_un_delai_de_grace` | On the development laptop the first start of PostgreSQL took about 40 s (create the database, stop, restart); with 5 checks of 5 s and no grace period, `db` was declared unhealthy and every service depending on it refused to start. | — |
+
+### test_exploitation.py
+
+**Fichier :** `tests/test_exploitation.py` — **Activité :** — — **Compétences :** —
+
+**Ce que ce fichier protège :** —
+
+| # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
+|---|---|---|---|
+| 1 | `test_le_modele_servi_se_reconstruit_a_l_identique` | Reproducibility (CI included, no models/ needed): refitting the served model from code and data gives the reference scores of the 50 sample accounts, to 1e-9. | — |
+| 2 | `test_le_modele_publie_redonne_les_scores_de_reference` | Fidelity: the file in service is the validated one (hash of the card) and gives the reference scores. | Skipped where models/ is empty (CI). |
+| 3 | `test_la_carte_du_modele_servi_designe_ses_donnees_d_entrainement` | Lineage: the training fingerprint written in the registry is the one recomputed now from the manifest's data and the frozen split. | — |
 
 ### test_industrialisation.py
 

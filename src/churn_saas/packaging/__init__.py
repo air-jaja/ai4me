@@ -5,7 +5,13 @@ from, what it can do, or what it cannot. The model card is therefore produced **
 the artefact, from the same metadata - never hand-written afterwards.
 """
 
-from .artefacts import FicheModele, charger_modele, sauvegarder_modele
+from .artefacts import (
+    FicheModele,
+    charger_modele,
+    empreinte_entrainement,
+    enregistrer_au_registre,
+    sauvegarder_modele,
+)
 from .dependances import decrire_modele, modules_utilises
 from .model_card import generer_model_card
 from .suivi import (
@@ -42,6 +48,8 @@ __all__ = [
     "sauvegarder_modele",
     "charger_modele",
     "generer_model_card",
+    "empreinte_entrainement",
+    "enregistrer_au_registre",
     # What a result depends on, what a model is (03/10/2026)
     "modules_utilises",
     "decrire_modele",

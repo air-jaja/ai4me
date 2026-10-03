@@ -392,7 +392,13 @@ def test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne(tmp_p
     assert chemin.read_bytes().endswith(b"\n"), "manifeste sans saut de ligne final"
 
     modele = DummyClassifier(strategy="prior").fit([[0], [1]], [0, 1])
-    artefact = sauvegarder_modele(modele, FicheModele(nom="essai", version="1.0"), dossier=tmp_path)
+    artefact = sauvegarder_modele(
+        modele,
+        FicheModele(nom="essai", version="1.0"),
+        dossier=tmp_path,
+        entrainement=(__import__("pandas").DataFrame({"a": [0, 1]}), [0, 1]),
+        registre=None,
+    )
     assert artefact.with_suffix(".json").read_bytes().endswith(b"\n"), (
         "fiche modèle sans saut de ligne final"
     )
