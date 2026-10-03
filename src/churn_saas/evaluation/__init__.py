@@ -11,6 +11,12 @@ therefore goes from metrics towards impact, never the other way round.
 """
 
 from .decision import prioriser, sensibilite_classement, seuil_par_compte
+from .explicabilite import (
+    contributions_lineaires,
+    expliquer_compte,
+    expliquer_par_contributions,
+    motif_lisible,
+)
 from .impact import mrr_a_risque, resume_impact
 from .metriques import evaluer, intervalle_confiance_rappel
 from .protocole import (
@@ -28,6 +34,11 @@ from .protocole import (
 from .valeur_vie import diagnostiquer_valeur_vie, valeur_encode_l_issue
 
 __all__ = [
+    # Explainability (B6, option C): exact linear contributions in production, SHAP for analysis
+    "contributions_lineaires",
+    "expliquer_par_contributions",
+    "expliquer_compte",
+    "motif_lisible",
     "evaluer",
     "intervalle_confiance_rappel",
     "seuil_par_compte",

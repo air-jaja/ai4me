@@ -409,18 +409,6 @@ condition = "Après le gel, si le temps le permet ; sans effet sur le livrable."
 # ═══ À arbitrer ══════════════════════════════════════════════════════════════
 
 [[element]]
-id = "A-03"
-titre = "SHAP (explication compte par compte)"
-nature = "outil"
-statut = "à arbitrer"
-phase = "9 · Validation"
-competence = "C4"
-section = "12"
-motif = "La régression logistique est retenue (03/10) : coefficient × valeur donne une explication locale exacte, sans SHAP. Recommandation : écarter. Décision du porteur attendue (B6)."
-source = "00.PLAN_ACTIONS § 2 · suivi_projet_ia"
-condition = "Après le choix du modèle final (phase 9)."
-
-[[element]]
 id = "A-05"
 titre = "Vérification de la pile Docker (V1 à V6)"
 nature = "action"
@@ -737,3 +725,16 @@ section = "9"
 motif = "R² (log) 0,805 contre 0,888 pour la forêt de régression ; gain très au-delà d'un écart-type (0,004) : la règle B5 retient la forêt."
 preuve = "test_le_modele_de_valeur_retenu_suit_la_regle_b5"
 source = "resultats/modele_valeur_vie.json"
+
+[[element]]
+id = "E-710"
+titre = "SHAP pour l'explication servie au conseiller (production)"
+nature = "outil"
+statut = "écarté"
+phase = "7 · Modélisation"
+date = "03/10/2026"
+competence = "C4"
+section = "9"
+motif = "Décision B6 du porteur (option C). Pour la régression logistique retenue, coefficient × (valeur − moyenne) donne l'explication exacte, sans dépendance ni approximation : c'est elle qui est servie. SHAP est conservé pour l'analyse seulement : comparer les facteurs de risque des trois modèles (§ 9.F)."
+preuve = "test_les_contributions_reconstituent_exactement_le_score"
+source = "décision B6 · tools/comparaison_explicabilite.py"

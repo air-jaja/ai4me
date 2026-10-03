@@ -1567,3 +1567,18 @@ def test_les_resultats_enregistres_de_la_phase_5_concordent_avec_les_chiffres_fi
     final = pd.DataFrame(bilan["final"]["Régression logistique"])
     assert final.filter(like="retenues").iloc[:, 0].mean() == pytest.approx(0.793, abs=0.01)
     assert sorted(bilan["candidates_au_retrait"]) == ["pays", "usage_par_actif"]
+
+
+def test_les_trois_modeles_s_appuient_sur_des_facteurs_communs():
+    """B6, option C: recorded SHAP comparison - integrations, seniority and support tickets
+    are among the five main factors of all three models; the two tree models agree almost
+    perfectly (rank correlation 0.96)."""
+    chemin = RACINE / "resultats" / "explicabilite_comparee.json"
+    if not chemin.exists():
+        pytest.skip("Comparaison des explications pas encore enregistrée.")
+    bilan = json.loads(chemin.read_text(encoding="utf-8"))
+    assert {"nb_integrations", "anciennete_mois", "tickets_support_90j"} <= set(
+        bilan["top_5_commun_aux_trois"]
+    )
+    for parts in bilan["parts"].values():
+        assert sum(parts.values()) == pytest.approx(1.0, abs=1e-3)

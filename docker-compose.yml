@@ -22,9 +22,9 @@ services:
     image: churn-saas-api:${IMAGE_TAG:-v1.0}
     ports: ["8000:8000"]
     environment:
-      CHURN_DB_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
-      CHURN_MODEL_PATH: /app/models/churn_model.joblib
-      MLFLOW_TRACKING_URI: http://mlflow:5000
+      CHURN_DB_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD:?renseigner DB_PASSWORD dans .env}@db:${DB_PORT:-5432}/${DB_NAME:-chrun}
+      CHURN_MODEL_PATH: ${CHURN_MODEL_PATH:-/app/models/churn_model.joblib}
+      MLFLOW_TRACKING_URI: http://mlflow:${MLFLOW_PORT:-5100}
     volumes:
       # Le modèle est monté, pas embarqué : un réentraînement ne force pas la
       # reconstruction de l'image (voir le commentaire du Dockerfile).
@@ -52,7 +52,7 @@ services:
     image: ghcr.io/mlflow/mlflow:v3.1.1
     ports: ["${MLFLOW_PORT}:${MLFLOW_PORT}"]
     environment:
-      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg://$:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
+      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg://$:${DB_PASSWORD :?renseigner DB_PASSWORD dans .env}@db:${DB_PORT:-5432}/${DB_NAME:-chrun}
     volumes: ["mlruns:/mlruns"]
     depends_on:
       db:
@@ -62,7 +62,7 @@ services:
     command: >
       mlflow server
       --host 0.0.0.0 --port ${MLFLOW_PORT}
-      --backend-store-uri postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
+      --backend-store-uri postgresql+psycopg://${DB_USER:-chrun}:${DB_PASSWORD:?renseigner DB_PASSWORD dans .env}@db:${DB_PORT:-5432}/${DB_NAME:-chrun}
       --default-artifact-root /mlruns
 
   prometheus:

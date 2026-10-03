@@ -254,6 +254,7 @@ OUTILS_ET_ARGUMENTS = {
     "retracer_mlflow.py": ["--help"],
     "nettoyer_mlflow.py": ["--help"],
     "selection_variables.py": ["--help"],
+    "comparaison_explicabilite.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],
@@ -416,3 +417,27 @@ def test_aucun_fichier_de_modele_n_est_versionne_hors_de_models():
         text=True,
     ).stdout.splitlines()
     assert "notebooks/essai.joblib" in ignores, "Un .joblib hors de models/ ne serait pas ignoré."
+
+
+def test_le_notebook_de_certification_lit_les_calculs_de_la_phase_5_sans_les_refaire():
+    """B1: sections 8.A to 8.C read tools/selection_variables.py's recorded results. A
+    notebook committed from an older working copy brought the computations back once
+    (11 minutes here, 15 to 20 on the laptop) without any test noticing."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    code = "\n".join(c.source for c in nb.cells if c.cell_type == "code")
+    assert "_phase5.en_objets(_phase5.executer())" in code
+    recalculs = [
+        f
+        for f in (
+            "comparer_jeux(",
+            "importances_par_permutation(",
+            "ablation_par_groupe(",
+            "tester_permutation(",
+            "courbe_apprentissage(",
+            "confirmer_retraits(",
+        )
+        if f in code
+    ]
+    assert not recalculs, f"Calculs de la phase 5 refaits dans le notebook : {recalculs}"

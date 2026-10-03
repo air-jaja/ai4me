@@ -36,6 +36,7 @@ from .graphiques import (
     tracer_courbes_apprentissage,
     tracer_courbes_pr_roc,
     tracer_demonstration_fuite,
+    tracer_facteurs_compares,
     tracer_fragmentation,
     tracer_importances,
     tracer_permutation,
@@ -101,6 +102,7 @@ __all__ = [
     "tracer_ablation",
     "tracer_importances",
     "tracer_demonstration_fuite",
+    "tracer_facteurs_compares",
     # Phase 6: baselines and evaluation protocol
     "tracer_courbes_pr_roc",
     "tracer_calibration",

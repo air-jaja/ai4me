@@ -1,0 +1,90 @@
+{
+  "identite_execution": "76d0f9c9ff0bf7b9",
+  "comptes_expliques": 1000,
+  "parts": {
+    "régression logistique": {
+      "jour_souscription": 0.04077,
+      "secteur": 0.04847,
+      "taille_entreprise": 0.0435,
+      "plan": 0.08838,
+      "anciennete_mois": 0.11749,
+      "sieges_souscrits": 0.01592,
+      "utilisateurs_actifs": 0.02712,
+      "taux_adoption_pct": 0.05815,
+      "connexions_30j": 0.00272,
+      "heures_usage_30j": 0.0186,
+      "fonctionnalites_utilisees": 0.00146,
+      "nb_integrations": 0.10787,
+      "derniere_connexion_jours": 0.11337,
+      "tickets_support_90j": 0.09696,
+      "delai_reponse_support_h": 0.04367,
+      "csat": 0.08774,
+      "retards_paiement_12m": 0.07779,
+      "revenu_mensuel_recurrent_eur": 0.01
+    },
+    "forêt aléatoire": {
+      "jour_souscription": 0.01389,
+      "secteur": 0.01481,
+      "taille_entreprise": 0.00868,
+      "plan": 0.0274,
+      "anciennete_mois": 0.1288,
+      "sieges_souscrits": 0.00862,
+      "utilisateurs_actifs": 0.0358,
+      "taux_adoption_pct": 0.05395,
+      "connexions_30j": 0.0662,
+      "heures_usage_30j": 0.0465,
+      "fonctionnalites_utilisees": 0.03927,
+      "nb_integrations": 0.14459,
+      "derniere_connexion_jours": 0.04858,
+      "tickets_support_90j": 0.10056,
+      "delai_reponse_support_h": 0.08681,
+      "csat": 0.07653,
+      "retards_paiement_12m": 0.08113,
+      "revenu_mensuel_recurrent_eur": 0.01789
+    },
+    "xgboost": {
+      "jour_souscription": 0.01378,
+      "secteur": 0.02245,
+      "taille_entreprise": 0.00954,
+      "plan": 0.01516,
+      "anciennete_mois": 0.12914,
+      "sieges_souscrits": 0.00756,
+      "utilisateurs_actifs": 0.01666,
+      "taux_adoption_pct": 0.04679,
+      "connexions_30j": 0.0555,
+      "heures_usage_30j": 0.02025,
+      "fonctionnalites_utilisees": 0.02273,
+      "nb_integrations": 0.15948,
+      "derniere_connexion_jours": 0.0784,
+      "tickets_support_90j": 0.11454,
+      "delai_reponse_support_h": 0.10508,
+      "csat": 0.08395,
+      "retards_paiement_12m": 0.08202,
+      "revenu_mensuel_recurrent_eur": 0.01694
+    }
+  },
+  "accords": [
+    {
+      "paire": "régression logistique / forêt aléatoire",
+      "corrélation des rangs (Spearman)": 0.56,
+      "variables communes au top 5": 3
+    },
+    {
+      "paire": "régression logistique / xgboost",
+      "corrélation des rangs (Spearman)": 0.593,
+      "variables communes au top 5": 3
+    },
+    {
+      "paire": "forêt aléatoire / xgboost",
+      "corrélation des rangs (Spearman)": 0.961,
+      "variables communes au top 5": 4
+    }
+  ],
+  "top_5_commun_aux_trois": [
+    "nb_integrations",
+    "anciennete_mois",
+    "tickets_support_90j"
+  ],
+  "duree_s": 5.6,
+  "date": "2026-10-03 07:14"
+}

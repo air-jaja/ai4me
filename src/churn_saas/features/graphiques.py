@@ -520,3 +520,30 @@ def tracer_baselines(par_pli: dict[str, pd.DataFrame], metrique: str = "PR-AUC")
     ax.set_title(f"Les trois références : {metrique}")
     fig.tight_layout()
     return fig
+
+
+def tracer_facteurs_compares(parts: pd.DataFrame, n: int = 10) -> Figure:
+    """Share of each model's attribution per variable, for the n most important on average.
+
+    `parts` has one column per model (SHAP shares summing to 1). Shares rather than raw
+    SHAP values: the families explain on different scales (log-odds, probability).
+    """
+    ordre = parts.mean(axis=1).sort_values(ascending=False).head(n).index[::-1]
+    fig, ax = plt.subplots(figsize=(8.5, 0.45 * n + 1.2))
+    hauteur = 0.8 / len(parts.columns)
+    couleurs = [PALETTE["principal"], PALETTE["accent"], PALETTE.get("neutre", "#7a7a7a")]
+    for k, modele in enumerate(parts.columns):
+        positions = [i + (k - (len(parts.columns) - 1) / 2) * hauteur for i in range(len(ordre))]
+        ax.barh(
+            positions,
+            parts.loc[ordre, modele],
+            height=hauteur,
+            color=couleurs[k % len(couleurs)],
+            label=modele,
+        )
+    ax.set_yticks(range(len(ordre)), ordre)
+    ax.set_xlabel("Part de l'attribution totale du modèle (SHAP)")
+    ax.legend(loc="lower right", frameon=False)
+    ax.set_title("Sur quoi chaque modèle s'appuie-t-il ?", fontsize=11)
+    fig.tight_layout()
+    return fig

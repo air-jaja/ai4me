@@ -589,7 +589,7 @@ séparation stratifiée · graine aléatoire fixée *(pour que les résultats so
 
 ---
 
-## 7 · Choix & entraînement du modèle *(🟢 terminé — B6 à décider)*
+## 7 · Choix & entraînement du modèle *(🟢 terminé)*
 
 **Bloc 7.0 — suivi des expériences (MLflow), 02/10.** Suivi local actif (SQLite, chemin absolu), XGBoost ajouté
 (`xgboost-cpu`), chaîne de quatre runs (forêt et XGBoost en autolog, régression logistique manuelle avec matrice
@@ -636,7 +636,7 @@ outils de vision par ordinateur (CNN, YOLO) sont sans objet : il n'y a pas d'ima
 *(MLflow, outil de traçabilité des expérimentations, est **différé à la phase 10** : il tracera le modèle
 final ; en phase 5, les résultats tiennent dans les tableaux du notebook — arbitrage du 01/10.)*
 📦 **Artefacts** : sections 8 et 9 du notebook · modèle entraîné
-**Statut** : **terminé** (03/10) — SHAP (B6) à décider
+**Statut** : **terminé** (03/10) — explicabilité B6 : option C (contributions linéaires en production, SHAP pour l'analyse)
 
 ---
 
