@@ -121,31 +121,43 @@ def test_les_carnets_respectent_le_format_notebook(carnet: Path):
     nbformat.validate(nb)
 
 
-def test_le_notebook_de_certification_reste_sans_sorties():
-    """The certification notebook ships without outputs until the freeze.
+def test_le_notebook_de_certification_est_execute_en_entier_sans_erreur():
+    """The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026).
 
-    Committed outputs would make every run produce a diff, drowning the real changes. The
-    notebook is executed at the freeze milestone, deliberately and once.
+    Outputs in the repository are only worth something if they are trustworthy: either the
+    notebook carries none, or it carries ONE complete run, top to bottom - execution counts
+    1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the
+    code in order does not produce) - with no error, and no path of the machine it ran on.
     """
+    import json
+    import re
 
-    """nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb",
-    as_version=4)
-    avec_sorties = [i for i, c in enumerate(nb.cells) if c.cell_type == "code"
-    and c.get("outputs")]
-    """
-    assert True, (
-        "Le notebook de certification n'est pas encore validé dans"
-        " notebooks/cas_usage_churn_saas.ipynb"
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    code = [c for c in nb.cells if c.cell_type == "code"]
+    compteurs = [c.get("execution_count") for c in code]
+    if all(n is None for n in compteurs) and not any(c.get("outputs") for c in code):
+        return  # not executed at all: allowed, nothing to trust or distrust
+    correction = (
+        " Le réexécuter en entier : `make executer-notebook` (sans make : "
+        "`uv run jupyter nbconvert --to notebook --execute --inplace "
+        "notebooks/cas_usage_churn_saas.ipynb`)."
     )
-
-    """assert not avec_sorties, (
-        f"Cellules avec sorties : {avec_sorties}. "
-        "Le notebook de certification est exécuté au moment du gel, pas avant. Pour le "
-        "rejouer sans l'écrire : `make executer-notebook` (sortie dans reports/execution/). "
-        "Pour retirer les sorties : `make vider-notebook` ; sans make, voir la cible "
-        "`vider-notebook` du Makefile, ou `git checkout notebooks/cas_usage_churn_saas.ipynb` "
-        "si le notebook n'a pas été modifié."
-    )"""
+    assert compteurs == list(range(1, len(code) + 1)), (
+        "Le notebook n'a pas été exécuté en une seule fois, du début à la fin : compteurs "
+        f"{compteurs[:12]}…" + correction
+    )
+    en_erreur = [i for i, c in enumerate(code) if any(o.output_type == "error" for o in c.outputs)]
+    assert not en_erreur, f"Cellules de code en erreur : {en_erreur}." + correction
+    chemin_local = re.compile(r"[A-Za-z]:\\\\Users|/home/[a-z]|/Users/[A-Za-z]")
+    avec_chemin = [
+        i for i, c in enumerate(code) if chemin_local.search(json.dumps(c.outputs, default=str))
+    ]
+    assert not avec_chemin, (
+        f"Sorties contenant un chemin du poste (cellules {avec_chemin}) : le livrable ne doit "
+        "dépendre d'aucune machine. Afficher des chemins relatifs à la racine du projet."
+    )
 
 
 def test_les_dependances_des_tests_sont_declarees():

@@ -49,16 +49,6 @@ repos:
         pass_filenames: false
         files: ^(tests/.*\.py|tools/catalogue_tests\.py)$
 
-      # Le notebook de certification reste sans sorties jusqu'au gel (règle 3).
-      # Exécuté dans Jupyter ou VS Code, il garde ses sorties : ce hook les retire
-      # et fait échouer le commit, qu'il suffit de relancer après `git add`.
-      - id: notebook-sans-sorties
-        name: notebook de certification sans sorties
-        entry: uv run jupyter nbconvert --clear-output --ClearMetadataPreprocessor.enabled=True --ClearMetadataPreprocessor.clear_notebook_metadata=False --inplace notebooks/cas_usage_churn_saas.ipynb
-        language: system
-        pass_filenames: false
-        files: ^notebooks/cas_usage_churn_saas\.ipynb$
-
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.21.2
     hooks:

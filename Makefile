@@ -169,18 +169,16 @@ notebook:
 
 # Rejoue le notebook sur les données réelles, kernel neuf. Contrôle exigé avant remise :
 # il doit se terminer sans erreur.
-# Run the certification notebook into reports/execution/, never in place: the versioned
-# notebook stays without outputs (rule 3) and no extra notebook lands in notebooks/.
+# Run the certification notebook in place, top to bottom: it is versioned WITH its outputs
+# (rule 3, revised 03/10/2026). An HTML copy goes to reports/execution/ (ignored).
 executer-notebook:
-	uv run jupyter nbconvert --to notebook --execute \
-		--ExecutePreprocessor.timeout=1800 \
-		--output-dir reports/execution --output cas_usage_churn_saas_execute.ipynb \
-		notebooks/cas_usage_churn_saas.ipynb
+	uv run jupyter nbconvert --to notebook --execute --inplace \
+		--ExecutePreprocessor.timeout=1800 notebooks/cas_usage_churn_saas.ipynb
 	uv run jupyter nbconvert --to html --output-dir reports/execution \
-		reports/execution/cas_usage_churn_saas_execute.ipynb
+		notebooks/cas_usage_churn_saas.ipynb
 
-# Remove the outputs of the certification notebook after running it in Jupyter or VS Code,
-# and the per-cell execution timestamps (cell metadata) - notebook metadata is kept.
+# Optional since rule 3 was revised: remove outputs and per-cell execution timestamps,
+# e.g. before a series of edits. Notebook metadata is kept.
 vider-notebook:
 	uv run jupyter nbconvert --clear-output --ClearMetadataPreprocessor.enabled=True \
 		--ClearMetadataPreprocessor.clear_notebook_metadata=False \
