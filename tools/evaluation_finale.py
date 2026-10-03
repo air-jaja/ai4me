@@ -181,6 +181,15 @@ def _publier(
     )
     chemin = sauvegarder_modele(modele, fiche)
     bilan["artefact"] = chemin.relative_to(RACINE).as_posix()
+    from churn_saas.packaging import decrire_modele
+
+    bilan["descriptif_modele"] = decrire_modele(modele)
+    if not ecrire:  # --publier: metadata only (the test part is not read), kept in the file
+        sortie.write_text(
+            json.dumps(bilan, ensure_ascii=False, indent=2, default=str) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
     if ecrire:
         sortie.parent.mkdir(parents=True, exist_ok=True)
         sortie.write_text(

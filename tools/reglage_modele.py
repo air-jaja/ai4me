@@ -110,6 +110,7 @@ def calculer() -> tuple[dict, dict]:
         optimisme_imbrique,
         regle_un_ecart_type,
     )
+    from churn_saas.packaging import decrire_modele
 
     resultat = executer_pipeline(config.FICHIER_COMPLET, config.FICHIER_CATALOGUE)
     parties = parties_du_decoupage(resultat)
@@ -224,6 +225,7 @@ def calculer() -> tuple[dict, dict]:
     for nom, modele in modeles.items():
         mesure = _mesurer_ressources(nom, modele, X, y, resultat.X, hypotheses)
         mesure["PR-AUC (25 plis)"] = round(float(np.mean(performances[nom])), 4)
+        mesure["famille"] = decrire_modele(modele)["famille"]
         mesures.append(mesure)
     ressources = pd.DataFrame(mesures)
     meilleur = ressources["PR-AUC (25 plis)"].idxmax()

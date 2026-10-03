@@ -10,7 +10,15 @@ An excellent model whose alerts change nothing to retention creates no value. Re
 therefore goes from metrics towards impact, never the other way round.
 """
 
-from .decision import prioriser, sensibilite_classement, seuil_par_compte
+from .decision import (
+    appliquer_regle,
+    distribution_seuils,
+    part_rentable_selon_hypotheses,
+    prioriser,
+    sensibilite_classement,
+    seuil_par_compte,
+    stabilite_liste,
+)
 from .explicabilite import (
     contributions_lineaires,
     expliquer_compte,
@@ -34,6 +42,11 @@ from .protocole import (
 from .valeur_vie import diagnostiquer_valeur_vie, valeur_encode_l_issue
 
 __all__ = [
+    # Phase 9: decision rule R3, stability R4
+    "appliquer_regle",
+    "distribution_seuils",
+    "part_rentable_selon_hypotheses",
+    "stabilite_liste",
     # Explainability (B6, option C): exact linear contributions in production, SHAP for analysis
     "contributions_lineaires",
     "expliquer_par_contributions",

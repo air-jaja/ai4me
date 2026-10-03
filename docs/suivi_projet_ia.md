@@ -671,18 +671,18 @@ CO₂e — quelques minutes et quelques grammes pour toute la phase (`docs/06.SO
 
 ---
 
-## 9 · Validation & explicabilité *(à faire — phase la plus différenciante)*
+## 9 · Validation & explicabilité *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Vérifier ce que vaut le modèle sur des données qu'il n'a jamais vues, traduire sa
 > performance en termes financiers, et rendre ses décisions compréhensibles. **L'explicabilité** est la
 > capacité à dire *pourquoi* un client précis a été signalé — sans elle, un conseiller ne peut pas agir de
 > façon pertinente.
 
-- [ ] Évaluer sur le jeu de test
-- [ ] Appliquer la règle de décision économique
-- [ ] Produire l'analyse d'importance des variables
-- [ ] Vérifier l'absence de traitement défavorable par secteur, pays et taille d'entreprise
-- [ ] Traduire la performance en euros
+- [x] Évaluer sur le jeu de test — *lecture unique de restitution (R6) : PR-AUC 0,761 [0,710 ; 0,807], validation croisée dans l'intervalle*
+- [x] Appliquer la règle de décision économique — *valeur nette, seuil par compte (×356), liste stable (Jaccard 0,87)*
+- [x] Produire l'analyse d'importance des variables — *permutation sur le test, contributions exactes, comparaison SHAP*
+- [x] Vérifier l'absence de traitement défavorable par secteur, pays et taille d'entreprise — *18 segments, un écart (Suisse) documenté et surveillé*
+- [x] Traduire la performance en euros — *57 % du revenu exposé couvert par 28 comptes ; ≈ 116 k€/mois préservés (test)*
 
 ### Le raisonnement central du projet
 
@@ -714,7 +714,7 @@ aux petits comptes, et un suivi du taux de départ **par segment** et non seulem
 courbe précision-rappel · importance par permutation · SHAP *(méthode expliquant la contribution de chaque
 variable à une prédiction individuelle — **option ouverte**)*
 📦 **Artefacts** : sections 9 et 12 du notebook · analyse d'équité · liste de comptes priorisée
-**Statut** : **à faire** — prévu le 26 septembre
+**Statut** : **terminé** (03/10)
 
 ---
 

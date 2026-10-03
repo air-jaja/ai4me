@@ -1,5 +1,5 @@
 {
-  "identite_execution": "b4cefd8f44fdcca8",
+  "identite_execution": "41874829696616ad",
   "comptes_expliques": 1000,
   "parts": {
     "régression logistique": {
@@ -85,6 +85,6 @@
     "anciennete_mois",
     "tickets_support_90j"
   ],
-  "duree_s": 6.3,
-  "date": "2026-10-03 11:33"
+  "duree_s": 5.4,
+  "date": "2026-10-03 15:40"
 }

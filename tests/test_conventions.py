@@ -257,6 +257,9 @@ OUTILS_ET_ARGUMENTS = {
     "comparaison_explicabilite.py": ["--help"],
     "reglage_modele.py": ["--help"],
     "modele_servi.py": ["--help"],
+    "regle_decision.py": ["--help"],
+    "restitution_test.py": ["--help"],
+    "validation_phase9.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],
@@ -450,3 +453,22 @@ def test_la_session_de_tests_n_utilise_jamais_le_dossier_temporaire_partage(tmp_
     very end (PermissionError on `pytest-current`), all tests having passed. Every session now
     works in a unique directory of its own (tests/conftest.py), which pytest never scans."""
     assert "pytest-of-" not in str(tmp_path), tmp_path
+
+
+def test_chaque_phase_close_a_son_carnet_de_travail():
+    """Rule 4 (revised 02/10): each phase has its executed working notebook. Phases 7 (the
+    modelling part) and 8 had none, and nothing noticed: the project tracker now says which
+    phases are closed, and each of them must have a `notebooks/0N*_*.ipynb`."""
+    import re
+
+    suivi = (RACINE / "docs" / "suivi_projet_ia.md").read_text(encoding="utf-8")
+    # Working notebooks were restored from phase 5 on (rule 4, 02/10/2026); phase 4 lives in
+    # section 7 of the certification notebook only.
+    closes = [
+        int(n)
+        for n in re.findall(r"^## (\d+) · [^\n]*🟢 terminé", suivi, flags=re.M)
+        if int(n) >= 5
+    ]
+    assert closes, "Aucune phase close trouvée dans le suivi."
+    sans_carnet = [n for n in closes if not list((RACINE / "notebooks").glob(f"{n:02d}*_*.ipynb"))]
+    assert not sans_carnet, f"Phases closes sans carnet de travail : {sans_carnet}"

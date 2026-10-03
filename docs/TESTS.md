@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**658 cas de test** issus de 358 fonctions, répartis sur 23 fichiers.
+**687 cas de test** issus de 370 fonctions, répartis sur 23 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -33,15 +33,15 @@ soutenance.
 | [Construction et contrôle des variables](#construction-et-contrôle-des-variables) | `test_features.py` | 2 · Contrôle des features | C3, C5 | 15 |
 | [Profilage et exploration](#profilage-et-exploration) | `test_exploration.py` | 1 · Données · 2 · Features | C3, C4 | 21 |
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
-| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 18 |
-| [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 3 |
+| [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
+| [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 4 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 229 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 247 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 102 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 107 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
 | [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 11 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
@@ -49,7 +49,7 @@ soutenance.
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
 | [test_resultats_reference.py](#test_resultats_referencepy) | `test_resultats_reference.py` | — | — | 5 |
-| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 25 |
+| [test_suivi.py](#test_suivipy) | `test_suivi.py` | — | — | 27 |
 
 ---
 
@@ -263,6 +263,9 @@ soutenance.
 | 16 | `test_a_egalite_le_plus_simple_l_emporte` | _(sans description)_ | — |
 | 17 | `test_les_contributions_reconstituent_exactement_le_score` | Base + sum of contributions = the model's log-odds, to the floating-point digit. | for a plain regression and for the calibrated average of its copies. |
 | 18 | `test_le_motif_du_conseiller_vient_des_contributions` | _(sans description)_ | — |
+| 19 | `test_un_compte_est_rentable_exactement_au_dessus_de_son_seuil` | R3: net expected value > 0 <=> p > p* = cost / (cost + efficacy x V); the treated accounts are profitable ones, within capacity. | — |
+| 20 | `test_l_efficacite_ne_change_pas_l_ordre_mais_le_nombre_de_comptes_rentables` | _(sans description)_ | — |
+| 21 | `test_la_stabilite_vaut_un_pour_un_modele_deterministe` | R4's measure: a model insensitive to resampling keeps exactly the same list. | — |
 
 ### Artefacts et fiche modèle
 
@@ -275,6 +278,7 @@ soutenance.
 | 1 | `test_le_modele_et_sa_fiche_sont_enregistres_ensemble` | A model must never be written without its card. | A model shipped alone is an orphan artefact: nobody knows what data it learned from, nor what it cannot do. |
 | 2 | `test_la_fiche_modele_est_remplie_depuis_le_contexte` | The card must be generated from training metadata, not hand-written. | Generation is what prevents the card and the artefact from drifting apart. |
 | 3 | `test_les_champs_absents_prennent_leur_valeur_par_defaut` | A missing field must fall back to the template default, never to an empty slot. | An unsubstituted placeholder shipped to a jury reads as an unfinished deliverable. |
+| 4 | `test_le_descriptif_est_lu_sur_l_objet_et_ecrit_dans_la_fiche` | What a card says about its model comes from the model: family, exact class, calibration and copies. | for a calibrated regression as served in phase 8. |
 
 ### Dérive et règles d'alerte
 
@@ -314,21 +318,22 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×90)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×90)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×94)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×94)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
-| 4 | `test_les_carnets_respectent_le_format_notebook` _(×7)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
+| 4 | `test_les_carnets_respectent_le_format_notebook` _(×10)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_est_execute_en_entier_sans_erreur` | The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026). | Outputs in the repository are only worth something if they are trustworthy: either the notebook carries none, or it carries ONE complete run, top to bottom - execution counts 1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the code in order does not produce) - with no error, and no path of the machine it ran on. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
-| 8 | `test_chaque_outil_reconfigure_ses_deux_sorties_avant_tout` _(×16)_ | Static half of the encoding check: `main()` forces stdout AND stderr to UTF-8 before parsing its arguments. | so `--help` and a real run go through the same streams. |
+| 8 | `test_chaque_outil_reconfigure_ses_deux_sorties_avant_tout` _(×19)_ | Static half of the encoding check: `main()` forces stdout AND stderr to UTF-8 before parsing its arguments. | so `--help` and a real run go through the same streams. |
 | 9 | `test_chaque_outil_est_couvert_par_le_controle_d_encodage` | A new tool must join the check below; a forgotten one would escape it silently. | — |
-| 10 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×16)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
+| 10 | `test_chaque_outil_ecrit_sa_sortie_en_utf8_quel_que_soit_le_terminal` _(×19)_ | Every tool prints UTF-8, even when the terminal announces cp1252. | A Windows terminal hands a piped child process cp1252: "…" became byte 0x85, which a UTF-8 reader cannot decode. That is how the materialisation test failed on the development laptop while passing on Linux. The terminal is simulated here, so the CI reproduces what Windows does. |
 | 11 | `test_les_erreurs_des_outils_s_ecrivent_aussi_en_utf8` | stderr too: the refusal of a second test evaluation opens with an accented capital, which a Windows terminal turned into byte 0xC9 - unreadable for a UTF-8 reader. | The first version of the encoding fix covered stdout only; this reproduces the refusal on a simulated cp1252 terminal. |
 | 12 | `test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne` | Files our code writes and Git versions must end with a newline. | Without it, `end-of-file-fixer` rewrites the file at every commit: the hook fails, the CI fails, and the diff shows a single character on a file whose content never changed. The noise then trains everyone to run `--no-verify`, which is how a guardrail dies. Covers the three writers: the data manifest, the model card written next to the serialised model, and the generated model card. |
 | 13 | `test_aucun_fichier_de_modele_n_est_versionne_hors_de_models` | Models live under models/ with their card, written by an absolute path; a model file elsewhere comes from a relative path (the legacy notebook wrote two into notebooks/). | Tracked or not yet ignored, it must not reach the repository. |
 | 14 | `test_le_notebook_de_certification_lit_les_calculs_de_la_phase_5_sans_les_refaire` | B1: sections 8.A to 8.C read tools/selection_variables.py's recorded results. | A notebook committed from an older working copy brought the computations back once (11 minutes here, 15 to 20 on the laptop) without any test noticing. |
 | 15 | `test_la_session_de_tests_n_utilise_jamais_le_dossier_temporaire_partage` | Windows: the shared %TEMP%\pytest-of-<user> tree made every campaign fail at the very end (PermissionError on `pytest-current`), all tests having passed. | Every session now works in a unique directory of its own (tests/conftest.py), which pytest never scans. |
+| 16 | `test_chaque_phase_close_a_son_carnet_de_travail` | Rule 4 (revised 02/10): each phase has its executed working notebook. | Phases 7 (the modelling part) and 8 had none, and nothing noticed: the project tracker now says which phases are closed, and each of them must have a `notebooks/0N*_*.ipynb`. |
 
 ### Stockage et cache des figures
 
@@ -459,6 +464,11 @@ soutenance.
 | 56 | `test_aucun_signe_de_surapprentissage_dans_le_reglage` | S1: every gap under 0.011 (threshold 0.05); S3: no selection optimism (-0.001); S4: final learning-curve gap 0.005; S5: calibration error 0.032. | — |
 | 57 | `test_le_reglage_ne_remplace_pas_le_champion` | P2: +0.0003 of paired PR-AUC (14 folds of 25), far under one standard deviation (0.019): the champion of phase 7 stays. | and the test part need not be read again. |
 | 58 | `test_le_modele_servi_est_equivalent_au_champion_evalue` | One calibrated copy instead of five (decision c, option i. | the test part is not read again): same PR-AUC (paired gain -0.0001, threshold 0.019), same calibration, same rankings (rank correlation 0.9999), within the per-account budget, about 5 times faster. |
+| 59 | `test_les_regles_de_la_phase_9_n_ont_pas_bouge_depuis_leur_validation` | R1 to R12, validated on 03/10/2026 before any computation and before the reporting read of the test part (rule 8). | — |
+| 60 | `test_la_regle_de_decision_enregistree_respecte_r3_et_r4` | Training part, served model: 2,833 of 4,000 accounts are profitable to contact, capacity treats 112 of them (churn rate 62.5 % against 28 %); thresholds span a factor of 356 between the 5 % and 95 % quantiles; the list survives model uncertainty (mean Jaccard 0.87, minimum 0.76, threshold 0.70). | — |
+| 61 | `test_les_scores_enregistres_redonnent_l_evaluation_de_la_phase_7` | The reporting read scored the same evaluated champion: same PR-AUC and ROC-AUC as the single evaluation of phase 7, and cross-validation inside the test interval. | — |
+| 62 | `test_les_niveaux_de_mrr_sont_emboites` | R8: preserved <= covered <= exposed; capacity-limited, the business point covers more revenue with 28 accounts (57 %) than the protocol point with 100 (28 %). | — |
+| 63 | `test_le_critere_d_equite_est_applique_tel_que_valide` | R9, recomputed from the recorded rows: one conclusive segment out of the criterion, Switzerland. | documented, not corrected (R12). |
 
 ### test_campagnes.py
 
@@ -619,3 +629,5 @@ soutenance.
 | 23 | `test_une_execution_en_echec_est_marquee_failed` | _(sans description)_ | — |
 | 24 | `test_le_perimetre_de_l_identite_est_le_code_qui_produit_les_resultats` | Correcting MLflow logging, a figure or another tool invalidated every recorded result three times in a day (15 minutes of recomputation each, identical figures). | The identity now covers the result-producing code and the producing tool only. |
 | 25 | `test_l_empreinte_ne_bouge_qu_avec_le_code_du_perimetre` | Same fingerprint after touching a file outside the perimeter; a new one after touching a file inside it. | — |
+| 26 | `test_le_perimetre_d_un_outil_suit_ses_imports_reels` | Phase 5's computations never import the decision rule: adding it to evaluation/ invalidated them anyway, under the package-level perimeter. | The import graph tells. |
+| 27 | `test_l_empreinte_d_un_outil_ignore_les_modules_qu_il_n_importe_pas` | _(sans description)_ | — |

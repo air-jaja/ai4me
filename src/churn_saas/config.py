@@ -102,6 +102,28 @@ SEUIL_ECART_APPRENTISSAGE = 0.02
 BUDGET_LOT_MENSUEL_S = 60.0
 BUDGET_COMPTE_MS = 50.0
 
+# --- Phase 9 rules R1 to R12, validated on 03/10/2026 BEFORE any computation (rule 8) ------
+# R1/R2: economic parameters are the framing hypotheses above; value = observed lifetime
+# value, the B5 model's prediction when it is missing.
+# R3: sensitivity of the share of profitable accounts to the hypotheses.
+EFFICACITES_SENSIBILITE = (0.15, 0.25, 0.40)
+VARIATION_COUT_SENSIBILITE = 0.30
+# R4: stability of the treated list under model uncertainty (bootstrap of the training part).
+REPETITIONS_STABILITE = 50
+SEUIL_JACCARD_STABILITE = 0.70
+# R5: business operating point = monthly capacity scaled to the evaluated sample; protocol
+# operating point = PART_HAUT_CLASSEMENT.
+# R6: the single reporting read of the test part (evaluated champion), scores recorded.
+MOTIF_LECTURE_RESTITUTION = "rapport de validation phase 9, aucune décision"
+# R9: fairness by segment, at the protocol operating point.
+SEGMENTS_EQUITE = ("secteur", "pays", "taille_entreprise")
+TAILLE_MIN_SEGMENT = 50
+DEPARTS_MIN_SEGMENT = 10
+RATIO_EQUITE = 0.8
+# R10: permutation importance on the test part.
+REPETITIONS_PERMUTATION_TEST = 30
+# R12: nothing is decided after the test part is read - anomalies are documented.
+
 # One parallel layer only: a parallel search over parallel forests would run up to
 # N_JOBS x N_JOBS tasks on N_JOBS cores (and, on Windows, trips joblib's memmapping cleanup).
 N_JOBS = _coeurs_paralleles()

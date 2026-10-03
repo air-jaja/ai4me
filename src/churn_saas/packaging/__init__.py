@@ -6,6 +6,7 @@ the artefact, from the same metadata - never hand-written afterwards.
 """
 
 from .artefacts import FicheModele, charger_modele, sauvegarder_modele
+from .dependances import decrire_modele, modules_utilises
 from .model_card import generer_model_card
 from .suivi import (
     CLES_IDENTITE_MODELE,
@@ -41,6 +42,9 @@ __all__ = [
     "sauvegarder_modele",
     "charger_modele",
     "generer_model_card",
+    # What a result depends on, what a model is (03/10/2026)
+    "modules_utilises",
+    "decrire_modele",
     # Experiment tracking and registry (MLflow, phase 7 bloc 7.0) - optional
     "CLES_MLFLOW",
     "uri_suivi",

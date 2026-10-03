@@ -1658,3 +1658,98 @@ def test_le_modele_servi_est_equivalent_au_champion_evalue():
         "sigmoid",
         1,
     )
+
+
+def test_les_regles_de_la_phase_9_n_ont_pas_bouge_depuis_leur_validation():
+    """R1 to R12, validated on 03/10/2026 before any computation and before the reporting
+    read of the test part (rule 8)."""
+    from churn_saas import config
+
+    assert (
+        config.EFFICACITE_RETENTION,
+        config.COUT_CONTACT_CSM_EUR,
+        config.CAPACITE_MENSUELLE,
+    ) == (0.25, 135.0, 140)
+    assert config.EFFICACITES_SENSIBILITE == (0.15, 0.25, 0.40)
+    assert config.VARIATION_COUT_SENSIBILITE == 0.30
+    assert (config.REPETITIONS_STABILITE, config.SEUIL_JACCARD_STABILITE) == (50, 0.70)
+    assert config.MOTIF_LECTURE_RESTITUTION == "rapport de validation phase 9, aucune décision"
+    assert config.SEGMENTS_EQUITE == ("secteur", "pays", "taille_entreprise")
+    assert (config.TAILLE_MIN_SEGMENT, config.DEPARTS_MIN_SEGMENT, config.RATIO_EQUITE) == (
+        50,
+        10,
+        0.8,
+    )
+    assert config.REPETITIONS_PERMUTATION_TEST == 30
+
+
+# --- Phase 9 · Decision rule and stability, recorded (no test part) -------------------------------
+def test_la_regle_de_decision_enregistree_respecte_r3_et_r4():
+    """Training part, served model: 2,833 of 4,000 accounts are profitable to contact,
+    capacity treats 112 of them (churn rate 62.5 % against 28 %); thresholds span a factor
+    of 356 between the 5 % and 95 % quantiles; the list survives model uncertainty
+    (mean Jaccard 0.87, minimum 0.76, threshold 0.70)."""
+    chemin = RACINE / "resultats" / "regle_decision.json"
+    if not chemin.exists():
+        pytest.skip("Règle de décision pas encore calculée (tools/regle_decision.py).")
+    from churn_saas.config import SEUIL_JACCARD_STABILITE
+
+    bilan = json.loads(chemin.read_text(encoding="utf-8"))
+    assert bilan["comptes_traites"] <= bilan["capacite_ramenee"] <= bilan["comptes_rentables"]
+    assert bilan["taux_de_depart_des_traites"] > 2 * bilan["taux_de_depart_global"]
+    assert bilan["stabilite"]["jaccard_moyen"] >= SEUIL_JACCARD_STABILITE
+    assert bilan["seuils"]["rapport 95 % / 5 %"] > 100
+
+
+# --- Phase 9 · The analyses of the recorded test scores (R7 to R9) --------------------------------
+def _validation_9() -> dict:
+    chemin = RACINE / "resultats" / "validation_phase9.json"
+    if not chemin.exists():
+        pytest.skip("Analyses de la phase 9 pas encore faites (tools/validation_phase9.py).")
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def test_les_scores_enregistres_redonnent_l_evaluation_de_la_phase_7():
+    """The reporting read scored the same evaluated champion: same PR-AUC and ROC-AUC as the
+    single evaluation of phase 7, and cross-validation inside the test interval."""
+    validation, evaluation = (
+        _validation_9(),
+        json.loads((RACINE / "resultats" / "evaluation_finale.json").read_text(encoding="utf-8")),
+    )
+    for m in ("PR-AUC", "ROC-AUC"):
+        assert validation["metriques"][m]["valeur"] == pytest.approx(
+            evaluation["metriques"][m], abs=1e-4
+        )
+    assert validation["ecart_validation_croisee_test"][
+        "validation croisée dans l'intervalle du test"
+    ]
+
+
+def test_les_niveaux_de_mrr_sont_emboites():
+    """R8: preserved <= covered <= exposed; capacity-limited, the business point covers more
+    revenue with 28 accounts (57 %) than the protocol point with 100 (28 %)."""
+    mrr = _validation_9()["mrr"]
+    for point in ("métier", "protocole"):
+        n = mrr[point]
+        assert (
+            n["préservé"]["€ par mois (test)"]
+            <= n["couvert"]["€ par mois (test)"]
+            <= n["exposé"]["€ par mois (test)"]
+        )
+    assert mrr["métier"]["part couverte"] > mrr["protocole"]["part couverte"]
+
+
+def test_le_critere_d_equite_est_applique_tel_que_valide():
+    """R9, recomputed from the recorded rows: one conclusive segment out of the criterion,
+    Switzerland - documented, not corrected (R12)."""
+    from churn_saas.config import RATIO_EQUITE
+
+    validation = _validation_9()
+    rappel_global = validation["matrices"]["protocole (10 % les plus risqués)"]["rappel"]
+    for ligne in validation["equite"]:
+        if not ligne["concluant"]:
+            continue
+        bas, haut = ligne["intervalle du rappel"]
+        attendu = ligne["rappel"] >= RATIO_EQUITE * rappel_global or bas <= rappel_global <= haut
+        assert ligne["critère respecté"] == attendu, ligne
+    assert validation["equite_synthese"]["segments concluants hors critère"] == ["pays = Suisse"]

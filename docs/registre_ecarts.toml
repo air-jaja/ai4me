@@ -421,20 +421,6 @@ source = "00.PLAN_ACTIONS § 8"
 condition = "Arbitrage du porteur au plus tard au gel du notebook."
 
 [[element]]
-id = "D-04"
-titre = "Sections 8 à 13 du notebook de certification, à réaligner sur la chaîne partagée"
-nature = "action"
-statut = "différé"
-phase = "5 · Features"
-date = "01/10/2026"
-competence = "C5"
-section = "8"
-motif = "Sections 0 à 10 réalignées (phases 1 à 7). Restent les sections 12 et 13 et la cellule-pont, réduite aux noms que la section 12 lit encore."
-preuve = "notebooks/cas_usage_churn_saas.ipynb"
-source = "livraison du réalignement des sections 0 à 7"
-condition = "Phases 9 à 11 : la cellule-pont est retirée quand la section 12 est réécrite."
-
-[[element]]
 id = "D-05"
 titre = "Phrase erronée imprimée par le carnet 03 sur les valeurs extrêmes"
 nature = "action"

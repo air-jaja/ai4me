@@ -1,5 +1,5 @@
 {
-  "identite_execution": "ccd19a48bab3e9a5",
+  "identite_execution": "f74d143463219f12",
   "regles": "B1 à B3 validées le 02/10/2026 (commit « decision(phase 7) »)",
   "reglages": {
     "forêt aléatoire": {
@@ -131,6 +131,43 @@
     ]
   },
   "modele_retenu": "régression logistique",
+  "descriptifs": {
+    "forêt aléatoire": {
+      "famille": "foret_aleatoire",
+      "estimateur": "sklearn.ensemble.RandomForestClassifier",
+      "calibration": null,
+      "copies": null,
+      "hyperparametres_cles": {
+        "class_weight": "None",
+        "max_depth": 10,
+        "min_samples_leaf": 5,
+        "n_estimators": 100
+      }
+    },
+    "xgboost": {
+      "famille": "xgboost",
+      "estimateur": "xgboost.sklearn.XGBClassifier",
+      "calibration": null,
+      "copies": null,
+      "hyperparametres_cles": {
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "min_child_weight": 5,
+        "n_estimators": 200
+      }
+    },
+    "régression logistique": {
+      "famille": "regression_logistique",
+      "estimateur": "sklearn.linear_model.LogisticRegression",
+      "calibration": null,
+      "copies": null,
+      "hyperparametres_cles": {
+        "C": 1.0,
+        "class_weight": "balanced",
+        "penalty": "l2"
+      }
+    }
+  },
   "calibration": {
     "methodes": {
       "sigmoid": {
@@ -147,5 +184,5 @@
     "methode_retenue": "sigmoid",
     "objectif_atteint": true
   },
-  "duree_s": 231.9
+  "duree_s": 210.6
 }

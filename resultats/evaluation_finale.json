@@ -42,5 +42,16 @@
   "empreinte_comptes_test": "c0e443d62fa63a85b1b81d974c8e5ea9e34abf4eaae231fe34fbf116cfb3349c",
   "empreinte_code": "719b55205a422cbe",
   "historique": [],
-  "artefact": "models/churn_saas_v1.0_20261003.joblib"
+  "artefact": "models/churn_saas_v1.0_20261003.joblib",
+  "descriptif_modele": {
+    "famille": "regression_logistique",
+    "estimateur": "sklearn.linear_model.LogisticRegression",
+    "calibration": "sigmoid",
+    "copies": 5,
+    "hyperparametres_cles": {
+      "C": 1.0,
+      "class_weight": "balanced",
+      "penalty": "l2"
+    }
+  }
 }
