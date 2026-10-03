@@ -30,6 +30,9 @@ make ressources         # mesure CE poste : ressources et temps de calcul (docs/
 make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter (+ run « données » MLflow)
 make mlflow             # interface MLflow sur le magasin du projet (mlruns/mlflow.db)
 make mlflow-nettoyer    # vide le magasin MLflow local (il se reconstruit : MLflow n'est qu'un journal)
+uv run python tools/liste_operationnelle.py   # liste du mois pour les conseillers (sorties/)
+uv run python tools/promouvoir.py --etat     # modèle en service ; --retour-arriere pour revenir au précédent
+uv run python tools/livraison.py --verifier  # paquet de livraison vérifié (docs/LIVRAISON.md)
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
