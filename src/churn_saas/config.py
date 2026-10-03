@@ -87,6 +87,21 @@ NIVEAU_CONFIANCE = 0.95
 # over 5 folds exceeds one standard deviation.
 MODELES_VALEUR_VIE = ("régression linéaire", "forêt de régression")
 
+# --- Phase 8 rules, validated on 03/10/2026 BEFORE any tuning computation (rule 8) ---------
+# S1/P3 - overfitting: a combination whose training PR-AUC exceeds its validation PR-AUC by
+# more than this gap is discarded.
+SEUIL_ECART_SURAPPRENTISSAGE = 0.05
+# S3 - nested cross-validation: selection optimism above this is reported and deducted.
+SEUIL_OPTIMISME_SELECTION = 0.01
+# S4 - learning curve of the retained configuration: final train-validation gap.
+SEUIL_ECART_APPRENTISSAGE = 0.02
+# P1 - within one standard deviation of the best, the most regularised (smallest C).
+# P2 - the champion is replaced only by a paired gain above one standard deviation (as B1).
+# P4 - resources: at equivalent performance (within one standard deviation), the cheapest;
+# budgets for the monthly batch (5,000 accounts) and for one account through the API.
+BUDGET_LOT_MENSUEL_S = 60.0
+BUDGET_COMPTE_MS = 50.0
+
 # One parallel layer only: a parallel search over parallel forests would run up to
 # N_JOBS x N_JOBS tasks on N_JOBS cores (and, on Windows, trips joblib's memmapping cleanup).
 N_JOBS = _coeurs_paralleles()

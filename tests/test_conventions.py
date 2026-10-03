@@ -255,6 +255,7 @@ OUTILS_ET_ARGUMENTS = {
     "nettoyer_mlflow.py": ["--help"],
     "selection_variables.py": ["--help"],
     "comparaison_explicabilite.py": ["--help"],
+    "reglage_modele.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],

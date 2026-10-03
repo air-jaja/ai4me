@@ -1582,3 +1582,56 @@ def test_les_trois_modeles_s_appuient_sur_des_facteurs_communs():
     )
     for parts in bilan["parts"].values():
         assert sum(parts.values()) == pytest.approx(1.0, abs=1e-3)
+
+
+def test_les_regles_de_la_phase_8_n_ont_pas_bouge_depuis_leur_validation():
+    """Validated on 03/10/2026 before any tuning computation (rule 8)."""
+    from churn_saas import config
+    from churn_saas.modelisation import grille_hyperparametres
+
+    assert (
+        config.SEUIL_ECART_SURAPPRENTISSAGE,
+        config.SEUIL_OPTIMISME_SELECTION,
+        config.SEUIL_ECART_APPRENTISSAGE,
+    ) == (0.05, 0.01, 0.02)
+    assert (config.BUDGET_LOT_MENSUEL_S, config.BUDGET_COMPTE_MS) == (60.0, 50.0)
+    grille = grille_hyperparametres()["regression"]
+    assert grille["modele__C"] == [0.01, 0.03, 0.1, 0.3, 1, 3, 10]
+    assert grille["modele__class_weight"] == [None, "balanced"]
+
+
+# --- Phase 8 · The recorded tuning follows the rules validated beforehand ------------------------
+def _reglage() -> dict:
+    chemin = RACINE / "resultats" / "reglage_modele.json"
+    if not chemin.exists():
+        pytest.skip("Réglage pas encore enregistré (tools/reglage_modele.py).")
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def test_le_reglage_retenu_suit_la_regle_d_un_ecart_type():
+    """P3 then P1, recomputed from the recorded grid: C=0.01 without weighting, the most
+    regularised combination within one standard deviation of the best (C=0.03)."""
+    from churn_saas.config import SEUIL_ECART_SURAPPRENTISSAGE
+    from churn_saas.modelisation import regle_un_ecart_type
+
+    reglage = _reglage()
+    table = pd.DataFrame(reglage["grille"])
+    assert regle_un_ecart_type(table, SEUIL_ECART_SURAPPRENTISSAGE) == reglage["indice_retenu"]
+
+
+def test_aucun_signe_de_surapprentissage_dans_le_reglage():
+    """S1: every gap under 0.011 (threshold 0.05); S3: no selection optimism (-0.001);
+    S4: final learning-curve gap 0.005; S5: calibration error 0.032."""
+    s = _reglage()["surapprentissage"]
+    assert s["S1_combinaisons_ecartees"] == 0 and s["S1_ecart_max_grille"] < 0.05
+    assert s["S3_conforme"] and s["S4_conforme"] and s["S5_conforme"]
+
+
+def test_le_reglage_ne_remplace_pas_le_champion():
+    """P2: +0.0003 of paired PR-AUC (14 folds of 25), far under one standard deviation
+    (0.019): the champion of phase 7 stays - and the test part need not be read again."""
+
+    reglage = _reglage()
+    table = pd.DataFrame(reglage["P2_comparaison"])
+    assert not table["gain significatif"].any()
+    assert reglage["P2_remplacer_le_champion"] is False

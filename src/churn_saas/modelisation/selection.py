@@ -79,6 +79,12 @@ def grille_hyperparametres() -> dict[str, dict[str, list]]:
             "modele__min_samples_leaf": [1, 5, 20],
             "modele__class_weight": [None, "balanced"],
         },
+        # Phase 8 (03/10/2026): the RETAINED model, never tuned so far - 7 x 2 = 14
+        # combinations, C on a log scale; penalty, solver and preprocessing stay fixed.
+        "regression": {
+            "modele__C": [0.01, 0.03, 0.1, 0.3, 1, 3, 10],
+            "modele__class_weight": [None, "balanced"],
+        },
         # B3 (02/10/2026): bounded like the forest's - 3 x 2 x 2 x 2 = 24 combinations.
         "xgboost": {
             "modele__max_depth": [3, 4, 6],

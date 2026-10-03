@@ -12,7 +12,14 @@ from .baseline import (
     construire_baseline_naive,
     construire_preprocesseur,
 )
-from .reglage import ResultatReglage, construire_calibre, regler
+from .reglage import (
+    ResultatReglage,
+    construire_calibre,
+    explorer_grille,
+    optimisme_imbrique,
+    regle_un_ecart_type,
+    regler,
+)
 from .selection import (
     POIDS_POSITIFS,
     comparer,
@@ -60,6 +67,10 @@ __all__ = [
     "regler",
     "ResultatReglage",
     "construire_calibre",
+    # Phase 8: tuning the retained model, overfitting watched
+    "explorer_grille",
+    "regle_un_ecart_type",
+    "optimisme_imbrique",
     # Phase 7, rule B5: customer lifetime value of recent accounts
     "construire_regression_valeur",
     "construire_foret_valeur",
