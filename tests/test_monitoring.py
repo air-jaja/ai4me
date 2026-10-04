@@ -47,6 +47,7 @@ def test_rapport_derive_marque_les_alertes():
     assert bool(rapport.loc[rapport["variable"] == "b", "alerte"].iloc[0]) is True
 
 
+@pytest.mark.phase11
 def test_chaque_regle_porte_une_action_et_un_responsable():
     """No rule may exist without a triggered action and a named owner.
 
@@ -56,12 +57,69 @@ def test_chaque_regle_porte_une_action_et_un_responsable():
     assert (regles["responsable"].str.len() > 0).all()
 
 
+@pytest.mark.phase11
 def test_alerte_declenchee_expose_son_action():
     """A triggered alert must surface what to do and who does it."""
-    resultat = evaluer_alertes({"PSI sur variables clés": True})
-    ligne = resultat.loc[resultat["indicateur"] == "PSI sur variables clés"].iloc[0]
+    resultat = evaluer_alertes({"Dérive des entrées et du score (PSI)": True})
+    ligne = resultat.loc[resultat["indicateur"] == "Dérive des entrées et du score (PSI)"].iloc[0]
     assert ligne["declenchee"]
     assert ligne["responsable"] != "—"
+
+
+# --- Phase 11 · Defaults validated before any implementation ----------------------------
+@pytest.mark.phase11
+def test_les_valeurs_par_defaut_de_la_phase_11_sont_figees():
+    """M1 to M9, validated by the project owner on 04/10/2026 (rule 8): changing one is a new
+    decision, committed alone - not an edit slipped into an implementation commit."""
+    from churn_saas.monitoring import alertes
+
+    assert alertes.CIBLE_COUVERTURE_REVENU == 0.50
+    assert alertes.FREQUENCE_REENTRAINEMENT_MOIS == 3
+    assert alertes.FENETRE_REENTRAINEMENT_MOIS == 12
+    assert (alertes.SEUIL_PSI_VARIABLE_CLE, alertes.SEUIL_PSI_MODERE) == (0.25, 0.10)
+    assert (alertes.NB_VARIABLES_PSI_MODERE, alertes.SEUIL_PSI_SCORE) == (3, 0.10)
+    assert alertes.FACTEUR_MANQUANTS == 2.0
+    assert alertes.ECART_VOLUME_SIGNALES == 0.30
+    assert alertes.SEGMENTS_SURVEILLES == (("pays", "Suisse"),)
+
+
+@pytest.mark.phase11
+def test_le_tableau_des_regles_reprend_les_valeurs_validees():
+    """The rule table is what people read; the constants are what the code will use. Each
+    validated value must appear in its rule, so the two cannot tell different stories."""
+    from churn_saas.monitoring import alertes
+
+    seuils = dict(zip(table_regles()["indicateur"], table_regles()["seuil"], strict=True))
+    assert (
+        f"{alertes.CIBLE_COUVERTURE_REVENU:.0%}".replace("%", " %")
+        in seuils["Couverture du revenu à risque"]
+    )
+    derive = seuils["Dérive des entrées et du score (PSI)"]
+    assert "0,25" in derive and derive.count("0,10") == 2 and "trois" in derive
+    assert f"{alertes.FACTEUR_MANQUANTS:.0f} ×" in seuils["Taux de manquants à l'entrée"]
+    assert (
+        f"{alertes.ECART_VOLUME_SIGNALES:.0%}".replace("%", " %")
+        in seuils["Volume de comptes signalés"]
+    )
+    assert "Rappel sur le segment Suisse" in seuils
+
+
+@pytest.mark.phase11
+def test_les_variables_cles_sont_les_quatre_premieres_de_la_phase_9():
+    """M5 names the key variables after the recorded permutation importance (R10), so the
+    list cannot silently drift from the result it claims to follow."""
+    import json
+    from pathlib import Path
+
+    from churn_saas.monitoring import alertes
+
+    restitution = json.loads(
+        (Path(__file__).resolve().parents[1] / "resultats" / "restitution_test.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    premieres = tuple(i["variable"] for i in restitution["importance_permutation"][:4])
+    assert alertes.VARIABLES_CLES == premieres
 
 
 # --- Phase 5 · Categorical stability ------------------------------------------------------

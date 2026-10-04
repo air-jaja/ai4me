@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**752 cas de test** issus de 392 fonctions, répartis sur 25 fichiers.
+**755 cas de test** issus de 395 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -35,7 +35,7 @@ soutenance.
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
-| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 9 |
+| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 12 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
 | [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 290 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
@@ -297,9 +297,12 @@ soutenance.
 | 4 | `test_rapport_derive_marque_les_alertes` | The drift report must flag the drifting variable and only that one. | — |
 | 5 | `test_chaque_regle_porte_une_action_et_un_responsable` | No rule may exist without a triggered action and a named owner. | A dashboard with no action owner produces no decision - it produces meetings. |
 | 6 | `test_alerte_declenchee_expose_son_action` | A triggered alert must surface what to do and who does it. | — |
-| 7 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
-| 8 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
-| 9 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
+| 7 | `test_les_valeurs_par_defaut_de_la_phase_11_sont_figees` | M1 to M9, validated by the project owner on 04/10/2026 (rule 8): changing one is a new decision, committed alone. | not an edit slipped into an implementation commit. |
+| 8 | `test_le_tableau_des_regles_reprend_les_valeurs_validees` | The rule table is what people read; the constants are what the code will use. | Each validated value must appear in its rule, so the two cannot tell different stories. |
+| 9 | `test_les_variables_cles_sont_les_quatre_premieres_de_la_phase_9` | M5 names the key variables after the recorded permutation importance (R10), so the list cannot silently drift from the result it claims to follow. | — |
+| 10 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
+| 11 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
+| 12 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
 
 ### Contrat d'affichage des notebooks
 

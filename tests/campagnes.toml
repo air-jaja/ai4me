@@ -18,7 +18,7 @@
 # Changer d'activité : ajouter une section [campagnes.<activite>], déclarer son marqueur
 # dans pyproject.toml ([tool.pytest.ini_options] markers), puis mettre à jour `activite`.
 
-activite = "phase10"
+activite = "phase11"
 
 [campagnes.phase5]
 titre = "Phase 5 · Feature engineering"
@@ -79,6 +79,20 @@ non_regression = [
 titre = "Phase 10 · Mise en exploitation"
 marqueur = "phase10"
 marqueurs_precedents = ["phase5", "phase6", "phase7", "phase9"]
+non_regression = [
+    "tests/test_non_regression.py",
+    "tests/test_materialisation.py",
+    "tests/test_industrialisation.py",
+    "tests/test_regression_casse_modalites.py",
+    "tests/test_structure.py",
+    "tests/test_conventions.py",
+    "tests/test_registre.py",
+]
+
+[campagnes.phase11]
+titre = "Phase 11 · Suivi et réentraînement"
+marqueur = "phase11"
+marqueurs_precedents = ["phase5", "phase6", "phase7", "phase9", "phase10"]
 non_regression = [
     "tests/test_non_regression.py",
     "tests/test_materialisation.py",

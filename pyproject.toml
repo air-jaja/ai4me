@@ -168,6 +168,7 @@ markers = [
     "phase7: tests des modules créés ou modifiés en phase 7 (suivi MLflow, modélisation)",
     "phase9: tests des modules créés ou modifiés en phase 9 (validation, décision, impact)",
     "phase10: tests des modules créés ou modifiés en phase 10 (mise en exploitation)",
+    "phase11: tests des modules créés ou modifiés en phase 11 (suivi et réentraînement)",
 ]
 
 # Un carnet est un livrable narratif, pas du code de production. Les règles levées
