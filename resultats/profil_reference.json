@@ -1,5 +1,5 @@
 {
- "identite_execution": "5caeff1cf872c7e6",
+ "identite_execution": "84c5f01e93da59a2",
  "decision": "M1 à M10 et S1 à S7, validées par le porteur le 04/10/2026",
  "source": "partie d'entraînement ; score du modèle servi réentraîné à l'identique",
  "modele": {
@@ -418,6 +418,6 @@
   "retards_paiement_12m": 0.04925,
   "revenu_mensuel_recurrent_eur": 0.02725
  },
- "duree_s": 0.9,
- "date": "2026-10-04 06:45"
+ "duree_s": 0.8,
+ "date": "2026-10-04 06:52"
 }

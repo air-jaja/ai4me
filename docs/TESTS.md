@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**780 cas de test** issus de 408 fonctions, répartis sur 25 fichiers.
+**782 cas de test** issus de 409 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -35,9 +35,9 @@ soutenance.
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
-| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 25 |
+| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 26 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 302 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 303 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
@@ -313,9 +313,10 @@ soutenance.
 | 20 | `test_la_derive_injectee_touche_les_parts_decidees` | S4: last login doubled on 30 % of the accounts, support delay blanked on 25 %. | — |
 | 21 | `test_la_derive_forte_ajoute_trente_jours_a_trente_pour_cent_des_comptes` | S8: 30 days added to the last login of 30 % of the accounts, nothing else touched. | — |
 | 22 | `test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet` | S3, S6, S7, S8: the report says it is simulated and what it proves; the drift-free month raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5). | — |
-| 23 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
-| 24 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
-| 25 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
+| 23 | `test_les_figures_du_suivi_se_tracent_depuis_le_rapport_et_disent_simule` | The working notebook's figures come from the recorded report, and each title carries the simulated mark: a monitoring chart lifted out of the notebook must not pass for production data. | — |
+| 24 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
+| 25 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
+| 26 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
 
 ### Contrat d'affichage des notebooks
 
@@ -340,7 +341,7 @@ soutenance.
 | 1 | `test_les_commentaires_sont_en_anglais` _(×111)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
 | 2 | `test_les_docstrings_sont_en_anglais` _(×111)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
-| 4 | `test_les_carnets_respectent_le_format_notebook` _(×11)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
+| 4 | `test_les_carnets_respectent_le_format_notebook` _(×12)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_est_execute_en_entier_sans_erreur` | The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026). | Outputs in the repository are only worth something if they are trustworthy: either the notebook carries none, or it carries ONE complete run, top to bottom - execution counts 1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the code in order does not produce) - with no error, and no path of the machine it ran on. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |

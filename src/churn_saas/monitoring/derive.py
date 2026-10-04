@@ -158,3 +158,10 @@ def psi_contre_profil(profil: dict, courant: pd.Series, epsilon: float = 1e-6) -
         cur.value_counts(normalize=True).reindex(modalites, fill_value=0).to_numpy(), epsilon, None
     )
     return float(np.sum((part_cur - part_ref) * np.log(part_cur / part_ref)))
+
+
+def parts_selon_profil(profil: dict, courant: pd.Series) -> list[float]:
+    """Shares of a numeric series in the profile's bins - what the PSI compares, to draw."""
+    courant = pd.to_numeric(pd.Series(courant), errors="coerce").dropna()
+    bornes = np.array([-np.inf, *profil["bornes_internes"], np.inf])
+    return [float(p) for p in np.histogram(courant, bins=bornes)[0] / max(len(courant), 1)]

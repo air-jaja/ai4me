@@ -704,3 +704,210 @@ def tracer_importance_test(importances: list[dict]) -> Figure:
     ax.set_title("Importance par permutation sur le jeu de test", fontsize=11)
     fig.tight_layout()
     return fig
+
+
+# --- Phase 11 · Monthly monitoring --------------------------------------------------------
+# Three months, three categorical slots in fixed order: the reference palette's first three
+# hues, validated all-pairs (colour-vision deficiencies included). Red and orange status
+# colours stay reserved for alerts: thresholds are drawn in grey ink and labelled.
+SERIES_MOIS = ("#2a78d6", "#eb6834", "#1baf7a")
+ENCRE, ENCRE_SECONDAIRE, CONTEXTE = "#0b0b0b", "#52514e", "#c3c2b7"
+
+
+def _mois(identifiant: str) -> str:
+    """Month identifier as the reader sees it: underscores to spaces, French accent restored."""
+    return identifiant.replace("_", " ").replace("derive", "dérive")
+
+
+def _virgule(valeur: float, decimales: int = 3) -> str:
+    return f"{valeur:.{decimales}f}".replace(".", ",")
+
+
+_AXE_VIRGULE = plt.FuncFormatter(lambda v, _: f"{v:g}".replace(".", ","))
+
+
+def _seuil(ax, valeur: float, texte: str, horizontal: bool = True) -> None:
+    trace = ax.axhline if horizontal else ax.axvline
+    trace(valeur, color=ENCRE_SECONDAIRE, ls="--", lw=1)
+    if horizontal:
+        ax.text(
+            1.0,
+            valeur,
+            f" {texte}",
+            transform=ax.get_yaxis_transform(),
+            va="center",
+            fontsize=8,
+            color=ENCRE_SECONDAIRE,
+        )
+    else:
+        ax.text(
+            valeur,
+            1.0,
+            f" {texte}",
+            transform=ax.get_xaxis_transform(),
+            va="bottom",
+            fontsize=8,
+            color=ENCRE_SECONDAIRE,
+        )
+
+
+def tracer_evolution_psi(
+    mois: list[dict], variables_cles: list[str], suivie: str, seuils: tuple[float, float]
+) -> Figure:
+    """M5 month after month: the PSI of the key variables and of the score, with the two
+    thresholds. `mois` is `resultats/suivi_simule.json`'s list; `suivie` is highlighted."""
+    etiquettes = [_mois(m["mois"]) for m in mois]
+    x = np.arange(len(mois))
+    fig, ax = plt.subplots(figsize=(8.4, 4.2))
+    for variable in variables_cles:
+        valeurs = [m["M5_derive"]["psi"][variable] for m in mois]
+        mise_en_avant = variable == suivie
+        ax.plot(
+            x,
+            valeurs,
+            marker="o",
+            ms=8 if mise_en_avant else 5,
+            lw=2 if mise_en_avant else 1.2,
+            color=SERIES_MOIS[0] if mise_en_avant else CONTEXTE,
+            zorder=3 if mise_en_avant else 2,
+            label=variable,
+        )
+        if mise_en_avant:
+            ax.annotate(
+                _virgule(valeurs[-1]),
+                (x[-1], valeurs[-1]),
+                xytext=(6, 0),
+                textcoords="offset points",
+                va="center",
+                fontsize=9,
+                color=ENCRE,
+            )
+    score = [m["M5_derive"]["verdict"]["psi du score"] for m in mois]
+    ax.plot(x, score, marker="s", ms=7, lw=2, ls="-", color=SERIES_MOIS[1], label="score", zorder=3)
+    ax.annotate(
+        f"score {_virgule(score[-1])}",
+        (x[-1], score[-1]),
+        xytext=(6, -10),
+        textcoords="offset points",
+        fontsize=9,
+        color=ENCRE,
+    )
+    modere, cle = seuils
+    _seuil(ax, modere, f"{_virgule(modere, 2)} : trois variables, ou le score")
+    _seuil(ax, cle, f"{_virgule(cle, 2)} : une variable clé")
+    ax.yaxis.set_major_formatter(_AXE_VIRGULE)
+    ax.set_xticks(x, etiquettes)
+    ax.set_ylim(0, max(cle * 1.3, max(score) * 1.2, ax.get_ylim()[1]))
+    ax.set_ylabel("PSI contre le profil de référence")
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(axis="y", color="#e6e6e3", lw=0.6)
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    ax.set_title(
+        "Dérive des variables clés et du score, mois après mois (M5) — SIMULÉ", fontsize=11
+    )
+    fig.tight_layout()
+    return fig
+
+
+def tracer_carte_psi(mois: list[dict]) -> Figure:
+    """Every model variable's PSI, one column per month: one hue, light to dark."""
+    table = pd.DataFrame({_mois(m["mois"]): m["M5_derive"]["psi"] for m in mois})
+    table = table.loc[table.max(axis=1).sort_values(ascending=False).index]
+    fig, ax = plt.subplots(figsize=(6.4, 0.3 * len(table) + 1.4))
+    image = ax.imshow(
+        table.to_numpy(),
+        cmap="Blues",
+        vmin=0,
+        vmax=max(0.25, float(table.max().max())),
+        aspect="auto",
+    )
+    for (i, j), valeur in np.ndenumerate(table.to_numpy()):
+        ax.text(
+            j,
+            i,
+            _virgule(valeur),
+            ha="center",
+            va="center",
+            fontsize=7,
+            color="white" if valeur > 0.15 else ENCRE,
+        )
+    ax.set_xticks(range(table.shape[1]), table.columns, fontsize=8)
+    ax.set_yticks(range(len(table)), table.index, fontsize=8)
+    fig.colorbar(image, ax=ax, shrink=0.6, label="PSI")
+    ax.set_title("PSI de chaque variable, par mois — SIMULÉ", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_deciles(bornes: list[float], parts: dict[str, list[float]], variable: str) -> Figure:
+    """Shares of one variable in the reference profile's bins: the reference, then each
+    batch - what the PSI compares, drawn. `parts` maps a label to its shares, in order."""
+    etiquettes = (
+        [f"≤ {bornes[0]:g}"]
+        + [f"{a:g} – {b:g}" for a, b in zip(bornes[:-1], bornes[1:], strict=True)]
+        + [f"> {bornes[-1]:g}"]
+    )
+    x = np.arange(len(etiquettes))
+    largeur = 0.8 / len(parts)
+    couleurs = [CONTEXTE, *SERIES_MOIS]
+    fig, ax = plt.subplots(figsize=(8.4, 3.8))
+    for k, (nom, valeurs) in enumerate(parts.items()):
+        ax.bar(
+            x + (k - (len(parts) - 1) / 2) * largeur,
+            valeurs,
+            width=largeur * 0.92,
+            color=couleurs[k],
+            label=nom,
+        )
+    ax.set_xticks(x, etiquettes, fontsize=8)
+    ax.set_xlabel(f"{variable} — tranches du profil de référence (jours)")
+    ax.set_ylabel("Part des comptes")
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(axis="y", color="#e6e6e3", lw=0.6)
+    ax.legend(frameon=False, fontsize=8)
+    ax.set_title(f"Répartition de {variable} : référence et lots — SIMULÉ", fontsize=11)
+    fig.tight_layout()
+    return fig
+
+
+def tracer_manquants(mois: list[dict], facteur: float) -> Figure:
+    """M8: each variable's missing share per month, against its threshold (twice training)."""
+    lignes = {
+        m["mois"]: pd.DataFrame(m["M8_manquants"]["table"]).set_index("variable") for m in mois
+    }
+    reference = next(iter(lignes.values()))
+    variables = reference.index[reference["part à l'entraînement"] > 0].tolist()
+    variables += [v for t in lignes.values() for v in t.index[t["alerte"]] if v not in variables]
+    fig, ax = plt.subplots(figsize=(8.4, 0.42 * len(variables) + 1.6))
+    y = np.arange(len(variables))
+    seuils = reference.loc[variables, "seuil"]
+    ax.scatter(
+        seuils,
+        y,
+        marker="|",
+        s=260,
+        color=ENCRE,
+        label=f"seuil ({facteur:g} × entraînement)",
+        zorder=2,
+    )
+    for k, (nom, table) in enumerate(lignes.items()):
+        ax.scatter(
+            table.loc[variables, "part du lot"],
+            y + (k - 1) * 0.18,
+            s=40,
+            color=SERIES_MOIS[k],
+            label=_mois(nom),
+            zorder=3,
+            edgecolors="white",
+            linewidths=1,
+        )
+    ax.set_yticks(y, variables, fontsize=8)
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
+    ax.set_xlabel("Part d'absents à l'entrée")
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(axis="x", color="#e6e6e3", lw=0.6)
+    ax.legend(frameon=False, fontsize=8, loc="upper right")
+    ax.set_title("Manquants à l'entrée contre leur seuil (M8) — SIMULÉ", fontsize=11)
+    fig.tight_layout()
+    return fig

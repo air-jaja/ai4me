@@ -390,6 +390,35 @@ def test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet():
     assert manifeste["fichiers"] == rapport["lots"]
 
 
+@pytest.mark.phase11
+def test_les_figures_du_suivi_se_tracent_depuis_le_rapport_et_disent_simule():
+    """The working notebook's figures come from the recorded report, and each title carries
+    the simulated mark: a monitoring chart lifted out of the notebook must not pass for
+    production data."""
+    import json
+    from pathlib import Path
+
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from churn_saas.features import tracer_carte_psi, tracer_evolution_psi, tracer_manquants
+
+    racine = Path(__file__).resolve().parents[1]
+    rapport = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))
+    profil = json.loads(
+        (racine / "resultats" / "profil_reference.json").read_text(encoding="utf-8")
+    )
+    figures = [
+        tracer_evolution_psi(
+            rapport["mois"], profil["variables_cles"], "derniere_connexion_jours", (0.10, 0.25)
+        ),
+        tracer_carte_psi(rapport["mois"]),
+        tracer_manquants(rapport["mois"], 2.0),
+    ]
+    for figure in figures:
+        assert "SIMULÉ" in figure.axes[0].get_title()
+
+
 # --- Phase 5 · Categorical stability ------------------------------------------------------
 @pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():

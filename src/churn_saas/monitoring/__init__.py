@@ -12,6 +12,7 @@ is useless. The two modules are inseparable.
 from .alertes import REGLES_ALERTE, evaluer_alertes, table_regles
 from .derive import (
     ks_deux_echantillons,
+    parts_selon_profil,
     profil_variable,
     psi,
     psi_categoriel,
@@ -27,6 +28,7 @@ __all__ = [
     "psi_categoriel",
     "profil_variable",
     "psi_contre_profil",
+    "parts_selon_profil",
     "ks_deux_echantillons",
     "rapport_derive",
     "REGLES_ALERTE",
