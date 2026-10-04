@@ -89,3 +89,22 @@ def injecter_derive_forte(lot, generateur):
         for i, v in zip(lignes, valeurs, strict=True)
     ]
     return lot
+
+
+def simuler_issues(groupes, probabilites, generateur):
+    """S5: each account's outcome three months later, drawn from the model's probability -
+    lowered by the efficacy hypothesis for the accounts actually contacted.
+
+    Outcomes drawn this way make the model right by construction (S6): they exercise the
+    quarterly review, they measure nothing about the model.
+    """
+    import numpy as np
+    import pandas as pd
+
+    risque = np.where(
+        np.asarray(groupes) == "contact",
+        np.asarray(probabilites) * (1 - REDUCTION_RISQUE_CONTACT),
+        np.asarray(probabilites),
+    )
+    partis = generateur.random(len(risque)) < risque
+    return pd.Series(np.where(partis, "parti", "reste"), index=getattr(groupes, "index", None))

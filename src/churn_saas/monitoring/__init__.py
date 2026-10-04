@@ -20,8 +20,24 @@ from .derive import (
     rapport_derive,
 )
 from .exporteur import publier_lot
-from .simulation import completer_lot, comptes_reels, injecter_derive, injecter_derive_forte
-from .suivi import derive_combinee, ecart_volume, manquants_relatifs, mesures_du_mois
+from .simulation import (
+    completer_lot,
+    comptes_reels,
+    injecter_derive,
+    injecter_derive_forte,
+    simuler_issues,
+)
+from .suivi import (
+    couverture_revenu,
+    derive_combinee,
+    ecart_volume,
+    manquants_relatifs,
+    mesures_du_mois,
+    mesures_du_trimestre,
+    pr_auc_en_production,
+    rappel_segment,
+    retention_contre_temoin,
+)
 
 __all__ = [
     "psi",
@@ -43,4 +59,10 @@ __all__ = [
     "completer_lot",
     "injecter_derive",
     "injecter_derive_forte",
+    "simuler_issues",
+    "couverture_revenu",
+    "rappel_segment",
+    "retention_contre_temoin",
+    "pr_auc_en_production",
+    "mesures_du_trimestre",
 ]

@@ -419,6 +419,126 @@ def test_les_figures_du_suivi_se_tracent_depuis_le_rapport_et_disent_simule():
         assert "SIMULÉ" in figure.axes[0].get_title()
 
 
+# --- Phase 11 · Quarterly review on simulated outcomes (part B) ----------------------------
+@pytest.mark.phase11
+def test_les_issues_simulees_reduisent_le_risque_des_seuls_comptes_contactes():
+    """S5: a contacted account's risk is lowered by the efficacy hypothesis; nobody else's."""
+    from churn_saas.monitoring import simuler_issues
+
+    groupes = pd.Series(["contact"] * 20_000 + ["temoin"] * 20_000)
+    issues = simuler_issues(groupes, np.full(40_000, 0.8), np.random.default_rng(0))
+    parti = issues == "parti"
+    assert parti[groupes == "contact"].mean() == pytest.approx(0.8 * 0.75, abs=0.01)
+    assert parti[groupes == "temoin"].mean() == pytest.approx(0.8, abs=0.01)
+
+
+def _issues(n_partis_signales, n_partis_non_signales, mrr=100.0, pays="France"):
+    lignes = [(True, True)] * n_partis_signales + [(True, False)] * n_partis_non_signales
+    return pd.DataFrame(
+        {
+            "parti": [p for p, _ in lignes],
+            "signale": [s for _, s in lignes],
+            "mrr": mrr,
+            "pays": pays,
+        }
+    )
+
+
+@pytest.mark.phase11
+def test_la_couverture_du_revenu_se_compare_a_la_cible():
+    """M1: covered MRR over exposed MRR, against 50 %."""
+    from churn_saas.monitoring import couverture_revenu
+
+    assert couverture_revenu(_issues(6, 4))["part couverte"] == 0.6
+    assert not couverture_revenu(_issues(6, 4))["déclenchée"]
+    assert couverture_revenu(_issues(4, 6))["déclenchée"]
+
+
+@pytest.mark.phase11
+def test_le_segment_surveille_suit_le_critere_r9():
+    """M7: triggered only when conclusive, under 0.8 x the global recall AND its interval
+    excludes the global recall; a small segment is never conclusive."""
+    from churn_saas.monitoring import rappel_segment
+
+    issues = pd.concat([_issues(300, 300), _issues(10, 190, pays="Suisse")], ignore_index=True)
+    verdict = rappel_segment(issues, "pays", "Suisse", 0.8, 50, 10, np.random.default_rng(0))
+    assert verdict["concluant"] and verdict["déclenchée"]
+    pareil = pd.concat([_issues(300, 300), _issues(100, 100, pays="Suisse")], ignore_index=True)
+    assert not rappel_segment(pareil, "pays", "Suisse", 0.8, 50, 10, np.random.default_rng(0))[
+        "déclenchée"
+    ]
+    petit = pd.concat([_issues(300, 300), _issues(0, 8, pays="Suisse")], ignore_index=True)
+    assert not rappel_segment(petit, "pays", "Suisse", 0.8, 50, 10, np.random.default_rng(0))[
+        "concluant"
+    ]
+
+
+@pytest.mark.phase11
+def test_la_retention_contre_temoin_exige_un_effet_significatif():
+    """A clear effect on large groups passes; the same effect on a handful of control
+    accounts is not significant - the rule triggers."""
+    from churn_saas.monitoring import retention_contre_temoin
+
+    def groupes(n_contact, n_temoin):
+        return pd.DataFrame(
+            {
+                "groupe": ["contact"] * n_contact + ["temoin"] * n_temoin,
+                "parti": [i % 10 < 3 for i in range(n_contact)]
+                + [i % 10 < 6 for i in range(n_temoin)],
+            }
+        )
+
+    assert not retention_contre_temoin(groupes(2_000, 2_000), np.random.default_rng(0))[
+        "déclenchée"
+    ]
+    assert retention_contre_temoin(groupes(400, 10), np.random.default_rng(0))["déclenchée"]
+
+
+@pytest.mark.phase11
+def test_le_pr_auc_en_production_ignore_les_comptes_contactes():
+    """A contact changes the outcome it would score: contacted accounts are left out."""
+    from churn_saas.monitoring import pr_auc_en_production
+
+    issues = pd.DataFrame(
+        {
+            "groupe": ["non_retenu"] * 4 + ["contact"] * 2,
+            "parti": [True, True, False, False, False, False],
+            "score": [0.9, 0.8, 0.2, 0.1, 0.99, 0.98],
+        }
+    )
+    verdict = pr_auc_en_production(issues, reference=0.8)
+    assert verdict["comptes"] == 4 and verdict["PR-AUC"] == 1.0 and not verdict["déclenchée"]
+
+
+@pytest.mark.phase11
+def test_la_revue_trimestrielle_simulee_est_enregistree_et_marquee():
+    """Part B in the recorded report: simulated outcomes on file (hashes match), the four
+    quarterly verdicts tied to existing rules, the simulated mark."""
+    import hashlib
+    import json
+    from pathlib import Path
+
+    racine = Path(__file__).resolve().parents[1]
+    revue = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))[
+        "revue_trimestrielle"
+    ]
+    assert revue["mention"] == "SIMULÉ — démonstration"
+    for nom, fichier in revue["issues"].items():
+        contenu = (racine / "data" / "simulation" / nom).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(contenu).hexdigest() == fichier["sha256"], nom
+    indicateurs = {a["indicateur"] for a in revue["alertes"]}
+    assert (
+        {
+            "Couverture du revenu à risque",
+            "Rappel sur le segment Suisse",
+            "Rétention des comptes traités",
+            "PR-AUC en production",
+        }
+        <= indicateurs
+        == set(table_regles()["indicateur"])
+    )
+
+
 # --- Phase 5 · Categorical stability ------------------------------------------------------
 @pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():

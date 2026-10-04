@@ -120,6 +120,7 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
     lots = generer(regenerer)
     sys.path.insert(0, str(RACINE / "src"))
     warnings.simplefilter("ignore")
+    import numpy as np
     import pandas as pd
 
     from churn_saas import config
@@ -133,13 +134,20 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
     from churn_saas.industrialisation import construire_liste
     from churn_saas.modelisation import construire_baseline
     from churn_saas.monitoring import (
+        couverture_revenu,
         derive_combinee,
         ecart_volume,
         evaluer_alertes,
         manquants_relatifs,
         mesures_du_mois,
+        mesures_du_trimestre,
+        pr_auc_en_production,
+        rappel_segment,
+        retention_contre_temoin,
+        simuler_issues,
     )
     from churn_saas.monitoring import simulation as s
+    from churn_saas.monitoring.alertes import SEGMENTS_SURVEILLES
     from churn_saas.packaging import etiquettes_tracabilite, identite_execution
 
     profil = json.loads(PROFIL.read_text(encoding="utf-8"))
@@ -166,8 +174,11 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
     modele.fit(fond, y)
     catalogue = pd.read_csv(config.FICHIER_CATALOGUE, dtype=str, encoding="utf-8-sig")
     retenus = {"À contacter ce mois", "Groupe témoin (pas de contact)"}
+    groupes = {"À contacter ce mois": "contact", "Groupe témoin (pas de contact)": "temoin"}
+    # S5: the outcomes have their own stream, so the batches' draws stay as they are.
+    generateur_issues = np.random.default_rng([s.GRAINE_SIMULATION, 5])
 
-    mois_rapportes, precedent = [], None
+    mois_rapportes, issues_du_trimestre, fichiers_issues, precedent = [], [], {}, None
     for mois, date_liste in zip(_mois(s), DATES_DES_MOIS, strict=True):
         brut = pd.read_csv(s.DOSSIER_SIMULATION / _fichier(mois), dtype=str, encoding="utf-8-sig")
         silver = construire_silver_standard(brut, catalogue=catalogue)
@@ -191,6 +202,34 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
         )
         signales = int(liste["Action recommandée"].isin(retenus).sum())
         volume = ecart_volume(signales, precedent)
+        action = liste.set_index("Compte")["Action recommandée"]
+        issues = pd.DataFrame(
+            {
+                "client_id": brut["client_id"].to_numpy(),
+                "mois_liste": date_liste,
+                "groupe": action.reindex(brut["client_id"])
+                .map(groupes)
+                .fillna("non_retenu")
+                .to_numpy(),
+            },
+            index=X.index,
+        )
+        issues["resultat_3_mois"] = simuler_issues(issues["groupe"], score, generateur_issues)
+        chemin_issues = s.DOSSIER_SIMULATION / f"issues_simulees_{mois}.csv"
+        issues.to_csv(chemin_issues, index=False, encoding="utf-8-sig", lineterminator="\n")
+        fichiers_issues[chemin_issues.name] = {
+            "lignes": len(issues),
+            "sha256": _empreinte(chemin_issues),
+        }
+        issues_du_trimestre.append(
+            issues.assign(
+                parti=issues["resultat_3_mois"] == "parti",
+                signale=issues["groupe"] != "non_retenu",
+                score=score,
+                mrr=X["revenu_mensuel_recurrent_eur"],
+                pays=silver.loc[X.index, "pays"],
+            )
+        )
         alertes = evaluer_alertes(mesures_du_mois(derive, manquants, volume))
         mois_rapportes.append(
             {
@@ -213,6 +252,37 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
         )
         precedent = signales
 
+    # The quarterly review, on the three months' outcomes (part B; S5, S6).
+    trimestre = pd.concat(issues_du_trimestre, ignore_index=True)
+    generateur_revue = np.random.default_rng([s.GRAINE_SIMULATION, 6])
+    reference = json.loads(
+        (RACINE / "resultats" / "validation_phase9.json").read_text(encoding="utf-8")
+    )["metriques"]["PR-AUC"]["valeur"]
+    couverture = couverture_revenu(trimestre)
+    colonne, modalite = SEGMENTS_SURVEILLES[0]
+    suisse = rappel_segment(
+        trimestre,
+        colonne,
+        modalite,
+        config.RATIO_EQUITE,
+        config.TAILLE_MIN_SEGMENT,
+        config.DEPARTS_MIN_SEGMENT,
+        generateur_revue,
+    )
+    retention = retention_contre_temoin(trimestre, generateur_revue)
+    pr_auc = pr_auc_en_production(trimestre, reference)
+    alertes_trimestre = evaluer_alertes(mesures_du_trimestre(couverture, suisse, retention, pr_auc))
+    revue = {
+        "mention": s.MENTION,
+        "comptes": int(len(trimestre)),
+        "issues": fichiers_issues,
+        "M1_couverture": couverture,
+        "M7_suisse": suisse,
+        "retention_contre_temoin": retention,
+        "pr_auc_en_production": pr_auc,
+        "alertes": json.loads(alertes_trimestre.to_json(orient="records", force_ascii=False)),
+    }
+
     bilan = {
         "identite_execution": identite,
         "mention": s.MENTION,
@@ -220,6 +290,7 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
         "profil": {"modele": profil["modele"], "identite_execution": profil["identite_execution"]},
         "lots": lots["fichiers"],
         "mois": mois_rapportes,
+        "revue_trimestrielle": revue,
         "duree_s": round(time.perf_counter() - debut, 1),
         "date": time.strftime("%Y-%m-%d %H:%M"),
     }

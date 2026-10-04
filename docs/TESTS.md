@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**782 cas de test** issus de 409 fonctions, répartis sur 25 fichiers.
+**788 cas de test** issus de 415 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -35,7 +35,7 @@ soutenance.
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
-| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 26 |
+| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 32 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
 | [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 303 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
@@ -314,9 +314,15 @@ soutenance.
 | 21 | `test_la_derive_forte_ajoute_trente_jours_a_trente_pour_cent_des_comptes` | S8: 30 days added to the last login of 30 % of the accounts, nothing else touched. | — |
 | 22 | `test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet` | S3, S6, S7, S8: the report says it is simulated and what it proves; the drift-free month raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5). | — |
 | 23 | `test_les_figures_du_suivi_se_tracent_depuis_le_rapport_et_disent_simule` | The working notebook's figures come from the recorded report, and each title carries the simulated mark: a monitoring chart lifted out of the notebook must not pass for production data. | — |
-| 24 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
-| 25 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
-| 26 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
+| 24 | `test_les_issues_simulees_reduisent_le_risque_des_seuls_comptes_contactes` | S5: a contacted account's risk is lowered by the efficacy hypothesis; nobody else's. | — |
+| 25 | `test_la_couverture_du_revenu_se_compare_a_la_cible` | M1: covered MRR over exposed MRR, against 50 %. | — |
+| 26 | `test_le_segment_surveille_suit_le_critere_r9` | M7: triggered only when conclusive, under 0.8 x the global recall AND its interval excludes the global recall; a small segment is never conclusive. | — |
+| 27 | `test_la_retention_contre_temoin_exige_un_effet_significatif` | A clear effect on large groups passes; the same effect on a handful of control accounts is not significant. | the rule triggers. |
+| 28 | `test_le_pr_auc_en_production_ignore_les_comptes_contactes` | A contact changes the outcome it would score: contacted accounts are left out. | — |
+| 29 | `test_la_revue_trimestrielle_simulee_est_enregistree_et_marquee` | Part B in the recorded report: simulated outcomes on file (hashes match), the four quarterly verdicts tied to existing rules, the simulated mark. | — |
+| 30 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
+| 31 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
+| 32 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
 
 ### Contrat d'affichage des notebooks
 
