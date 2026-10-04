@@ -88,8 +88,20 @@ def _chaines_lineaires(modele: Any) -> list:
     return [modele]
 
 
+def moyennes_de_reference(modele: Any, fond: pd.DataFrame) -> list:
+    """The baseline of the explanations, computed once: the mean transformed account of
+    `fond`, per calibrated copy. A service scoring one account at a time passes it to
+    `contributions_lineaires` instead of re-transforming the whole training set per call."""
+    import numpy as np
+
+    return [
+        np.asarray(chaine.named_steps["preparation"].transform(fond), dtype=float).mean(axis=0)
+        for chaine in _chaines_lineaires(modele)
+    ]
+
+
 def contributions_lineaires(
-    modele: Any, X: pd.DataFrame, fond: pd.DataFrame | None = None
+    modele: Any, X: pd.DataFrame, fond: pd.DataFrame | None = None, moyennes: list | None = None
 ) -> tuple[pd.DataFrame, float]:
     """Each variable's contribution to each account's risk score, exactly (option C).
 
@@ -109,14 +121,18 @@ def contributions_lineaires(
 
     fond = X if fond is None else fond
     tables, bases = [], []
-    for chaine in _chaines_lineaires(modele):
+    for rang, chaine in enumerate(_chaines_lineaires(modele)):
         preparation, regression = chaine.named_steps["preparation"], chaine.steps[-1][1]
         categorielles = next(
             (list(cols) for nom, _, cols in preparation.transformers_ if nom == "cat"), []
         )
         noms = preparation.get_feature_names_out()
         Xt = np.asarray(preparation.transform(X), dtype=float)
-        moyenne = np.asarray(preparation.transform(fond), dtype=float).mean(axis=0)
+        moyenne = (
+            moyennes[rang]
+            if moyennes is not None
+            else np.asarray(preparation.transform(fond), dtype=float).mean(axis=0)
+        )
         coefficients = regression.coef_.ravel()
         contributions = pd.DataFrame((Xt - moyenne) * coefficients, index=X.index, columns=noms)
         tables.append(

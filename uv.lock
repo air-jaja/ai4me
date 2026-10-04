@@ -604,6 +604,8 @@ boosting = [
     { name = "xgboost-cpu", version = "3.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 dev = [
+    { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "nbformat" },
     { name = "pre-commit" },
@@ -675,6 +677,8 @@ api = [
 ]
 boosting = [{ name = "xgboost-cpu", specifier = ">=2.1" }]
 dev = [
+    { name = "fastapi", specifier = ">=0.111" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "nbformat", specifier = ">=5.10" },
     { name = "pre-commit", specifier = ">=3.7" },

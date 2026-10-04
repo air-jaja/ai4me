@@ -53,6 +53,9 @@ dev = [
     # tests/test_exploitation.py régénère la model card (gabarit Jinja) : sans jinja2 en CI,
     # le test de fraîcheur de la carte était ignoré.
     "jinja2>=3.1",
+    # tests/test_api.py appelle l'API par son client de test (FastAPI + httpx).
+    "fastapi>=0.111",
+    "httpx>=0.27",
 ]
 
 # Nécessaire pour exécuter et exporter le notebook livré au jury.

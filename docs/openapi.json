@@ -1,0 +1,496 @@
+{
+ "components": {
+  "schemas": {
+   "CompteEntree": {
+    "properties": {
+     "anciennete_mois": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Mois depuis la souscription. (mois)",
+      "examples": [
+       8
+      ],
+      "title": "Ancienneté"
+     },
+     "client_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Identifiant du compte dans le CRM, renvoyé tel quel.",
+      "examples": [
+       "CLI-004593"
+      ],
+      "title": "Compte"
+     },
+     "connexions_30j": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Connexions sur les 30 derniers jours. (connexions)",
+      "examples": [
+       41
+      ],
+      "title": "Connexions (30 j)"
+     },
+     "csat": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Note de satisfaction de 1 à 5. (sur 5)",
+      "examples": [
+       3
+      ],
+      "title": "Satisfaction (CSAT)"
+     },
+     "delai_reponse_support_h": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Délai moyen de première réponse. (heures)",
+      "examples": [
+       9.5
+      ],
+      "title": "Délai de réponse du support"
+     },
+     "derniere_connexion_jours": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Jours écoulés depuis la dernière connexion d'un utilisateur. (jours)",
+      "examples": [
+       30
+      ],
+      "title": "Jours depuis la dernière connexion"
+     },
+     "fonctionnalites_utilisees": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Fonctionnalités utilisées au moins une fois. (fonctionnalités)",
+      "examples": [
+       6
+      ],
+      "title": "Fonctionnalités utilisées"
+     },
+     "heures_usage_30j": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Temps d'usage cumulé sur 30 jours. (heures)",
+      "examples": [
+       63.5
+      ],
+      "title": "Heures d'usage (30 j)"
+     },
+     "jour_souscription": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Jour de la semaine de la souscription.",
+      "examples": [
+       "Mardi"
+      ],
+      "title": "Jour de souscription"
+     },
+     "nb_integrations": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Connecteurs actifs vers d'autres outils du client. (intégrations)",
+      "examples": [
+       0
+      ],
+      "title": "Intégrations actives"
+     },
+     "plan": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Formule du catalogue (Starter, Pro, Business, Enterprise).",
+      "examples": [
+       "Starter"
+      ],
+      "title": "Formule souscrite"
+     },
+     "retards_paiement_12m": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Factures payées en retard sur 12 mois. (retards)",
+      "examples": [
+       1
+      ],
+      "title": "Retards de paiement (12 mois)"
+     },
+     "revenu_mensuel_recurrent_eur": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Revenu récurrent mensuel ; reconstruit depuis le catalogue s'il manque. (€ par mois)",
+      "examples": [
+       1188.0
+      ],
+      "title": "Revenu mensuel"
+     },
+     "secteur": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Secteur d'activité du client.",
+      "examples": [
+       "Santé"
+      ],
+      "title": "Secteur"
+     },
+     "sieges_souscrits": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Nombre de licences payées. (sièges)",
+      "examples": [
+       12
+      ],
+      "title": "Sièges souscrits"
+     },
+     "taille_entreprise": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "TPE, PME, ETI ou Grand compte.",
+      "examples": [
+       "PME"
+      ],
+      "title": "Taille d'entreprise"
+     },
+     "taux_adoption_pct": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Part des sièges réellement utilisés. (%)",
+      "examples": [
+       58.3
+      ],
+      "title": "Adoption des licences"
+     },
+     "tickets_support_90j": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Tickets ouverts sur 90 jours. (tickets)",
+      "examples": [
+       6
+      ],
+      "title": "Tickets de support (90 j)"
+     },
+     "utilisateurs_actifs": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Utilisateurs connectés sur les 30 derniers jours. (utilisateurs)",
+      "examples": [
+       7
+      ],
+      "title": "Utilisateurs actifs"
+     },
+     "valeur_vie_client_eur": {
+      "description": "Valeur vie du compte : nécessaire au gain attendu d'un contact. (€)",
+      "examples": [
+       18400.0
+      ],
+      "title": "Valeur client estimée",
+      "type": "number"
+     }
+    },
+    "required": [
+     "valeur_vie_client_eur"
+    ],
+    "title": "CompteEntree",
+    "type": "object"
+   },
+   "ScoreSortie": {
+    "description": "Score of one account, with the operational list's labels.",
+    "properties": {
+     "avertissement": {
+      "default": "Score indicatif : la priorité et l'action se lisent dans la liste du mois.",
+      "title": "Avertissement",
+      "type": "string"
+     },
+     "client_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Compte"
+     },
+     "gain_attendu_contact_eur": {
+      "description": "Probabilité × valeur × efficacité − coût d'un contact.",
+      "title": "Gain attendu d'un contact (€)",
+      "type": "number"
+     },
+     "modele": {
+      "description": "Nom et version du modèle en service.",
+      "title": "Modèle",
+      "type": "string"
+     },
+     "motif": {
+      "description": "Les trois principaux facteurs, avec leur sens.",
+      "title": "Pourquoi ce compte ?",
+      "type": "string"
+     },
+     "probabilite": {
+      "description": "Valeur exacte, de 0 à 1.",
+      "title": "Probabilité de départ",
+      "type": "number"
+     },
+     "risque_pct": {
+      "description": "Probabilité calibrée de départ, en %.",
+      "title": "Risque (%)",
+      "type": "integer"
+     },
+     "tranche_risque": {
+      "description": "Très élevé, Élevé, Modéré ou Faible.",
+      "title": "Risque de départ",
+      "type": "string"
+     }
+    },
+    "required": [
+     "risque_pct",
+     "tranche_risque",
+     "probabilite",
+     "gain_attendu_contact_eur",
+     "motif",
+     "modele"
+    ],
+    "title": "ScoreSortie",
+    "type": "object"
+   }
+  }
+ },
+ "info": {
+  "description": "Risque de départ d'un compte, à la demande, avec ses trois principaux motifs. **Aucune décision** : la priorité et l'action se lisent dans la liste mensuelle. Guide : `docs/API.md`.",
+  "title": "Scoring churn — aide à la décision",
+  "version": "1.1.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/health": {
+   "get": {
+    "description": "The process answers. Does not imply the service is usable.",
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "string"
+         },
+         "title": "Response Health Health Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Le processus répond"
+   }
+  },
+  "/metrics": {
+   "get": {
+    "description": "Endpoint that serves Prometheus metrics.",
+    "operationId": "metrics_metrics_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Metrics"
+   }
+  },
+  "/ready": {
+   "get": {
+    "description": "The champion is loaded: the service can actually serve.",
+    "operationId": "ready_ready_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Ready Ready Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Le modèle est chargé et le service peut répondre"
+   }
+  },
+  "/score": {
+   "post": {
+    "description": "Score one account with the model in service; never returns a decision.",
+    "operationId": "score_score_post",
+    "parameters": [
+     {
+      "description": "Clé d'API (variable CHURN_API_KEY).",
+      "in": "header",
+      "name": "x-api-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Clé d'API (variable CHURN_API_KEY).",
+       "title": "X-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CompteEntree"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScoreSortie"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Clé d'API absente ou invalide"
+     },
+     "422": {
+      "description": "Champ obligatoire manquant ou de mauvais type"
+     },
+     "503": {
+      "description": "Modèle non chargé, ou aucune clé configurée"
+     }
+    },
+    "summary": "Risque de départ d'un compte"
+   }
+  }
+ }
+}

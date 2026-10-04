@@ -24,6 +24,7 @@ from .explicabilite import (
     expliquer_compte,
     expliquer_par_contributions,
     motif_lisible,
+    moyennes_de_reference,
 )
 from .impact import mrr_a_risque, resume_impact
 from .metriques import evaluer, intervalle_confiance_rappel
@@ -49,6 +50,7 @@ __all__ = [
     "stabilite_liste",
     # Explainability (B6, option C): exact linear contributions in production, SHAP for analysis
     "contributions_lineaires",
+    "moyennes_de_reference",
     "expliquer_par_contributions",
     "expliquer_compte",
     "motif_lisible",

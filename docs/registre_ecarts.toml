@@ -379,20 +379,6 @@ source = "arbitrage du porteur, 01/10/2026"
 # ═══ Différés ════════════════════════════════════════════════════════════════
 
 [[element]]
-id = "D-02"
-titre = "API unitaire appelée sans catalogue des plans"
-nature = "architecture"
-statut = "différé"
-phase = "4 · Préparation"
-date = "01/10/2026"
-competence = "C6"
-section = "10"
-motif = "Le point d'entrée unitaire prépare un compte sans catalogue : les colonnes de prix, SLA et quotas manquent, et le revenu ne peut pas être reconstruit. Le lot mensuel, lui, reçoit le catalogue."
-preuve = "src/churn_saas/industrialisation/api.py"
-source = "constat de la phase 4"
-condition = "Phase 10, avant toute démonstration de l'API."
-
-[[element]]
 id = "D-03"
 titre = "Contrôle de langue des commentaires placés en fin de ligne"
 nature = "action"
@@ -786,3 +772,16 @@ section = "15"
 motif = "Le porteur présentera les modèles sous leur nom anglais (LogisticRegression, RandomForestClassifier, XGBClassifier, RandomForestRegressor, Ridge), plus reconnaissables ; le dépôt garde les noms français."
 source = "échange du 03/10/2026"
 condition = "À reproposer à la préparation du support de soutenance."
+
+[[element]]
+id = "D-09"
+titre = "Harmonisation de la casse des catégories dépendante du lot"
+nature = "action"
+statut = "différé"
+phase = "11 · Suivi"
+date = "04/10/2026"
+competence = "C3"
+section = "11"
+motif = "La préparation choisit la graphie d'une catégorie ('PRO', 'pro' -> 'Pro') à partir du lot lui-même : un compte seul n'a pas de lot. L'API corrige avec le vocabulaire de l'entraînement ; la correction à la source (donnees/silver.py) imposera un recalcul complet."
+source = "tests/test_api.py (parité API et lot) · industrialisation/dictionnaire.py"
+condition = "Retour vers la phase Données (phase 11)."
