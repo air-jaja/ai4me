@@ -1753,3 +1753,64 @@ def test_le_critere_d_equite_est_applique_tel_que_valide():
         attendu = ligne["rappel"] >= RATIO_EQUITE * rappel_global or bas <= rappel_global <= haut
         assert ligne["critère respecté"] == attendu, ligne
     assert validation["equite_synthese"]["segments concluants hors critère"] == ["pays = Suisse"]
+
+
+# --- Figures quoted in the executive summary and the conclusion (rule 5) ------------------------
+def _texte_du_notebook(*titres: str) -> str:
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    return "\n".join(
+        c.source
+        for c in nb.cells
+        if c.cell_type == "markdown" and any(c.source.lstrip().startswith(t) for t in titres)
+    )
+
+
+def _fr(valeur: float, decimales: int) -> str:
+    return f"{valeur:.{decimales}f}".replace(".", ",")
+
+
+def test_les_chiffres_du_resume_et_de_la_conclusion_sont_ceux_des_resultats():
+    """Every figure the executive summary and the conclusion quote is recomputed here from
+    resultats/ and must appear in the text as written: a recomputed result that moved makes
+    this test fail, and the message names the sentence to rewrite."""
+
+    def lire(nom: str) -> dict:
+        return json.loads((RACINE / "resultats" / f"{nom}.json").read_text(encoding="utf-8"))
+
+    validation, selection = lire("validation_phase9"), lire("selection_modele")
+    finale = lire("evaluation_finale")
+    suivi = lire("suivi_simule")
+    pr = {c["modèle"]: c["PR-AUC"] for c in selection["comparaison"]}
+    m = validation["metriques"]
+    mrr = validation["mrr"]["métier"]
+    extrapole = {
+        k: mrr[k]["€ par mois (extrapolé au portefeuille)"]
+        for k in ("exposé", "couvert", "préservé")
+    }
+    attendus = [
+        f"PR-AUC {_fr(pr['régression logistique'], 3)} contre "
+        f"{_fr(pr['forêt aléatoire'], 3)} et {_fr(pr['xgboost'], 3)}",
+        # One test evaluation, one interval: the final evaluation's (section 9.C).
+        "PR-AUC {} [{} ; {}]".format(
+            _fr(finale["metriques"]["PR-AUC"], 3),
+            *(_fr(b, 3) for b in finale["intervalles_95"]["PR-AUC"]),
+        ),
+        f"ROC-AUC {_fr(m['ROC-AUC']['valeur'], 3)}",
+        f"erreur de calibration {_fr(m['erreur de calibration']['valeur'], 3)}",
+        f"{_fr(100 * mrr['part couverte'], 1)} %",
+        f"{_fr(extrapole['couvert'] / 1e6, 1)} M€ couverts sur "
+        f"{_fr(extrapole['exposé'] / 1e6, 1)} M€",
+        f"{_fr(extrapole['préservé'] / 1e6, 2)} M€ préservés",
+        f"{validation['equite_synthese']['segments concluants']} segments concluants",
+        f"{_fr(100 * validation['matrices']['métier (28 comptes, valeur nette)']['rappel'], 1)} %",
+    ]
+    texte = _texte_du_notebook("## 1. Résumé exécutif", "## 14. Conclusion")
+    for attendu in attendus:
+        assert attendu in texte, f"Résumé ou conclusion à réécrire : « {attendu} » n'y figure pas."
+    assert validation["equite_synthese"]["segments concluants hors critère"] == ["pays = Suisse"]
+    assert suivi["revue_trimestrielle"]["retention_contre_temoin"]["comptes témoins"] == 48
+    assert suivi["mois"][2]["M5_derive"]["psi"]["derniere_connexion_jours"] == pytest.approx(
+        0.459, abs=5e-4
+    )

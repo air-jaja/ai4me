@@ -44,6 +44,24 @@ def preparer(
     return preparer_gold(silver).gold
 
 
+def preparer_lot(
+    brut: pd.DataFrame,
+    catalogue: pd.DataFrame | None = None,
+    **options_silver: Any,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """A batch's silver table and model matrix, on the same index.
+
+    Silver drops the duplicate rows and renumbers the accounts: from then on, a row of `brut`
+    is no longer the row of the same rank in the matrix. The account's identifier and value
+    must be read from silver - read from `brut` by position, they shift after the first
+    duplicate and every account carries its neighbour's score.
+    """
+    silver = construire_silver_standard(brut, catalogue=catalogue, **options_silver)
+    X = preparer_gold(silver).gold
+    X = typer_pour_modele(X.drop(columns=[c for c in ("churn",) if c in X.columns]))
+    return silver.loc[X.index], X
+
+
 def controler_lot(brut: pd.DataFrame, catalogue: pd.DataFrame | None = None) -> pd.DataFrame:
     """Run the data contract on a monthly batch, as on the training set.
 
@@ -65,7 +83,7 @@ def controler_lot(brut: pd.DataFrame, catalogue: pd.DataFrame | None = None) -> 
 def scorer_lot_mensuel(
     modele_churn: Any,
     brut: pd.DataFrame,
-    valeur_vie_client: pd.Series | None = None,
+    valeur_vie_client: str | pd.Series | None = None,
     modele_clv: Any | None = None,
     catalogue: pd.DataFrame | None = None,
     capacite: int = CAPACITE_MENSUELLE,
@@ -75,15 +93,15 @@ def scorer_lot_mensuel(
 ) -> pd.DataFrame:
     """Produce the prioritised shortlist for the Customer Success teams.
 
-    `valeur_vie_client` is supplied when known, otherwise estimated by the secondary
-    model. This is the use the brief intends: a decision weight, never an explanatory
-    variable of the churn model.
+    `valeur_vie_client` is supplied when known - the name of a batch column, or a series
+    indexed by account identifier - otherwise estimated by the secondary model. This is the
+    use the brief intends: a decision weight, never an explanatory variable of the churn
+    model. Never by position: the batch may hold duplicates, which silver drops.
     """
-    # Identifiers are captured before preparation, since construire_gold drops them.
-    identifiants = brut[identifiant] if identifiant in brut.columns else pd.Series(brut.index)
     exiger_contrat(controler_lot(brut, catalogue=catalogue))
-    X = preparer(brut, catalogue=catalogue, **options_silver)
-    X = typer_pour_modele(X.drop(columns=[c for c in ("churn",) if c in X.columns]))
+    silver, X = preparer_lot(brut, catalogue=catalogue, **options_silver)
+    # Identifiers come from silver, aligned with X: construire_gold drops them.
+    identifiants = silver[identifiant] if identifiant in silver.columns else pd.Series(X.index)
 
     proba = pd.Series(modele_churn.predict_proba(X)[:, 1], index=X.index)
 
@@ -93,10 +111,18 @@ def scorer_lot_mensuel(
                 "Fournir `valeur_vie_client` ou `modele_clv` : la priorisation par valeur "
                 "espérée ne peut pas être calculée sans la valeur du compte."
             )
-        valeur_vie_client = pd.Series(modele_clv.predict(X), index=X.index)
+        valeur = pd.Series(modele_clv.predict(X), index=X.index)
+    elif isinstance(valeur_vie_client, str):
+        valeur = pd.to_numeric(silver[valeur_vie_client], errors="coerce")
+    else:
+        absents = ~identifiants.isin(valeur_vie_client.index)
+        if not valeur_vie_client.index.is_unique or absents.any():
+            raise ValueError(
+                f"`valeur_vie_client` doit être indexée par `{identifiant}`, une valeur par "
+                f"compte : {int(absents.sum())} compte(s) du lot n'y figurent pas."
+            )
+        valeur = pd.Series(valeur_vie_client.reindex(identifiants).to_numpy(), index=X.index)
 
-    table = prioriser(
-        proba, valeur_vie_client, capacite=capacite, efficacite_retention=efficacite_retention
-    )
+    table = prioriser(proba, valeur, capacite=capacite, efficacite_retention=efficacite_retention)
     table.insert(0, identifiant, identifiants.reindex(table.index).to_numpy())
     return table

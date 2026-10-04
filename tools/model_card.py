@@ -30,6 +30,31 @@ def _ic(valeur: dict) -> str:
     return f"{valeur['valeur']:.3f} [{bas:.3f}; {haut:.3f}]"
 
 
+def plan_de_suivi() -> str:
+    """The phase 11 monitoring and retraining plan, worded from the validated rules (M1-M10)."""
+    sys.path.insert(0, str(RACINE / "src"))
+    from churn_saas.config import SEUIL_DEGRADATION_PR_AUC
+    from churn_saas.monitoring import alertes as a
+
+    return (
+        "Monitoring and retraining plan (phase 11, rules M1-M10 validated before any computation). "
+        "Monthly, against a reference profile versioned with the model "
+        "(resultats/profil_reference.json): drift alert when one key variable "
+        f"({', '.join(a.VARIABLES_CLES)}) has a PSI above {a.SEUIL_PSI_VARIABLE_CLE}, "
+        f"{a.NB_VARIABLES_PSI_MODERE} variables above {a.SEUIL_PSI_MODERE}, or the score above "
+        f"{a.SEUIL_PSI_SCORE}; missing values above {a.FACTEUR_MANQUANTS:g} x their training share; "
+        f"flagged accounts moving by more than {a.ECART_VOLUME_SIGNALES:.0%} from the previous month. "
+        f"Quarterly: at-risk revenue coverage of at least {a.CIBLE_COUVERTURE_REVENU:.0%}, recall on the "
+        "Switzerland segment (phase 9 fairness criterion), retention against the control group, "
+        f"PR-AUC drop above {SEUIL_DEGRADATION_PR_AUC:.0%}. An alert warns and is qualified by a person; "
+        "it never blocks scoring. Retraining every "
+        f"{a.FREQUENCE_REENTRAINEMENT_MOIS} months, earlier on an alert qualified as real drift, on a "
+        f"{a.FENETRE_REENTRAINEMENT_MOIS}-month window excluding contacted accounts (control group and "
+        "non-contacted accounts kept); a new champion comes with a new reference profile. Demonstrated on "
+        "simulated batches (data/simulation/, notebooks/11_suivi.ipynb): mechanics only, no performance claim."
+    )
+
+
 def contexte() -> dict:
     servi = _lire("modele_servi")
     validation, regle = _lire("validation_phase9"), _lire("regle_decision")
@@ -180,8 +205,9 @@ def contexte() -> dict:
         "citation_apa": "Not applicable",
         "glossary": "PR-AUC: area under the precision-recall curve. Expected net value: probability x value "
         "x efficacy - cost. Control group: accounts randomly not contacted.",
-        "more_information": "Monitoring and retraining plan: to be completed in phase 11. Decisions and "
-        "rejected options: docs/00.README_choix_methodologiques.md, docs/05.REGISTRE_elements_ecartes.md.",
+        "more_information": plan_de_suivi()
+        + " Decisions and rejected options: docs/00.README_choix_methodologiques.md, "
+        "docs/05.REGISTRE_elements_ecartes.md.",
         "model_card_authors": "Rakotovoalavo Petera Haja",
         "model_card_contact": "Through the repository issues",
     }

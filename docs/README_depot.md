@@ -28,8 +28,8 @@ make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
-soient « intégrés ou clairement référencés et accessibles », et leur volume le permet ici (moins de
-2 Mo). Les instantanés d'entraînement et les fichiers dérivés, eux, restent hors dépôt — voir le
+soient « intégrés ou clairement référencés et accessibles », et leur volume le permet ici (0,7 Mo
+au total). Les instantanés d'entraînement et les fichiers dérivés, eux, restent hors dépôt — voir le
 cycle de vie des données dans `docs/00.README_choix_methodologiques.md` § 3.
 
 ---
@@ -49,8 +49,8 @@ et sélectionner le même noyau en haut à droite du notebook.
 | *« requires the ipykernel package »* avec un chemin vers `AppData\Roaming\uv\python\...` | L'éditeur pointe sur l'interpréteur uv partagé, pas sur `.venv` | Lancer les deux commandes ci-dessus, puis sélectionner `.venv`. **Ne pas** accepter le `pip install` proposé par l'éditeur : il installerait hors du verrou |
 | `.venv` absent de la liste des interpréteurs | L'environnement a été créé après l'ouverture du dossier | Recharger la fenêtre (`Developer: Reload Window`) |
 | `make` : commande introuvable | `make` n'existe pas nativement sous Windows | Utiliser les commandes `uv run` directement, ou Git Bash |
-| `uv sync` échoue à la construction du projet | Le paquet local ne se construit pas dans l'environnement | Ajouter `--no-install-project` : `preparer_import()` ajoute `src/` au chemin, le notebook fonctionne quand même |
-| `ModuleNotFoundError: churn_saas` dans le notebook | La cellule d'amorçage n'a pas été exécutée | Exécuter la première cellule, qui appelle `preparer_import()` |
+| `uv sync` échoue à la construction du projet | Le paquet local ne se construit pas dans l'environnement | Ajouter `--no-install-project` : la première cellule du notebook ajoute `src/` au chemin, le notebook fonctionne quand même |
+| `ModuleNotFoundError: churn_saas` dans le notebook | La cellule d'amorçage n'a pas été exécutée | Exécuter la première cellule, qui ajoute `src/` au chemin d'import |
 
 **Règle générale :** toute installation passe par `uv`. Un `pip install` direct sort du
 verrou et rend l'environnement non reproductible — ce qui contredit un critère
@@ -124,8 +124,9 @@ versions divergentes, dont une seule testée.
 Le notebook importe le paquet et **affiche le code au moment où il l'explique** :
 
 ```python
-from churn_saas.notebook import preparer_import, afficher_source
-preparer_import()   # importable même sans `uv sync`, depuis l'archive décompressée
+# Cellule 1 : src/ est ajouté au chemin d'import, que le paquet soit installé ou non
+# (sans `uv sync`, depuis l'archive décompressée)
+from churn_saas.notebook import afficher_source
 
 from churn_saas.donnees.silver import nettoyer_decimal_texte
 afficher_source(nettoyer_decimal_texte)   # le code s'affiche, coloré
@@ -134,7 +135,7 @@ afficher_source(nettoyer_decimal_texte)   # le code s'affiche, coloré
 Le code affiché est lu dans le module : c'est celui qui s'exécute, et celui que `pytest`
 vérifie. `tests/test_notebook.py` garantit cet invariant.
 
-Détail complet et procédure de migration : `docs/ORGANISATION_CODE.md`.
+Détail complet et procédure de migration : `docs/00.ORGANISATION_CODE.md`.
 
 ---
 
@@ -192,7 +193,7 @@ make smoke               # vérifie /ready — modèle chargé, pas seulement pr
 |---|---|---|---|
 | `api` | construite localement | Scoring unitaire | http://localhost:8000/docs |
 | `db` | `postgres:16` | Entrepôt des scores | `localhost:5432` |
-| `mlflow` | `ghcr.io/mlflow/mlflow:v3.1.1` | Suivi et registre de modèles | http://localhost:5000 |
+| `mlflow` | `ghcr.io/mlflow/mlflow:v3.16.1` | Suivi et registre de modèles | http://localhost:5000 |
 | `prometheus` | `prom/prometheus:v2.53.0` | Collecte des indicateurs | http://localhost:9090 |
 | `grafana` | `grafana/grafana:11.1.0` | Restitution | http://localhost:3000 |
 

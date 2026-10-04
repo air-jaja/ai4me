@@ -17,6 +17,8 @@ destination des équipes Customer Success.
 ```bash
 # Installation de l'environnement, à l'identique du verrou
 make install            # ou : uv sync --frozen --group dev --group notebook
+make install-plateforme # tous les groupes : nécessaire pour rejouer le notebook, dont le § 8.E
+                        # refait la comparaison des candidats (MLflow, XGBoost non retenu)
 
 # Lancer le notebook
 make notebook
@@ -25,19 +27,20 @@ make notebook
 make test               # toute la suite de tests
 make test-activite      # campagne de l'activité : tests courants + non-régression
 make lint               # style du code
-make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise
+make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise (make install-plateforme)
 make ressources         # mesure CE poste : ressources et temps de calcul (docs/06.SOBRIETE_calcul.md)
 make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter (+ run « données » MLflow)
 make mlflow             # interface MLflow sur le magasin du projet (mlruns/mlflow.db)
 make mlflow-nettoyer    # vide le magasin MLflow local (il se reconstruit : MLflow n'est qu'un journal)
 uv run python tools/liste_operationnelle.py   # liste du mois pour les conseillers (sorties/)
+make lot-mensuel        # flux mensuel complet : contrôle, score, liste, suivi (M5, M8, M9)
 uv run python tools/promouvoir.py --etat     # modèle en service ; --retour-arriere pour revenir au précédent
 uv run python tools/livraison.py --verifier  # paquet de livraison vérifié (docs/LIVRAISON.md)
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
-soient « intégrés ou clairement référencés et accessibles », et leur volume le permet ici (moins de
-2 Mo). Les instantanés d'entraînement et les fichiers dérivés, eux, restent hors dépôt — voir le
+soient « intégrés ou clairement référencés et accessibles », et leur volume le permet ici (0,7 Mo
+au total). Les instantanés d'entraînement et les fichiers dérivés, eux, restent hors dépôt — voir le
 cycle de vie des données dans `docs/00.README_choix_methodologiques.md` § 3.
 
 ---
@@ -68,7 +71,7 @@ churn-saas-cisia/
 │   └── ressources_poste.toml     Ressources du poste et hypothèses d'énergie — entrée du projet
 │
 ├── data/
-│   ├── raw/                      CSV sources — **versionnés** (2 Mo, référence de tout)
+│   ├── raw/                      CSV sources — **versionnés** (0,7 Mo, référence de tout)
 │   ├── processed/                Instantanés Parquet — non versionnés, recalculables
 │   ├── interim/                  Travail intermédiaire — non versionné
 │   ├── simulation/               Lots de démonstration **simulés** (phase 11) — versionnés
@@ -150,6 +153,7 @@ churn-saas-cisia/
         ├── alertes.py            indicateur → seuil → action → responsable
         ├── exporteur.py          exposition des indicateurs à Prometheus
         ├── suivi.py              verdicts mensuels M5, M8, M9 contre le profil de référence
+        ├── reentrainement.py     données de réentraînement (M2, M4) et déclenchement (M3)
         └── simulation.py         lots de démonstration simulés, dérive injectée (S1 à S7)
 ```
 
@@ -167,8 +171,9 @@ versions divergentes, dont une seule testée.
 Le notebook importe le paquet et **affiche le code au moment où il l'explique** :
 
 ```python
-from churn_saas.notebook import preparer_import, afficher_source
-preparer_import()   # importable même sans `uv sync`, depuis l'archive décompressée
+# Cellule 1 : src/ est ajouté au chemin d'import, que le paquet soit installé ou non
+# (sans `uv sync`, depuis l'archive décompressée)
+from churn_saas.notebook import afficher_source
 
 from churn_saas.donnees.silver import nettoyer_decimal_texte
 afficher_source(nettoyer_decimal_texte)   # le code s'affiche, coloré
@@ -177,7 +182,7 @@ afficher_source(nettoyer_decimal_texte)   # le code s'affiche, coloré
 Le code affiché est lu dans le module : c'est celui qui s'exécute, et celui que `pytest`
 vérifie. `tests/test_notebook.py` garantit cet invariant.
 
-Détail complet et procédure de migration : `docs/ORGANISATION_CODE.md`.
+Détail complet et procédure de migration : `docs/00.ORGANISATION_CODE.md`.
 
 ---
 
@@ -238,7 +243,7 @@ make smoke               # vérifie /ready — modèle chargé, pas seulement pr
 |---|---|---|---|
 | `api` | construite localement | Scoring unitaire | http://localhost:8000/docs |
 | `db` | `postgres:16` | Entrepôt des scores | `localhost:5432` |
-| `mlflow` | `ghcr.io/mlflow/mlflow:v3.1.1` | Suivi et registre de modèles | http://localhost:5000 |
+| `mlflow` | `ghcr.io/mlflow/mlflow:v3.16.1` | Suivi et registre de modèles | http://localhost:5000 |
 | `prometheus` | `prom/prometheus:v2.53.0` | Collecte des indicateurs | http://localhost:9090 |
 | `grafana` | `grafana/grafana:11.1.0` | Restitution | http://localhost:3000 |
 

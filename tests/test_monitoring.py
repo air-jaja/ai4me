@@ -350,23 +350,266 @@ def test_la_derive_injectee_touche_les_parts_decidees():
 
 
 @pytest.mark.phase11
+def test_la_derive_forte_ajoute_trente_jours_a_trente_pour_cent_des_comptes():
+    """S8: 30 days added to the last login of 30 % of the accounts, nothing else touched."""
+    from churn_saas.monitoring import injecter_derive_forte
+
+    lot = pd.DataFrame(
+        {"derniere_connexion_jours": ["2"] * 1_000, "delai_reponse_support_h": ["5.0"] * 1_000}
+    )
+    derive = injecter_derive_forte(lot, np.random.default_rng(0))
+    assert (derive["derniere_connexion_jours"] == "32").sum() == 300
+    assert derive["delai_reponse_support_h"].equals(lot["delai_reponse_support_h"])
+
+
+@pytest.mark.phase11
 def test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet():
-    """S3, S6, S7: the report says it is simulated and what it proves; the drift-free month
-    raises no alert, the collection incident of month 2 is caught (M8)."""
+    """S3, S6, S7, S8: the report says it is simulated and what it proves; the drift-free
+    month raises no alert, month 2's collection incident is caught (M8), month 3's strong
+    disengagement too (M5)."""
     import json
     from pathlib import Path
 
     racine = Path(__file__).resolve().parents[1]
     rapport = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))
     assert rapport["mention"] == "SIMULÉ — démonstration" and "performance" in rapport["portee"]
-    mois_1, mois_2 = rapport["mois"]
+    mois_1, mois_2, mois_3 = rapport["mois"]
     assert not any(a["declenchee"] for a in mois_1["alertes"])
     assert mois_2["M8_manquants"]["verdict"]["variables en alerte"] == ["delai_reponse_support_h"]
+    # The month 2 finding, kept as is: doubling the last login left M5 silent.
+    assert not mois_2["M5_derive"]["verdict"]["déclenchée"]
+    # S8: the strong disengagement is caught on its key variable; M8 is silent again.
+    assert mois_3["M5_derive"]["verdict"]["variables clés au-dessus de 0,25"] == [
+        "derniere_connexion_jours"
+    ]
+    assert not mois_3["M8_manquants"]["verdict"]["déclenchée"]
     manifeste = json.loads(
         (racine / "data" / "simulation" / "manifeste_simulation.json").read_text(encoding="utf-8")
     )
     assert manifeste["mention"] == rapport["mention"]
     assert manifeste["fichiers"] == rapport["lots"]
+
+
+@pytest.mark.phase11
+def test_les_figures_du_suivi_se_tracent_depuis_le_rapport_et_disent_simule():
+    """The working notebook's figures come from the recorded report, and each title carries
+    the simulated mark: a monitoring chart lifted out of the notebook must not pass for
+    production data."""
+    import json
+    from pathlib import Path
+
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from churn_saas.features import tracer_carte_psi, tracer_evolution_psi, tracer_manquants
+
+    racine = Path(__file__).resolve().parents[1]
+    rapport = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))
+    profil = json.loads(
+        (racine / "resultats" / "profil_reference.json").read_text(encoding="utf-8")
+    )
+    figures = [
+        tracer_evolution_psi(
+            rapport["mois"], profil["variables_cles"], "derniere_connexion_jours", (0.10, 0.25)
+        ),
+        tracer_carte_psi(rapport["mois"]),
+        tracer_manquants(rapport["mois"], 2.0),
+    ]
+    for figure in figures:
+        assert "SIMULÉ" in figure.axes[0].get_title()
+
+
+# --- Phase 11 · Quarterly review on simulated outcomes (part B) ----------------------------
+@pytest.mark.phase11
+def test_les_issues_simulees_reduisent_le_risque_des_seuls_comptes_contactes():
+    """S5: a contacted account's risk is lowered by the efficacy hypothesis; nobody else's."""
+    from churn_saas.monitoring import simuler_issues
+
+    groupes = pd.Series(["contact"] * 20_000 + ["temoin"] * 20_000)
+    issues = simuler_issues(groupes, np.full(40_000, 0.8), np.random.default_rng(0))
+    parti = issues == "parti"
+    assert parti[groupes == "contact"].mean() == pytest.approx(0.8 * 0.75, abs=0.01)
+    assert parti[groupes == "temoin"].mean() == pytest.approx(0.8, abs=0.01)
+
+
+def _issues(n_partis_signales, n_partis_non_signales, mrr=100.0, pays="France"):
+    lignes = [(True, True)] * n_partis_signales + [(True, False)] * n_partis_non_signales
+    return pd.DataFrame(
+        {
+            "parti": [p for p, _ in lignes],
+            "signale": [s for _, s in lignes],
+            "mrr": mrr,
+            "pays": pays,
+        }
+    )
+
+
+@pytest.mark.phase11
+def test_la_couverture_du_revenu_se_compare_a_la_cible():
+    """M1: covered MRR over exposed MRR, against 50 %."""
+    from churn_saas.monitoring import couverture_revenu
+
+    assert couverture_revenu(_issues(6, 4))["part couverte"] == 0.6
+    assert not couverture_revenu(_issues(6, 4))["déclenchée"]
+    assert couverture_revenu(_issues(4, 6))["déclenchée"]
+
+
+@pytest.mark.phase11
+def test_le_segment_surveille_suit_le_critere_r9():
+    """M7: triggered only when conclusive, under 0.8 x the global recall AND its interval
+    excludes the global recall; a small segment is never conclusive."""
+    from churn_saas.monitoring import rappel_segment
+
+    issues = pd.concat([_issues(300, 300), _issues(10, 190, pays="Suisse")], ignore_index=True)
+    verdict = rappel_segment(issues, "pays", "Suisse", 0.8, 50, 10, np.random.default_rng(0))
+    assert verdict["concluant"] and verdict["déclenchée"]
+    pareil = pd.concat([_issues(300, 300), _issues(100, 100, pays="Suisse")], ignore_index=True)
+    assert not rappel_segment(pareil, "pays", "Suisse", 0.8, 50, 10, np.random.default_rng(0))[
+        "déclenchée"
+    ]
+    petit = pd.concat([_issues(300, 300), _issues(0, 8, pays="Suisse")], ignore_index=True)
+    assert not rappel_segment(petit, "pays", "Suisse", 0.8, 50, 10, np.random.default_rng(0))[
+        "concluant"
+    ]
+
+
+@pytest.mark.phase11
+def test_la_retention_contre_temoin_exige_un_effet_significatif():
+    """A clear effect on large groups passes; the same effect on a handful of control
+    accounts is not significant - the rule triggers."""
+    from churn_saas.monitoring import retention_contre_temoin
+
+    def groupes(n_contact, n_temoin):
+        return pd.DataFrame(
+            {
+                "groupe": ["contact"] * n_contact + ["temoin"] * n_temoin,
+                "parti": [i % 10 < 3 for i in range(n_contact)]
+                + [i % 10 < 6 for i in range(n_temoin)],
+            }
+        )
+
+    assert not retention_contre_temoin(groupes(2_000, 2_000), np.random.default_rng(0))[
+        "déclenchée"
+    ]
+    assert retention_contre_temoin(groupes(400, 10), np.random.default_rng(0))["déclenchée"]
+
+
+@pytest.mark.phase11
+def test_le_pr_auc_en_production_ignore_les_comptes_contactes():
+    """A contact changes the outcome it would score: contacted accounts are left out."""
+    from churn_saas.monitoring import pr_auc_en_production
+
+    issues = pd.DataFrame(
+        {
+            "groupe": ["non_retenu"] * 4 + ["contact"] * 2,
+            "parti": [True, True, False, False, False, False],
+            "score": [0.9, 0.8, 0.2, 0.1, 0.99, 0.98],
+        }
+    )
+    verdict = pr_auc_en_production(issues, reference=0.8)
+    assert verdict["comptes"] == 4 and verdict["PR-AUC"] == 1.0 and not verdict["déclenchée"]
+
+
+@pytest.mark.phase11
+def test_la_revue_trimestrielle_simulee_est_enregistree_et_marquee():
+    """Part B in the recorded report: simulated outcomes on file (hashes match), the four
+    quarterly verdicts tied to existing rules, the simulated mark."""
+    import hashlib
+    import json
+    from pathlib import Path
+
+    racine = Path(__file__).resolve().parents[1]
+    revue = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))[
+        "revue_trimestrielle"
+    ]
+    assert revue["mention"] == "SIMULÉ — démonstration"
+    for nom, fichier in revue["issues"].items():
+        contenu = (racine / "data" / "simulation" / nom).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(contenu).hexdigest() == fichier["sha256"], nom
+    indicateurs = {a["indicateur"] for a in revue["alertes"]}
+    assert (
+        {
+            "Couverture du revenu à risque",
+            "Rappel sur le segment Suisse",
+            "Rétention des comptes traités",
+            "PR-AUC en production",
+        }
+        <= indicateurs
+        == set(table_regles()["indicateur"])
+    )
+
+
+# --- Phase 11 · Retraining (part C) --------------------------------------------------------
+@pytest.mark.phase11
+def test_les_donnees_de_reentrainement_excluent_les_contactes_et_suivent_la_fenetre():
+    """M2: contacted accounts out, control group and non-contacted in; unknown outcomes out;
+    M4: twelve sliding months before the reference date."""
+    from churn_saas.monitoring import selectionner_donnees_reentrainement
+
+    issues = pd.DataFrame(
+        {
+            "mois_liste": ["2025-12-01", "2026-06-01", "2026-06-01", "2026-06-01", "2026-06-01"],
+            "groupe": ["non_retenu", "contact", "temoin", "non_retenu", "non_retenu"],
+            "resultat_3_mois": ["parti", "parti", "reste", "parti", "inconnu"],
+        }
+    )
+    selection, bilan = selectionner_donnees_reentrainement(issues, "2027-01-01")
+    assert selection.index.tolist() == [2, 3]
+    assert bilan["hors fenêtre"] == 1 and bilan["contactés, exclus (M2)"] == 1
+    assert bilan["issue inconnue, écartés"] == 1 and bilan["dont témoins"] == 1
+
+
+@pytest.mark.phase11
+def test_le_reentrainement_suit_l_echeance_et_les_seules_derives_reelles():
+    """M3: due at three months; earlier only for an alert qualified as real drift - a
+    collection incident sends back to the data, never to retraining."""
+    from churn_saas.monitoring import decider_reentrainement
+
+    derive = [{"indicateur": "Dérive", "qualification": "dérive réelle"}]
+    incident = [{"indicateur": "Manquants", "qualification": "incident de collecte"}]
+    assert not decider_reentrainement("2026-10-03", "2026-11-01", [])["réentraîner"]
+    assert decider_reentrainement("2026-10-03", "2026-11-01", derive)["réentraîner"]
+    verdict = decider_reentrainement("2026-10-03", "2026-12-01", incident)
+    assert not verdict["réentraîner"]
+    assert verdict["retour aux données (incidents de collecte)"] == ["Manquants"]
+    assert decider_reentrainement("2026-10-03", "2027-01-01", [])["réentraîner"]
+
+
+@pytest.mark.phase11
+def test_le_rapport_simule_trace_la_selection_et_les_decisions_de_reentrainement():
+    """Part C in the recorded report: no contacted account among the retained, and month 3
+    retrains while month 2's collection incident goes back to the data."""
+    import json
+    from pathlib import Path
+
+    racine = Path(__file__).resolve().parents[1]
+    rapport = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))
+    partie_c = rapport["reentrainement"]
+    selection = partie_c["selection"]
+    assert selection["retenus"] + selection["contactés, exclus (M2)"] == selection["lignes reçues"]
+    decisions = {d["mois"]: d for d in partie_c["decisions"]}
+    assert not decisions["mois_2_avec_derive"]["réentraîner"]
+    assert decisions["mois_2_avec_derive"]["retour aux données (incidents de collecte)"]
+    assert decisions["mois_3_derive_forte"]["réentraîner"]
+
+
+@pytest.mark.phase11
+def test_les_verdicts_du_mois_sont_exposes_a_prometheus():
+    """A6: each verdict reaches its gauge, each rule its 0/1 alert - when the observability
+    group is installed; without it, publishing is a silent no-op that never breaks a batch."""
+    from churn_saas.monitoring import exporteur, publier_suivi
+
+    derive = {"psi du score": 0.05, "variables au-dessus de 0,10": ["a", "b"]}
+    manquants = {"variables en alerte": ["c"]}
+    volume = {"comptes signalés": 156}
+    alertes = evaluer_alertes({"Taux de manquants à l'entrée": True})
+    publier_suivi(derive, manquants, volume, alertes)
+    if not exporteur._DISPONIBLE:
+        return
+    assert exporteur.PSI_SCORE._value.get() == 0.05
+    assert exporteur.VARIABLES_PSI_MODERE._value.get() == 2
+    assert exporteur.COMPTES_SIGNALES._value.get() == 156
+    assert exporteur.ALERTE.labels(indicateur="Taux de manquants à l'entrée")._value.get() == 1
 
 
 # --- Phase 5 · Categorical stability ------------------------------------------------------

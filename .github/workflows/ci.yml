@@ -1,4 +1,4 @@
-# Chaîne d'intégration continue — étapes 1 et 2 décrites au notebook § 10.
+# Chaîne d'intégration continue — niveau 3 de la chaîne décrite au notebook § 10.
 # Objectif : aucun code de nettoyage ne part en production sans avoir été testé.
 name: CI
 

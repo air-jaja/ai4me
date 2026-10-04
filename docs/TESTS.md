@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**779 cas de test** issus de 407 fonctions, répartis sur 25 fichiers.
+**817 cas de test** issus de 442 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -35,18 +35,18 @@ soutenance.
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
-| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 24 |
+| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 302 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 324 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 107 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 108 |
 | [test_api.py](#test_apipy) | `test_api.py` | — | — | 7 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
 | [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 11 |
 | [test_exploitation.py](#test_exploitationpy) | `test_exploitation.py` | — | — | 14 |
-| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
+| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 7 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
@@ -311,10 +311,22 @@ soutenance.
 | 18 | `test_un_compte_du_jeu_de_test_est_refuse_dans_un_lot_simule` | S1: the test part is never read a third time. | a test account is refused, loudly. |
 | 19 | `test_un_lot_simule_a_sa_taille_ses_identifiants_et_aucune_issue` | S2: the real accounts first, drawn rows renamed SIM-..., no outcome column. | — |
 | 20 | `test_la_derive_injectee_touche_les_parts_decidees` | S4: last login doubled on 30 % of the accounts, support delay blanked on 25 %. | — |
-| 21 | `test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet` | S3, S6, S7: the report says it is simulated and what it proves; the drift-free month raises no alert, the collection incident of month 2 is caught (M8). | — |
-| 22 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
-| 23 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
-| 24 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
+| 21 | `test_la_derive_forte_ajoute_trente_jours_a_trente_pour_cent_des_comptes` | S8: 30 days added to the last login of 30 % of the accounts, nothing else touched. | — |
+| 22 | `test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet` | S3, S6, S7, S8: the report says it is simulated and what it proves; the drift-free month raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5). | — |
+| 23 | `test_les_figures_du_suivi_se_tracent_depuis_le_rapport_et_disent_simule` | The working notebook's figures come from the recorded report, and each title carries the simulated mark: a monitoring chart lifted out of the notebook must not pass for production data. | — |
+| 24 | `test_les_issues_simulees_reduisent_le_risque_des_seuls_comptes_contactes` | S5: a contacted account's risk is lowered by the efficacy hypothesis; nobody else's. | — |
+| 25 | `test_la_couverture_du_revenu_se_compare_a_la_cible` | M1: covered MRR over exposed MRR, against 50 %. | — |
+| 26 | `test_le_segment_surveille_suit_le_critere_r9` | M7: triggered only when conclusive, under 0.8 x the global recall AND its interval excludes the global recall; a small segment is never conclusive. | — |
+| 27 | `test_la_retention_contre_temoin_exige_un_effet_significatif` | A clear effect on large groups passes; the same effect on a handful of control accounts is not significant. | the rule triggers. |
+| 28 | `test_le_pr_auc_en_production_ignore_les_comptes_contactes` | A contact changes the outcome it would score: contacted accounts are left out. | — |
+| 29 | `test_la_revue_trimestrielle_simulee_est_enregistree_et_marquee` | Part B in the recorded report: simulated outcomes on file (hashes match), the four quarterly verdicts tied to existing rules, the simulated mark. | — |
+| 30 | `test_les_donnees_de_reentrainement_excluent_les_contactes_et_suivent_la_fenetre` | M2: contacted accounts out, control group and non-contacted in; unknown outcomes out; M4: twelve sliding months before the reference date. | — |
+| 31 | `test_le_reentrainement_suit_l_echeance_et_les_seules_derives_reelles` | M3: due at three months; earlier only for an alert qualified as real drift. | a collection incident sends back to the data, never to retraining. |
+| 32 | `test_le_rapport_simule_trace_la_selection_et_les_decisions_de_reentrainement` | Part C in the recorded report: no contacted account among the retained, and month 3 retrains while month 2's collection incident goes back to the data. | — |
+| 33 | `test_les_verdicts_du_mois_sont_exposes_a_prometheus` | A6: each verdict reaches its gauge, each rule its 0/1 alert. | when the observability group is installed; without it, publishing is a silent no-op that never breaks a batch. |
+| 34 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
+| 35 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
+| 36 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
 
 ### Contrat d'affichage des notebooks
 
@@ -336,10 +348,10 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×111)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×111)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×112)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×112)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
-| 4 | `test_les_carnets_respectent_le_format_notebook` _(×11)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
+| 4 | `test_les_carnets_respectent_le_format_notebook` _(×12)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_est_execute_en_entier_sans_erreur` | The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026). | Outputs in the repository are only worth something if they are trustworthy: either the notebook carries none, or it carries ONE complete run, top to bottom - execution counts 1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the code in order does not produce) - with no error, and no path of the machine it ran on. |
 | 6 | `test_les_dependances_des_tests_sont_declarees` | Every third-party module the tests import is declared in base or dev dependencies. | A dependency inherited transitively from another group works locally, where the full environment is installed, and fails in CI, which installs only `dev`. That is exactly how `nbformat` slipped through: imported by the tests, provided by `nbconvert` in the `notebook` group, absent from the pipeline. Declaring it where the tests run turns a pipeline failure into a static check. |
 | 7 | `test_le_catalogue_s_ecrit_en_utf8_quel_que_soit_le_terminal` | The catalogue writes itself in UTF-8 rather than relying on shell redirection. | Redirecting the output tied the result to the terminal encoding: a Windows console opens `sys.stdout` in cp1252 and cannot represent the arrows the document contains, so `catalogue_tests.py > docs/TESTS.md` failed there while working on Linux. A tool whose success depends on the operating system of whoever runs it is a tool the CI cannot vouch for. |
@@ -352,6 +364,25 @@ soutenance.
 | 14 | `test_le_notebook_de_certification_lit_les_calculs_de_la_phase_5_sans_les_refaire` | B1: sections 8.A to 8.C read tools/selection_variables.py's recorded results. | A notebook committed from an older working copy brought the computations back once (11 minutes here, 15 to 20 on the laptop) without any test noticing. |
 | 15 | `test_la_session_de_tests_n_utilise_jamais_le_dossier_temporaire_partage` | Windows: the shared %TEMP%\pytest-of-<user> tree made every campaign fail at the very end (PermissionError on `pytest-current`), all tests having passed. | Every session now works in a unique directory of its own (tests/conftest.py), which pytest never scans. |
 | 16 | `test_chaque_phase_close_a_son_carnet_de_travail` | Rule 4 (revised 02/10): each phase has its executed working notebook. | Phases 7 (the modelling part) and 8 had none, and nothing noticed: the project tracker now says which phases are closed, and each of them must have a `notebooks/0N*_*.ipynb`. |
+| 17 | `test_le_notebook_de_certification_n_a_plus_de_texte_provisoire` | Placeholders survived several phases unnoticed (summary, conclusion, 'not deployed yet'): a deliverable must not promise text it does not contain. | — |
+| 18 | `test_l_annexe_b_couvre_les_47_criteres_de_la_grille` | Annex B lists every criterion of the evaluation grid, competency by competency. | — |
+| 19 | `test_le_notebook_de_certification_ne_cite_plus_d_element_perime` | Sketches and conventions written before phase 10 survived next to the real service: a `/score-churn` pseudo-API, `staging`/`production` aliases, model and snapshot names nobody uses, an MLflow image the compose no longer builds (corrected 04/10/2026). | A reader comparing the notebook with the repository would find two versions of the truth. The oral preparation document is the candidate's, not the jury's: the notebook does not cite it. |
+| 20 | `test_chaque_iteration_de_l_annexe_d_est_rattachee_a_une_boucle_du_cycle` | Section 2 listed five loops while Annex D logged fifteen iterations, and labelled the modelling-to-framing loop "weak signal" although the real trigger was a too-good score (AUC 0.999, a leak). | Every logged iteration now appears in the section 2 loop table. |
+| 21 | `test_le_notebook_n_affiche_pas_deux_fois_la_meme_information` | The cell audit of 04/10/2026 found tables repeating the figure next to them, the test metrics shown twice with two intervals, an exclusion table listing decisions taken two sections later, a probability rounded to "100 %", and a reading placed after the demonstration that followed what it commented. | None of them may come back. |
+| 22 | `test_aucune_cellule_de_texte_ne_depasse_la_lecture_en_trente_secondes` | Outside the annexes, the longest text cells reached 11,000 characters before the 04/10/2026 audit: a cell the candidate cannot justify in thirty seconds. | They were condensed to at most about 7,000; this ceiling keeps them there. |
+| 23 | `test_les_documents_livres_ne_citent_plus_d_element_perime` | The certification notebook was cleaned on 04/10/2026, but the same obsolete facts lived on elsewhere. | an MLflow 3.1.1 image in two READMEs, file names nobody uses in the phase 2 notebook, a staging alias in a comment, a ROC-AUC rounded by hand to 0,882 where the tool writes 0,881, a test set said to be read once although the phase 9 report read it again. |
+| 24 | `test_l_intervalle_de_la_pr_auc_du_test_est_celui_de_l_evaluation_finale` | Two bootstrap draws on the same 1,000 test scores gave two intervals, [0,712 ; 0,806] at the final evaluation and [0,710 ; 0,807] in the phase 9 report, both quoted until 04/10/2026. | One test evaluation, one interval: every document quotes the final one. |
+| 25 | `test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne` | Until 04/10/2026 section 10 described a textbook chain - unit tests at each commit - while the repository runs fast checks at commit, the test campaign at push and both CI jobs on GitHub. | The section now shows the real levels, with a capture of each. |
+| 26 | `test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee` | Section 11 carries the architecture diagram (C7). | its cell was an empty comment until 04/10/2026 - and the captures that prove the platform ran, attached to the notebook so that it stays readable on its own. |
+| 27 | `test_la_latence_citee_au_9g_est_celle_du_modele_servi` | Section 9.G quoted 57 ms for one account, a figure from an earlier run, beside a table showing 58.5 ms (04/10/2026). | The text quotes the served model's results, so that a new measurement makes this test fail until the text follows. |
+| 28 | `test_le_schema_du_11_ne_dessine_que_les_liaisons_que_le_code_realise` | Until 04/10/2026 the section 11 diagram drew the monthly batch feeding Prometheus and MLflow handing the model over. | The flow updates its gauges without starting the exporter, and the model in service is named by the alias file, MLflow being a mirror: a link the code does not make is not drawn, neither in the Mermaid source nor in the figure. |
+| 29 | `test_la_carence_de_la_liste_est_decrite_telle_que_l_outil_l_applique` | `tools/liste_operationnelle.py` accepts `--historique` but does not hand it to `construire_liste`: the two-month cooling-off period is coded, not applied. | Until 04/10/2026 the notebook said it was. While the tool ignores the history, section 10 says so. |
+| 30 | `test_la_promotion_n_est_pas_decrite_comme_conditionnee_par_l_outil` | `tools/promouvoir.py` moves the alias without comparing any score. | Until 04/10/2026 the notebook announced a promotion blocked by an automated comparison: while the promotion code reads no PR-AUC, no delivered text claims it. |
+| 31 | `test_les_doublons_de_cle_annonces_stricts_le_sont` | Section 6.1 shows 35 strict duplicates and 35 key duplicates, the second row warning that no automatic deduplication is possible; the text reads them as the same 35 rows. | That holds only if no key is left duplicated once the strict copies are dropped. |
+| 32 | `test_la_taille_des_sources_citee_est_celle_du_manifeste` | The three source files weigh 0.7 MB according to the manifest; "2 Mo" lived in the notebooks and five documents until 04/10/2026. | — |
+| 33 | `test_la_soutenance_de_l_annexe_c_tient_en_trente_minutes` | Annex C planned a 30-minute defence whose durations added up to 32 (until 04/10/2026). | — |
+| 34 | `test_l_annexe_e_rattache_chaque_dossier_a_ses_tests` | Annex E showed "—" (no tests) for `modelisation/` and `industrialisation/`, which have theirs, and an obsolete count of test files (until 04/10/2026). | — |
+| 35 | `test_chaque_element_du_registre_cite_par_le_notebook_existe` | On 04/10/2026 the notebook started citing D-11, the deferred deployment of the batch and its monitoring into the Docker stack: a register identifier quoted in the certification notebook must name an entry of `docs/registre_ecarts.toml`. | — |
 
 ### Stockage et cache des figures
 
@@ -487,6 +518,7 @@ soutenance.
 | 61 | `test_les_scores_enregistres_redonnent_l_evaluation_de_la_phase_7` | The reporting read scored the same evaluated champion: same PR-AUC and ROC-AUC as the single evaluation of phase 7, and cross-validation inside the test interval. | — |
 | 62 | `test_les_niveaux_de_mrr_sont_emboites` | R8: preserved <= covered <= exposed; capacity-limited, the business point covers more revenue with 28 accounts (57 %) than the protocol point with 100 (28 %). | — |
 | 63 | `test_le_critere_d_equite_est_applique_tel_que_valide` | R9, recomputed from the recorded rows: one conclusive segment out of the criterion, Switzerland. | documented, not corrected (R12). |
+| 64 | `test_les_chiffres_du_resume_et_de_la_conclusion_sont_ceux_des_resultats` | Every figure the executive summary and the conclusion quote is recomputed here from resultats/ and must appear in the text as written: a recomputed result that moved makes this test fail, and the message names the sentence to rewrite. | — |
 
 ### test_api.py
 
@@ -576,6 +608,9 @@ soutenance.
 | 2 | `test_le_lot_mensuel_passe_le_contrat_de_donnees` | _(sans description)_ | — |
 | 3 | `test_le_lot_mensuel_prepare_comme_l_entrainement` | On the full dataset, the batch preparation yields the training gold, byte for byte. | — |
 | 4 | `test_le_contrat_du_lot_n_exige_pas_les_colonnes_posterieures` | A monthly batch has no outcome yet: its contract must not demand `churn`. | — |
+| 5 | `test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi` | The monthly flow, its steps in production order, on the three simulated batches: data contract, scoring with the accounts' value and the catalogue, prioritisation, then the phase 11 verdicts. | Month 1 raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5); the flagged volume is compared month to month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so. The steps run without the Prefect engine (fixture `flux_sans_prefect`). |
+| 6 | `test_make_lot_mensuel_lance_le_flux_avec_le_champion_designe_par_son_alias` | `make lot-mensuel` runs `python -m churn_saas.industrialisation.flux`: until 04/10/2026 the module had no entry point and the command did nothing. | The champion is resolved as the API resolves it - the alias names the file, its hash is checked first - so an altered model file stops the batch before any account is scored. |
+| 7 | `test_chaque_compte_de_la_liste_porte_son_propre_score_malgre_les_doublons` | The full portfolio holds 35 duplicate rows, which silver drops and renumbers. | Until 04/10/2026 the identifiers and values were read from the batch by position: from the third row on, they shifted, the list held 5,035 rows and 9 of its first 10 accounts carried another account's score. Each listed account is scored here again, alone, as the API scores it - categories spelt as in training first (D-09) - and must find its own score and its own value. |
 
 ### test_modelisation.py
 

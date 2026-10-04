@@ -209,7 +209,7 @@ au délégué à la protection des données, pas à l'équipe technique.
 
 | Type de donnée | Support retenu | Motif |
 |---|---|---|
-| CSV sources (2 Mo) | **Git simple** | Sous 50 Mo, Git suffit et n'exige rien de particulier |
+| CSV sources (0,7 Mo) | **Git simple** | Sous 50 Mo, Git suffit et n'exige rien de particulier |
 | Instantanés d'entraînement | **Parquet, suivi Git-LFS** | Fichiers volumineux et immuables : le cas où LFS est pertinent |
 | Scores produits | **PostgreSQL** | On les interroge, on ne les versionne pas |
 | Fiches de version | **Git simple** | Minuscules, textuelles, et ce sont elles le contrat |
@@ -365,7 +365,7 @@ contrôle compare ces empreintes avant tout entraînement.
 
 | Jeu | Support | Conservé dans l'historique |
 |---|---|---|
-| Fichiers de départ | `data/raw/*.csv` | **Oui** — 2 Mo, référence de tout le reste |
+| Fichiers de départ | `data/raw/*.csv` | **Oui** — 0,7 Mo, référence de tout le reste |
 | Jeu nettoyé | `data/processed/*.parquet` | Non — recalculable |
 | Jeu d'entraînement | `data/processed/*.parquet` | Non — recalculable |
 | Fiche de version | `data/manifeste_v1.0.json` | **Oui** — c'est elle le contrat |
@@ -678,7 +678,7 @@ CO₂e — quelques minutes et quelques grammes pour toute la phase (`docs/06.SO
 > capacité à dire *pourquoi* un client précis a été signalé — sans elle, un conseiller ne peut pas agir de
 > façon pertinente.
 
-- [x] Évaluer sur le jeu de test — *lecture unique de restitution (R6) : PR-AUC 0,761 [0,710 ; 0,807], validation croisée dans l'intervalle*
+- [x] Évaluer sur le jeu de test — *lecture de restitution (R6), sans décision ; PR-AUC 0,761 [0,712 ; 0,806] (évaluation finale), validation croisée dans l'intervalle*
 - [x] Appliquer la règle de décision économique — *valeur nette, seuil par compte (×356), liste stable (Jaccard 0,87)*
 - [x] Produire l'analyse d'importance des variables — *permutation sur le test, contributions exactes, comparaison SHAP*
 - [x] Vérifier l'absence de traitement défavorable par secteur, pays et taille d'entreprise — *18 segments, un écart (Suisse) documenté et surveillé*
@@ -753,7 +753,7 @@ non installé — le cas d'usage ne comporte pas d'environnement réel.)*
 
 ---
 
-## 11 · Suivi & ré-entraînement *(conçu, non mis en service)*
+## 11 · Suivi & ré-entraînement *(implémenté, démontré sur lots simulés)*
 
 > **De quoi s'agit-il ?** Un modèle se dégrade avec le temps, parce que la réalité évolue. La **dérive**
 > désigne ce décalage progressif entre les données d'aujourd'hui et celles sur lesquelles le modèle a
@@ -762,7 +762,11 @@ non installé — le cas d'usage ne comporte pas d'environnement réel.)*
 - [x] Définir les indicateurs, leurs seuils d'alerte et l'action associée
 - [x] Définir la fréquence de ré-entraînement
 - [x] Formaliser le retour vers la phase Données en cas d'alerte
-- [ ] Implémenter le calcul de dérive
+- [x] Implémenter le calcul de dérive — profil de référence versionné avec le modèle, verdicts M5, M8, M9
+- [x] Valider les valeurs par défaut avant tout calcul (M1 à M10, S1 à S8 — choix méthodologiques § 7 nonies)
+- [x] Démontrer le suivi sur lots simulés : mensuel, revue trimestrielle, décision de réentraînement
+- [ ] Reporter au § 13 du notebook de certification — exécution sur le poste du porteur
+- [ ] Obtenir du commanditaire l'issue de **tous** les comptes et les responsables nommés des alertes
 
 **Chaque indicateur est associé à un seuil, une action et un responsable nommé.** Un indicateur sans seuil
 ne se surveille pas ; un seuil sans action associée ne sert à rien.
@@ -778,8 +782,11 @@ détecter de nouvelles. Cette référence doit donc être versionnée au même t
 
 🔧 **Outils** : PSI *(Population Stability Index — indicateur mesurant l'écart entre deux distributions)* ·
 test de Kolmogorov-Smirnov · tableau de bord de suivi
-📦 **Artefacts** : section 13 du notebook · tableau indicateur / seuil / action / responsable
-**Statut** : **partiel** — dispositif conçu, calcul à implémenter
+📦 **Artefacts** : carnet `notebooks/11_suivi.ipynb` · `monitoring/suivi.py`, `reentrainement.py`, `simulation.py` ·
+`resultats/profil_reference.json`, `resultats/suivi_simule.json` · lots simulés `data/simulation/` · section 13 du
+notebook · tableau indicateur / seuil / action / responsable
+**Statut** : **implémenté** — démontré sur lots simulés (mécanique, jamais la performance) ; mise en service sur
+données réelles à la réception des issues de tous les comptes
 
 ---
 
@@ -856,11 +863,11 @@ argument défendable devant un jury.
 | 4 · Préparation | 🟢 Terminé | 01/10 |
 | 5 · Feature engineering | 🟢 Terminé | 02/10 |
 | 6 · Baseline | 🟢 Terminé | 02/10 |
-| 7 · Entraînement | 🔴 À faire | 25/09 |
-| 8 · Optimisation | 🔴 À faire | 25/09 |
-| 9 · Validation | 🔴 À faire | 26/09 |
-| 10 · Déploiement | 🟠 Partiel | 27/09 |
-| 11 · Suivi | 🟠 Partiel | 28/09 |
-| **Gel des livrables** | — | **28/09 au soir** |
-| Support de présentation | 🔴 À faire | 29–30/09 |
-| **Remise** | — | **01/10** |
+| 7 · Entraînement | 🟢 Terminé | 03/10 |
+| 8 · Optimisation | 🟢 Terminé | 03/10 |
+| 9 · Validation | 🟢 Terminé | 03/10 |
+| 10 · Déploiement | 🟢 Terminé | 04/10 |
+| 11 · Suivi | 🟢 Terminé — démontré sur lots simulés | 04/10 |
+| **Gel des livrables** | — | **04/10, à confirmer** |
+| Support de présentation | 🟠 En cours | 04–05/10 |
+| **Remise** | — | **05/10 au matin** |

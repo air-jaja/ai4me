@@ -116,7 +116,7 @@ Shared chain bronze -> silver -> gold; variables after the decision date removed
 
 <!-- This section provides information about throughput, start/end time, checkpoint size if relevant, etc. -->
 
-27.2 kB; training 0.483 s; one account 13.42 ms (x4.5 faster than the evaluated five-copy champion).
+27.2 kB; training 0.483 s; one account 12.0 ms (x4.9 faster than the evaluated five-copy champion).
 
 ## Evaluation
 
@@ -213,7 +213,7 @@ PR-AUC: area under the precision-recall curve. Expected net value: probability x
 
 ## More Information [optional]
 
-Monitoring and retraining plan: to be completed in phase 11. Decisions and rejected options: docs/00.README_choix_methodologiques.md, docs/05.REGISTRE_elements_ecartes.md.
+Monitoring and retraining plan (phase 11, rules M1-M10 validated before any computation). Monthly, against a reference profile versioned with the model (resultats/profil_reference.json): drift alert when one key variable (derniere_connexion_jours, anciennete_mois, nb_integrations, tickets_support_90j) has a PSI above 0.25, 3 variables above 0.1, or the score above 0.1; missing values above 2 x their training share; flagged accounts moving by more than 30% from the previous month. Quarterly: at-risk revenue coverage of at least 50%, recall on the Switzerland segment (phase 9 fairness criterion), retention against the control group, PR-AUC drop above 15%. An alert warns and is qualified by a person; it never blocks scoring. Retraining every 3 months, earlier on an alert qualified as real drift, on a 12-month window excluding contacted accounts (control group and non-contacted accounts kept); a new champion comes with a new reference profile. Demonstrated on simulated batches (data/simulation/, notebooks/11_suivi.ipynb): mechanics only, no performance claim. Decisions and rejected options: docs/00.README_choix_methodologiques.md, docs/05.REGISTRE_elements_ecartes.md.
 
 ## Model Card Authors [optional]
 

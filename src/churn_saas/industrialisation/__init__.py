@@ -21,7 +21,7 @@ except ImportError:  # scoring, the list and the service must still import witho
     construire_moteur = creer_schema = ecrire_scores = lire_derniers_scores = _stockage_absent
 from .dictionnaire import ENTREES, harmoniser, par_colonne, vocabulaire
 from .liste import FORMULATIONS, LIBELLES, construire_liste, motif, selectionner, tranche
-from .scoring import controler_lot, preparer, scorer_lot_mensuel
+from .scoring import controler_lot, preparer, preparer_lot, scorer_lot_mensuel
 from .service import reponse_scoring_unitaire
 
 __all__ = [
@@ -37,6 +37,7 @@ __all__ = [
     "LIBELLES",
     "FORMULATIONS",
     "preparer",
+    "preparer_lot",
     "scorer_lot_mensuel",
     "controler_lot",
     "reponse_scoring_unitaire",

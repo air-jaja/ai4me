@@ -74,3 +74,37 @@ def injecter_derive(lot, generateur):
     lignes = generateur.choice(len(lot), size=round(part * len(lot)), replace=False)
     lot.loc[lot.index[lignes], variable] = pd.NA
     return lot
+
+
+def injecter_derive_forte(lot, generateur):
+    """S8: a marked disengagement - 30 days added to the last login of 30 % of the accounts."""
+    import pandas as pd
+
+    lot = lot.copy()
+    variable, part, ajout = (DERIVE_CONNEXION_FORTE[k] for k in ("variable", "part", "ajout_jours"))
+    lignes = generateur.choice(len(lot), size=round(part * len(lot)), replace=False)
+    valeurs = pd.to_numeric(lot[variable].iloc[lignes], errors="coerce") + ajout
+    lot.loc[lot.index[lignes], variable] = [
+        lot[variable].iloc[i] if pd.isna(v) else str(int(v))
+        for i, v in zip(lignes, valeurs, strict=True)
+    ]
+    return lot
+
+
+def simuler_issues(groupes, probabilites, generateur):
+    """S5: each account's outcome three months later, drawn from the model's probability -
+    lowered by the efficacy hypothesis for the accounts actually contacted.
+
+    Outcomes drawn this way make the model right by construction (S6): they exercise the
+    quarterly review, they measure nothing about the model.
+    """
+    import numpy as np
+    import pandas as pd
+
+    risque = np.where(
+        np.asarray(groupes) == "contact",
+        np.asarray(probabilites) * (1 - REDUCTION_RISQUE_CONTACT),
+        np.asarray(probabilites),
+    )
+    partis = generateur.random(len(risque)) < risque
+    return pd.Series(np.where(partis, "parti", "reste"), index=getattr(groupes, "index", None))
