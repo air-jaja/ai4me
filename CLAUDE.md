@@ -9,8 +9,9 @@ valeur pour les conseillers, API de score à la demande. Porteur : Rakotovoalavo
 - **Le jeu de test a été lu deux fois, pour de bon** (évaluation phase 7, restitution phase 9). Ne jamais le relire ;
   `tools/restitution_test.py` et `tools/evaluation_finale.py` le refusent.
 - Commits **au nom du porteur**, message `NN · type: objet` (`docs/LIVRAISON.md`) ; jamais `--no-verify`.
-- **Commit au fil de l'activité, push une seule fois à la fin** : on commite sans pousser ; le push final se fait quand
-  l'activité est terminée, sur demande du porteur. Chaque message de commit lui est soumis avant le commit.
+- **Commit au fil de l'activité, push une seule fois à la fin** : on commite à chaque fin d'étape, sans pousser ; le
+  push final se fait quand l'activité est terminée, sur demande du porteur. Les messages ne lui sont plus soumis à
+  chaque commit (04/10/2026) : il vérifie celui du dernier commit, avant le push final.
 - Avant tout push : `uv run python tools/campagne_tests.py` (et `make check`) ; la CI a deux jobs, le job `complet`
   ne tolère aucun test ignoré.
 - Hooks installés par `make hooks` après chaque clone : au commit, les documents générés dont une source change
