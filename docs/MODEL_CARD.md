@@ -116,7 +116,7 @@ Shared chain bronze -> silver -> gold; variables after the decision date removed
 
 <!-- This section provides information about throughput, start/end time, checkpoint size if relevant, etc. -->
 
-27.2 kB; training 0.483 s; one account 12.0 ms (x4.9 faster than the evaluated five-copy champion).
+One account 12.0 ms, a batch of 5,000 accounts 0.054 s (x4.9 faster than the evaluated five-copy champion).
 
 ## Evaluation
 
@@ -146,22 +146,22 @@ PR-AUC (primary: 28 % churners), ROC-AUC, calibration error, precision at the op
 
 | Metric | Test (95 % interval) |
 |---|---|
-| PR-AUC | 0.761 [0.710; 0.807] |
-| ROC-AUC | 0.881 [0.859; 0.903] |
-| Calibration error | 0.036 [0.027; 0.062] |
+| PR-AUC | 0.761 [0.712; 0.806] |
+| ROC-AUC | 0.881 [0.858; 0.904] |
+| Calibration error | 0.036 [0.028; 0.061] |
 | Business point (28 accounts) | precision 0.64 |
 | Protocol point (top 10 %) | precision 0.88, recall 0.31 |
 | Revenue at risk covered (28 accounts) | 57% |
 
 #### Summary
 
-Cross-validation PR-AUC 0.793 lies within the test interval. Versus the frozen baseline, RandomForestClassifier (0.774) and XGBClassifier (0.780) do not beat LogisticRegression. The served one-copy model is equivalent to the evaluated champion (paired gap -0.0001, rank correlation 0.9999). 2833 of 4000 accounts are worth a contact: capacity, not profitability, is the constraint; the treated list is stable (mean Jaccard 0.87).
+Cross-validation PR-AUC 0.793 lies within the test interval. Versus the frozen baseline, RandomForestClassifier (0.774) and XGBClassifier (0.780) do not beat LogisticRegression. The served one-copy model is equivalent to the evaluated champion (paired gap -0.0001, rank correlation 0.9999). 2833 of 4000 accounts pass their own threshold: capacity, not profitability, is the constraint; the treated list is stable (mean Jaccard 0.87).
 
 ## Model Examination [optional]
 
 <!-- Relevant interpretability work for the model goes here -->
 
-Exact linear contributions per account (base + contributions = score). On the test set, the most important features by permutation are derniere_connexion_jours, anciennete_mois, nb_integrations, tickets_support_90j.
+Exact linear contributions per account (base + contributions = score before calibration). On the test set, the most important features by permutation are derniere_connexion_jours, anciennete_mois, nb_integrations, tickets_support_90j.
 
 ## Environmental Impact
 
@@ -170,10 +170,10 @@ Exact linear contributions per account (base + contributions = score). On the te
 Carbon emissions can be estimated using the [Machine Learning Impact calculator](https://mlco2.github.io/impact#compute) presented in [Lacoste et al. (2019)](https://arxiv.org/abs/1910.09700).
 
 - **Hardware Type:** Laptop CPU (Intel Core i5-6300U, 4 cores)
-- **Hours used:** Training under one second; whole tuning about two minutes
+- **Hours used:** Training under one second; whole tuning 64 s
 - **Cloud Provider:** None (local)
 - **Compute Region:** None (local)
-- **Carbon Emitted:** About 0.00335 Wh of energy per training (measured time x power); carbon negligible.
+- **Carbon Emitted:** Thousandths of a watt-hour per training, measured for the tuned models in phase 8 (resultats/ressources_modeles.json, docs/06.SOBRIETE_calcul.md); carbon negligible.
 
 ## Technical Specifications [optional]
 
@@ -183,7 +183,7 @@ Calibrated logistic regression on 18 tabular features; objective: log-loss.
 
 ### Compute Infrastructure
 
-Local workstation; MLflow tracking; Docker stack (API, MLflow, PostgreSQL).
+Local workstation: training, MLflow tracking, monthly batch. Docker stack: the API is demonstrated in it; its MLflow server and the batch deployment are deferred (D-06, D-10, D-11).
 
 #### Hardware
 

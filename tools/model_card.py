@@ -25,9 +25,10 @@ def _lire(nom: str) -> dict:
     return json.loads((RACINE / "resultats" / f"{nom}.json").read_text(encoding="utf-8"))
 
 
-def _ic(valeur: dict) -> str:
-    bas, haut = valeur["intervalle_95"]
-    return f"{valeur['valeur']:.3f} [{bas:.3f}; {haut:.3f}]"
+def _ic(finale: dict, metrique: str) -> str:
+    """The single test evaluation, with its interval - the figures the notebook publishes (9.C)."""
+    bas, haut = finale["intervalles_95"][metrique]
+    return f"{finale['metriques'][metrique]:.3f} [{bas:.3f}; {haut:.3f}]"
 
 
 def plan_de_suivi() -> str:
@@ -58,7 +59,11 @@ def plan_de_suivi() -> str:
 def contexte() -> dict:
     servi = _lire("modele_servi")
     validation, regle = _lire("validation_phase9"), _lire("regle_decision")
-    selection, ressources = _lire("selection_modele"), _lire("ressources_modeles")
+    selection, finale, reglage = (
+        _lire("selection_modele"),
+        _lire("evaluation_finale"),
+        _lire("reglage_modele"),
+    )
     restitution = _lire("restitution_test")
     registre = json.loads(
         (RACINE / "resultats" / "registre_modeles.json").read_text(encoding="utf-8")
@@ -66,18 +71,15 @@ def contexte() -> dict:
     manifeste = json.loads((RACINE / "data" / "manifeste_v1.0.json").read_text(encoding="utf-8"))
     entree = [e for e in registre if e["nom"] == "churn_saas_servi"][-1]
     descriptif, hyper = servi["descriptif_modele"], servi["hyperparametres"]
-    m = validation["metriques"]
     metier = validation["matrices"]["métier (28 comptes, valeur nette)"]
     protocole = validation["matrices"]["protocole (10 % les plus risqués)"]
     mrr = validation["mrr"]["métier"]
     equivalence = servi["equivalence"]
-    lr = next(r for r in ressources["mesures"] if r["modèle"].startswith("régression"))
     comparaison = {c["modèle"]: c for c in selection["comparaison"]}
     importance = [i["variable"] for i in restitution["importance_permutation"][:4]]
     hors = ", ".join(validation["equite_synthese"]["segments concluants hors critère"]) or "none"
     gold = manifeste["jeux_derives"]["jeux"]["gold"]
     acceleration = equivalence["accélération d'un compte"]
-    energie = lr["énergie d'un entraînement (Wh)"]
     return {
         "card_data": "\n".join(
             [
@@ -156,8 +158,8 @@ def contexte() -> dict:
         "18 features retained in phase 5.",
         "training_regime": "fp64, scikit-learn; deterministic (fixed seed), refit in about one second.",
         "speeds_sizes_times": (
-            f"{lr['taille (Ko)']} kB; training {lr['entraînement (s)']} s; one account "
-            f"{servi['mesures']['modèle servi (une copie calibrée)']['un compte (ms)']} ms "
+            f"One account {servi['mesures']['modèle servi (une copie calibrée)']['un compte (ms)']} ms, "
+            f"a batch of 5,000 accounts {servi['mesures']['modèle servi (une copie calibrée)']['lot de 5 000 comptes (s)']} s "
             f"(x{acceleration} faster than the evaluated five-copy champion)."
         ),
         "testing_data": "1,000 accounts held out and read for evaluation once (phase 7), then once more for "
@@ -169,9 +171,9 @@ def contexte() -> dict:
             [
                 "| Metric | Test (95 % interval) |",
                 "|---|---|",
-                f"| PR-AUC | {_ic(m['PR-AUC'])} |",
-                f"| ROC-AUC | {_ic(m['ROC-AUC'])} |",
-                f"| Calibration error | {_ic(m['erreur de calibration'])} |",
+                f"| PR-AUC | {_ic(finale, 'PR-AUC')} |",
+                f"| ROC-AUC | {_ic(finale, 'ROC-AUC')} |",
+                f"| Calibration error | {_ic(finale, 'erreur de calibration')} |",
                 f"| Business point (28 accounts) | precision {metier['précision']:.2f} |",
                 f"| Protocol point (top 10 %) | precision {protocole['précision']:.2f}, recall {protocole['rappel']:.2f} |",
                 f"| Revenue at risk covered (28 accounts) | {mrr['part couverte']:.0%} |",
@@ -185,20 +187,22 @@ def contexte() -> dict:
             f"The served one-copy model is equivalent to the evaluated champion (paired gap "
             f"{equivalence['gain apparié du modèle servi']:+.4f}, rank correlation "
             f"{equivalence['corrélation de rang des probabilités']:.4f}). {regle['comptes_rentables']} of "
-            f"{regle['comptes']} accounts are worth a contact: capacity, not profitability, is the constraint; "
+            f"{regle['comptes']} accounts pass their own threshold: capacity, not profitability, is the constraint; "
             f"the treated list is stable (mean Jaccard {regle['stabilite']['jaccard_moyen']:.2f})."
         ),
         "model_examination": (
-            f"Exact linear contributions per account (base + contributions = score). On the test set, the "
+            f"Exact linear contributions per account (base + contributions = score before calibration). On the test set, the "
             f"most important features by permutation are {', '.join(importance)}."
         ),
         "hardware_type": "Laptop CPU (Intel Core i5-6300U, 4 cores)",
-        "hours_used": "Training under one second; whole tuning about two minutes",
+        "hours_used": f"Training under one second; whole tuning {reglage['duree_s']:.0f} s",
         "cloud_provider": "None (local)",
         "cloud_region": "None (local)",
-        "co2_emitted": f"About {energie} Wh of energy per training (measured time x power); carbon negligible.",
+        "co2_emitted": "Thousandths of a watt-hour per training, measured for the tuned models in phase 8 "
+        "(resultats/ressources_modeles.json, docs/06.SOBRIETE_calcul.md); carbon negligible.",
         "model_specs": "Calibrated logistic regression on 18 tabular features; objective: log-loss.",
-        "compute_infrastructure": "Local workstation; MLflow tracking; Docker stack (API, MLflow, PostgreSQL).",
+        "compute_infrastructure": "Local workstation: training, MLflow tracking, monthly batch. Docker stack: "
+        "the API is demonstrated in it; its MLflow server and the batch deployment are deferred (D-06, D-10, D-11).",
         "hardware_requirements": "Any CPU; under 10 MB of memory to score.",
         "software": "Python 3.11, scikit-learn, pandas; versions locked in uv.lock.",
         "citation_bibtex": "Not applicable",

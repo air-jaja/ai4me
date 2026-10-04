@@ -824,20 +824,34 @@ def test_le_schema_du_11_ne_dessine_que_les_liaisons_que_le_code_realise():
         assert not re.search(r'\("lot", "\w", "prometheus"', figure)
 
 
-def test_la_carence_de_la_liste_est_decrite_telle_que_l_outil_l_applique():
-    """`tools/liste_operationnelle.py` accepts `--historique` but does not hand it to
-    `construire_liste`: the two-month cooling-off period is coded, not applied. Until
-    04/10/2026 the notebook said it was. While the tool ignores the history, section 10 says so."""
+def _historique_transmis_a_la_liste() -> bool:
+    """Whether `tools/liste_operationnelle.py` hands the contact history to `construire_liste`."""
     arbre = ast.parse((RACINE / "tools" / "liste_operationnelle.py").read_text(encoding="utf-8"))
     appel = next(
         n
         for n in ast.walk(arbre)
         if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "construire_liste"
     )
-    transmis = "historique" in {k.arg for k in appel.keywords} or len(appel.args) >= 10
+    return "historique" in {k.arg for k in appel.keywords} or len(appel.args) >= 10
+
+
+def test_la_carence_de_la_liste_est_decrite_telle_que_l_outil_l_applique():
+    """`tools/liste_operationnelle.py` accepts `--historique` but does not hand it to
+    `construire_liste`: the two-month cooling-off period is coded, not applied. Until
+    04/10/2026 the notebook said it was. While the tool ignores the history, section 10 says so."""
     texte = "".join(c.source for c in _section_certification("## 10.", "## 11."))
-    if not transmis:
+    if not _historique_transmis_a_la_liste():
         assert "`--historique`" in texte and "non branchée" in texte
+
+
+def test_l_integration_crm_ne_presente_pas_la_carence_comme_appliquee():
+    """docs/INTEGRATION_CRM.md, the contract with the CRM team, described the cooling-off period
+    as applied (until 04/10/2026, cross-document check); while the tool ignores the history,
+    the contract says the rule is coded but not yet applied."""
+    contrat = (RACINE / "docs" / "INTEGRATION_CRM.md").read_text(encoding="utf-8")
+    ligne = next(ligne for ligne in contrat.split("\n") if "**Compte déjà traité**" in ligne)
+    if not _historique_transmis_a_la_liste():
+        assert "pas encore appliquée" in ligne and "D-11" in ligne
 
 
 def test_la_promotion_n_est_pas_decrite_comme_conditionnee_par_l_outil():
@@ -999,3 +1013,63 @@ def test_les_annexes_se_suivent_et_chaque_renvoi_trouve_la_sienne():
     assert set(re.findall(r"\bAnnexe ([A-Z])\b", texte)) <= set(lettres)
     assert "### Annexe C — Journal des itérations" in texte
     assert "https://github.com/air-jaja/ai4me" in nb.cells[0].source
+
+
+def test_la_model_card_publie_l_evaluation_finale():
+    """The model card took its test intervals from the phase 9 report ([0.710; 0.807]) while the
+    notebook publishes the final evaluation's ([0.712; 0.806]) - one test evaluation, one
+    interval, in every language (cross-document check, 04/10/2026)."""
+    import json
+
+    finale = json.loads(
+        (RACINE / "resultats" / "evaluation_finale.json").read_text(encoding="utf-8")
+    )
+    carte = (RACINE / "docs" / "MODEL_CARD.md").read_text(encoding="utf-8")
+    for metrique, libelle in (
+        ("PR-AUC", "PR-AUC"),
+        ("ROC-AUC", "ROC-AUC"),
+        ("erreur de calibration", "Calibration error"),
+    ):
+        bas, haut = finale["intervalles_95"][metrique]
+        valeur = finale["metriques"][metrique]
+        assert f"| {libelle} | {valeur:.3f} [{bas:.3f}; {haut:.3f}] |" in carte, libelle
+
+
+def test_le_readme_presente_les_outils_tels_qu_ils_servent():
+    """The README, the repository's front page, still showed the 01/10 positions: MLflow
+    deferred to phase 10, SHAP to be decided, XGBoost always set aside - all three since
+    used - and a notebook said to run on the base dependencies alone (04/10/2026)."""
+    readme = (RACINE / "README.md").read_text(encoding="utf-8")
+    ecartes = readme[readme.index("**Toujours écartés**") :].split("\n---")[0]
+    assert "XGBoost" not in ecartes, "XGBoost a été réglé et comparé (§ 9.A)."
+    assert "À arbitrer" not in readme and "seules dépendances de base" not in readme
+    assert re.search(r"^\| MLflow \|.*retenu en phase 7", readme, re.M)
+    paquets = len(
+        re.findall(r"^\[\[package\]\]", (RACINE / "uv.lock").read_text(encoding="utf-8"), re.M)
+    )
+    assert f"des {paquets} dépendances" in readme
+
+
+def test_les_chemins_et_identifiants_cites_par_les_documents_existent():
+    """The cross-document check of 04/10/2026 found a commented path to a renamed document in
+    pyproject.toml, a phase notebook pointing to a document under its old name, and register
+    identifiers (D-07) that no entry carries. Every `docs/...` path quoted in a delivered text
+    exists, and every E- or D- identifier names a register entry."""
+    import tomllib
+
+    registre = tomllib.loads((RACINE / "docs" / "registre_ecarts.toml").read_text(encoding="utf-8"))
+    connus = {e["id"] for e in registre["element"]}
+    chemins, identifiants = {}, {}
+    for nom, texte in _textes_livres().items():
+        absents = {
+            c
+            for c in re.findall(r"(?<![\w/.\-])docs/[\w.\-/]+\.(?:md|json|toml|png)", texte)
+            if not (RACINE / c).exists()
+        }
+        inconnus = set(re.findall(r"\b[ED]-\d{2,3}\b", texte)) - connus
+        if absents:
+            chemins[nom] = sorted(absents)
+        if inconnus:
+            identifiants[nom] = sorted(inconnus)
+    assert not chemins, f"Documents cités introuvables : {chemins}"
+    assert not identifiants, f"Identifiants absents du registre : {identifiants}"

@@ -77,11 +77,10 @@ explicabilite = [
     "shap>=0.46",
 ]
 
-# C4 — Optimisation d'hyperparamètres avec élagage.
-# Optuna explore par échantillonnage bayésien (TPE) et interrompt les essais sans
-# avenir. À budget égal il couvre davantage d'espace qu'une grille exhaustive, et à
-# couverture égale il consomme moins : c'est un choix d'éco-conception, pas son
-# contraire (voir docs/README_choix_methodologiques.md § 8).
+# C4 — Groupe déclaré mais inutilisé : Optuna et CodeCarbon ont été écartés le 01/10,
+# avant tout résultat (GridSearchCV borné ; temps de calcul mesuré et converti). Aucun
+# module ne les importe (registre E-501, E-502 ; docs/00.README_choix_methodologiques.md,
+# arbitrages A-01 et A-04).
 optimisation = [
     "optuna>=3.6",
     "codecarbon>=2.4",      # mesure de l'empreinte du calcul — preuve chiffrée

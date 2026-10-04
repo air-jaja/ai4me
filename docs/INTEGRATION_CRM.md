@@ -6,7 +6,7 @@ Réglages dans `src/churn_saas/industrialisation/liste.py`.
 |---|---|---|
 | **Format** | CSV UTF-8 avec BOM, séparateur `;`, une ligne par compte, libellés métier (`industrialisation/liste.py`, `LIBELLES`) | — |
 | **Fréquence** | Lot **mensuel** : `tools/liste_operationnelle.py` ; score à la demande par l'API | — |
-| **Compte déjà traité** | Écarté s'il a été contacté il y a moins de 2 mois, sauf hausse du gain attendu de plus de 50 % ou événement critique signalé par le CRM | `CARENCE_MOIS`, `HAUSSE_REINTEGRATION` |
+| **Compte déjà traité** | Règle prévue : écarté s'il a été contacté il y a moins de 2 mois, sauf hausse du gain attendu de plus de 50 % ou événement critique signalé par le CRM. **Codée dans `construire_liste`, pas encore appliquée** : l'outil de liste ne lui transmet pas l'historique des contacts (`--historique` accepté, non branché ; registre D-11) | `CARENCE_MOIS`, `HAUSSE_REINTEGRATION` |
 | **Groupe témoin** | 10 % des comptes sélectionnés, tirés au sort (graine = mois de la liste), **non contactés** | `PART_GROUPE_TEMOIN` |
 | **Boucle de retour** | Le CRM renvoie l'issue à 3 mois de chaque compte de la liste, contacté **et** témoin : `tools/retours_terrain.py` mesure l'efficacité réelle | — |
 

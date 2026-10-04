@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**822 cas de test** issus de 447 fonctions, répartis sur 25 fichiers.
+**826 cas de test** issus de 451 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,7 +37,7 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 329 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 333 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
@@ -378,16 +378,20 @@ soutenance.
 | 28 | `test_la_latence_citee_au_9g_est_celle_du_modele_servi` | Section 9.G quoted 57 ms for one account, a figure from an earlier run, beside a table showing 58.5 ms (04/10/2026). | The text quotes the served model's results, so that a new measurement makes this test fail until the text follows. |
 | 29 | `test_le_schema_du_11_ne_dessine_que_les_liaisons_que_le_code_realise` | Until 04/10/2026 the section 11 diagram drew the monthly batch feeding Prometheus and MLflow handing the model over. | The flow updates its gauges without starting the exporter, and the model in service is named by the alias file, MLflow being a mirror: a link the code does not make is not drawn, neither in the Mermaid source nor in the figure. |
 | 30 | `test_la_carence_de_la_liste_est_decrite_telle_que_l_outil_l_applique` | `tools/liste_operationnelle.py` accepts `--historique` but does not hand it to `construire_liste`: the two-month cooling-off period is coded, not applied. | Until 04/10/2026 the notebook said it was. While the tool ignores the history, section 10 says so. |
-| 31 | `test_la_promotion_n_est_pas_decrite_comme_conditionnee_par_l_outil` | `tools/promouvoir.py` moves the alias without comparing any score. | Until 04/10/2026 the notebook announced a promotion blocked by an automated comparison: while the promotion code reads no PR-AUC, no delivered text claims it. |
-| 32 | `test_les_doublons_de_cle_annonces_stricts_le_sont` | Section 6.1 shows 35 strict duplicates and 35 key duplicates, the second row warning that no automatic deduplication is possible; the text reads them as the same 35 rows. | That holds only if no key is left duplicated once the strict copies are dropped. |
-| 33 | `test_la_taille_des_sources_citee_est_celle_du_manifeste` | The three source files weigh 0.7 MB according to the manifest; "2 Mo" lived in the notebooks and five documents until 04/10/2026. | — |
-| 34 | `test_l_annexe_d_rattache_chaque_dossier_a_ses_tests` | The code organisation annex (D, formerly E) showed "—" (no tests) for `modelisation/` and `industrialisation/`, which have theirs, and an obsolete count of test files (until 04/10/2026). | — |
-| 35 | `test_chaque_element_du_registre_cite_par_le_notebook_existe` | On 04/10/2026 the notebook started citing D-11, the deferred deployment of the batch and its monitoring into the Docker stack: a register identifier quoted in the certification notebook must name an entry of `docs/registre_ecarts.toml`. | — |
-| 36 | `test_la_regle_du_9e_ne_confond_pas_seuil_et_valeur_nette` | Section 9.E said the net expected value p x V x efficacy - cost is positive exactly when p exceeds p* = cost / (cost + efficacy x V); algebra says p > cost / (efficacy x V). | The threshold is the section 8 rule, the ranking uses the net value (final re-check, 04/10/2026): while the two criteria differ, the text does not merge them. |
-| 37 | `test_la_stabilite_de_la_liste_est_citee_en_part_de_comptes_communs` | Section 9.E read a Jaccard index of 0.87 as "87 % of the same list"; two lists of equal size sharing a share s of their accounts have a Jaccard index s / (2. | s). |
-| 38 | `test_l_intervalle_de_calibration_du_test_est_cite_quand_il_depasse_l_objectif` | The test calibration error, 0.036, is under the 0.05 objective but its 95 % interval reaches 0.061; until 04/10/2026 sections 9.C and 12.A only said "under the objective". | — |
-| 39 | `test_le_paragraphe_10_ne_prete_au_flux_que_les_verdicts_qu_il_calcule` | Section 10 credited the monthly flow with the M1 to M10 verdicts; it computes M5, M8 and M9, the quarterly review the others (final re-check, 04/10/2026). | — |
-| 40 | `test_les_annexes_se_suivent_et_chaque_renvoi_trouve_la_sienne` | On 04/10/2026 the defence-timing annex (C) was removed: the iteration log became C and the code organisation D. | Annex letters follow each other, every "Annexe X" quoted in the notebook exists, and the cover page gives the repository's address. |
+| 31 | `test_l_integration_crm_ne_presente_pas_la_carence_comme_appliquee` | docs/INTEGRATION_CRM.md, the contract with the CRM team, described the cooling-off period as applied (until 04/10/2026, cross-document check); while the tool ignores the history, the contract says the rule is coded but not yet applied. | — |
+| 32 | `test_la_promotion_n_est_pas_decrite_comme_conditionnee_par_l_outil` | `tools/promouvoir.py` moves the alias without comparing any score. | Until 04/10/2026 the notebook announced a promotion blocked by an automated comparison: while the promotion code reads no PR-AUC, no delivered text claims it. |
+| 33 | `test_les_doublons_de_cle_annonces_stricts_le_sont` | Section 6.1 shows 35 strict duplicates and 35 key duplicates, the second row warning that no automatic deduplication is possible; the text reads them as the same 35 rows. | That holds only if no key is left duplicated once the strict copies are dropped. |
+| 34 | `test_la_taille_des_sources_citee_est_celle_du_manifeste` | The three source files weigh 0.7 MB according to the manifest; "2 Mo" lived in the notebooks and five documents until 04/10/2026. | — |
+| 35 | `test_l_annexe_d_rattache_chaque_dossier_a_ses_tests` | The code organisation annex (D, formerly E) showed "—" (no tests) for `modelisation/` and `industrialisation/`, which have theirs, and an obsolete count of test files (until 04/10/2026). | — |
+| 36 | `test_chaque_element_du_registre_cite_par_le_notebook_existe` | On 04/10/2026 the notebook started citing D-11, the deferred deployment of the batch and its monitoring into the Docker stack: a register identifier quoted in the certification notebook must name an entry of `docs/registre_ecarts.toml`. | — |
+| 37 | `test_la_regle_du_9e_ne_confond_pas_seuil_et_valeur_nette` | Section 9.E said the net expected value p x V x efficacy - cost is positive exactly when p exceeds p* = cost / (cost + efficacy x V); algebra says p > cost / (efficacy x V). | The threshold is the section 8 rule, the ranking uses the net value (final re-check, 04/10/2026): while the two criteria differ, the text does not merge them. |
+| 38 | `test_la_stabilite_de_la_liste_est_citee_en_part_de_comptes_communs` | Section 9.E read a Jaccard index of 0.87 as "87 % of the same list"; two lists of equal size sharing a share s of their accounts have a Jaccard index s / (2. | s). |
+| 39 | `test_l_intervalle_de_calibration_du_test_est_cite_quand_il_depasse_l_objectif` | The test calibration error, 0.036, is under the 0.05 objective but its 95 % interval reaches 0.061; until 04/10/2026 sections 9.C and 12.A only said "under the objective". | — |
+| 40 | `test_le_paragraphe_10_ne_prete_au_flux_que_les_verdicts_qu_il_calcule` | Section 10 credited the monthly flow with the M1 to M10 verdicts; it computes M5, M8 and M9, the quarterly review the others (final re-check, 04/10/2026). | — |
+| 41 | `test_les_annexes_se_suivent_et_chaque_renvoi_trouve_la_sienne` | On 04/10/2026 the defence-timing annex (C) was removed: the iteration log became C and the code organisation D. | Annex letters follow each other, every "Annexe X" quoted in the notebook exists, and the cover page gives the repository's address. |
+| 42 | `test_la_model_card_publie_l_evaluation_finale` | The model card took its test intervals from the phase 9 report ([0.710; 0.807]) while the notebook publishes the final evaluation's ([0.712; 0.806]). | one test evaluation, one interval, in every language (cross-document check, 04/10/2026). |
+| 43 | `test_le_readme_presente_les_outils_tels_qu_ils_servent` | The README, the repository's front page, still showed the 01/10 positions: MLflow deferred to phase 10, SHAP to be decided, XGBoost always set aside. | all three since used - and a notebook said to run on the base dependencies alone (04/10/2026). |
+| 44 | `test_les_chemins_et_identifiants_cites_par_les_documents_existent` | The cross-document check of 04/10/2026 found a commented path to a renamed document in pyproject.toml, a phase notebook pointing to a document under its old name, and register identifiers (D-07) that no entry carries. | Every `docs/...` path quoted in a delivered text exists, and every E- or D- identifier names a register entry. |
 
 ### Stockage et cache des figures
 
