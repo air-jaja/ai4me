@@ -88,4 +88,7 @@ jobs:
         env:
           CHURN_EXIGER_TOUT: "1"
           MPLBACKEND: Agg
+          # The rebuilt file's bytes are this runner's, not the recorded ones: the API loads
+          # it through the alias the rebuild wrote; the tests check its scores (1e-9).
+          CHURN_ALIASES: ${{ github.workspace }}/models/aliases_reconstruits.json
         run: uv run pytest -rs

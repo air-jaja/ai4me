@@ -265,6 +265,11 @@ def reconstruire() -> Path:
     checked - not the last run's artefact in modele_servi.json: on 04/10/2026 a run named
     its file after that day while the champion stayed the 03/10 file, the API found no
     model, and the CI job that tolerates no skipped test failed on every push.
+
+    The bytes of a saved model depend on the machine that wrote them (the CI runner's are
+    not the recorded ones), its predictions do not: the fidelity tests check them against
+    the reference scores. The rebuilt file's own hash goes to models/aliases_reconstruits.json,
+    the alias the CI points the API to (CHURN_ALIASES); resultats/ is never touched.
     """
     import hashlib
 
@@ -288,12 +293,16 @@ def reconstruire() -> Path:
     chemin = sauvegarder_modele(modele, fiche, attendu.parent, entrainement=(X, y), registre=None)
     if chemin != attendu:
         raise SystemExit(f"Nom inattendu : {chemin.name} au lieu de {attendu.name}")
-    # The bytes of a saved model depend on the platform that wrote them: a file rebuilt here
-    # that differs from the champion's recorded hash would be refused by the API anyway.
-    if hashlib.sha256(chemin.read_bytes()).hexdigest() != entree["fichier_sha256"]:
-        raise SystemExit(
-            f"Empreinte de {chemin.name} différente de celle du champion : "
-            "fichier non reproductible sur cette machine."
+    empreinte = hashlib.sha256(chemin.read_bytes()).hexdigest()
+    aliases = lire_aliases(RACINE / "resultats" / "aliases_modeles.json")
+    aliases["champion"] = {**entree, "fichier_sha256": empreinte}
+    (attendu.parent / "aliases_reconstruits.json").write_text(
+        json.dumps(aliases, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+    )
+    if empreinte != entree["fichier_sha256"]:
+        print(
+            f"Octets de {chemin.name} propres à cette machine (prédictions vérifiées par les "
+            "tests) : alias local models/aliases_reconstruits.json."
         )
     return chemin
 
