@@ -25,6 +25,9 @@ Seule `valeur_vie_client_eur` est obligatoire ; un champ absent est imputé comm
 sont les colonnes de l'export du CRM ; leurs libellés, descriptions et exemples viennent du dictionnaire
 (`industrialisation/dictionnaire.py`), le même que la liste opérationnelle.
 
+**Référence de chaque champ** — entrées et réponse, unité, plage admise, valeurs vues à l'entraînement, traitement
+d'un champ absent : `docs/API_champs.md`, généré par `uv run python tools/documenter_champs.py`.
+
 ## Réponse et erreurs
 
 | Champ | Libellé |

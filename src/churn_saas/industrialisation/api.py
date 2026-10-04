@@ -46,7 +46,9 @@ CompteEntree = create_model("CompteEntree", **{v.colonne: _champ(v) for v in ENT
 class ScoreSortie(BaseModel):
     """Score of one account, with the operational list's labels."""
 
-    client_id: str | None = Field(None, title=LIBELLES["client_id"])
+    client_id: str | None = Field(
+        None, title=LIBELLES["client_id"], description="Identifiant reçu, renvoyé tel quel."
+    )
     risque_pct: int = Field(
         title=LIBELLES["proba_pct"], description="Probabilité calibrée de départ, en %."
     )
@@ -66,7 +68,11 @@ class ScoreSortie(BaseModel):
     modele: str = Field(
         title=LIBELLES["modele"], description="Nom et version du modèle en service."
     )
-    avertissement: str = AVERTISSEMENT
+    avertissement: str = Field(
+        AVERTISSEMENT,
+        title="Avertissement",
+        description="Rappel : le score éclaire, la liste mensuelle décide.",
+    )
 
 
 etat: dict[str, Any] = {}

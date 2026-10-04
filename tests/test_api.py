@@ -136,6 +136,24 @@ def test_le_contrat_est_documente_et_a_jour(tmp_path):
 
 
 @pytest.mark.phase10
+def test_la_reference_des_champs_est_a_jour(tmp_path):
+    """docs/API_champs.md is what the tool generates today from the dictionary, the response
+    schema and the training part: a field, a label or a training figure changed without
+    regenerating it fails here."""
+    import importlib.util
+
+    specification = importlib.util.spec_from_file_location(
+        "documenter", RACINE / "tools" / "documenter_champs.py"
+    )
+    outil = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(outil)
+    outil.main(["--sortie", str(tmp_path / "API_champs.md")])
+    assert (tmp_path / "API_champs.md").read_text(encoding="utf-8") == (
+        RACINE / "docs" / "API_champs.md"
+    ).read_text(encoding="utf-8")
+
+
+@pytest.mark.phase10
 def test_le_dictionnaire_couvre_les_entrees_du_modele(chaine_x_entrainement):
     from churn_saas.industrialisation.dictionnaire import par_colonne
 

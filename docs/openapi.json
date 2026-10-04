@@ -308,6 +308,7 @@
     "properties": {
      "avertissement": {
       "default": "Score indicatif : la priorité et l'action se lisent dans la liste du mois.",
+      "description": "Rappel : le score éclaire, la liste mensuelle décide.",
       "title": "Avertissement",
       "type": "string"
      },
@@ -320,6 +321,7 @@
         "type": "null"
        }
       ],
+      "description": "Identifiant reçu, renvoyé tel quel.",
       "title": "Compte"
      },
      "gain_attendu_contact_eur": {
