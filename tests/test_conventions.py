@@ -260,6 +260,12 @@ OUTILS_ET_ARGUMENTS = {
     "regle_decision.py": ["--help"],
     "restitution_test.py": ["--help"],
     "validation_phase9.py": ["--help"],
+    "promouvoir.py": ["--help"],
+    "liste_operationnelle.py": ["--help"],
+    "livraison.py": ["--help"],
+    "journal_modifications.py": ["--help"],
+    "retours_terrain.py": ["--help"],
+    "model_card.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],
@@ -392,7 +398,13 @@ def test_les_fichiers_ecrits_par_le_code_se_terminent_par_un_saut_de_ligne(tmp_p
     assert chemin.read_bytes().endswith(b"\n"), "manifeste sans saut de ligne final"
 
     modele = DummyClassifier(strategy="prior").fit([[0], [1]], [0, 1])
-    artefact = sauvegarder_modele(modele, FicheModele(nom="essai", version="1.0"), dossier=tmp_path)
+    artefact = sauvegarder_modele(
+        modele,
+        FicheModele(nom="essai", version="1.0"),
+        dossier=tmp_path,
+        entrainement=(__import__("pandas").DataFrame({"a": [0, 1]}), [0, 1]),
+        registre=None,
+    )
     assert artefact.with_suffix(".json").read_bytes().endswith(b"\n"), (
         "fiche modèle sans saut de ligne final"
     )

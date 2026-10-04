@@ -718,15 +718,15 @@ variable à une prédiction individuelle — **option ouverte**)*
 
 ---
 
-## 10 · Déploiement *(conçu, non mis en service)*
+## 10 · Déploiement *(🟢 terminé)*
 
 > **De quoi s'agit-il ?** Faire passer le modèle du fichier d'expérimentation à un usage réel et régulier.
 > Cela suppose de l'**empaqueter** (l'enregistrer dans un format rechargeable), de définir comment il sera
 > appelé, et de garder trace de la version utilisée à chaque instant.
 
-- [~] Enregistrer le modèle dans un fichier rechargeable
-- [ ] Recharger le modèle et l'appliquer à l'échantillon de test
-- [ ] Produire la liste opérationnelle destinée aux conseillers
+- [x] Enregistrer le modèle dans un fichier rechargeable — *carte d'identité obligatoire (empreintes du fichier et des données), registre versionné*
+- [x] Recharger le modèle et l'appliquer à l'échantillon de test — *mêmes scores à 10⁻⁹, rechargé ou reconstruit*
+- [x] Produire la liste opérationnelle destinée aux conseillers — *libellés métier, motifs rédigés, carence, groupe témoin*
 - [x] Décrire la chaîne de livraison automatisée
 - [x] Définir les règles de versioning
 - [x] Documenter les besoins d'intégration
@@ -749,7 +749,7 @@ service · chaîne d'intégration continue décrite
 *(MLflow Model Registry, qui gère le passage d'un modèle du test à la production, est décrit comme cible mais
 non installé — le cas d'usage ne comporte pas d'environnement réel.)*
 📦 **Artefacts** : sections 10 et 11 du notebook · modèle enregistré · schéma d'architecture *(à produire)*
-**Statut** : **partiel** — conception faite, trois éléments techniques à produire
+**Statut** : **terminé** (03/10) — model card version 1 (`docs/MODEL_CARD.md`, MIT, générée depuis les résultats) ; reste à confirmer avec le commanditaire : CRM, identifiants, retours (`docs/INTEGRATION_CRM.md`)
 
 ---
 

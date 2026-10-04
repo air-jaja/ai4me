@@ -224,6 +224,22 @@ def _ecrire_detail(tr, fichier: str) -> None:
         tr.write(f"{duree * 1000:>7.0f} ms\n")
 
 
+def pytest_sessionfinish(session, exitstatus) -> None:
+    """CHURN_EXIGER_TOUT=1 (complete CI job): a skipped test fails the session.
+
+    In that job every optional group is installed and the model file is rebuilt: a skip
+    there means a test silently stopped proving anything.
+    """
+    import os
+
+    if os.environ.get("CHURN_EXIGER_TOUT") != "1" or exitstatus != 0:
+        return
+    rapporteur = session.config.pluginmanager.get_plugin("terminalreporter")
+    ignores = len(rapporteur.stats.get("skipped", [])) if rapporteur else 0
+    if ignores:
+        session.exitstatus = 1
+
+
 def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
     """Print the per-case detail, then the per-file summary table."""
     niveau = config.getoption("--recap")

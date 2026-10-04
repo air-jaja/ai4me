@@ -1,5 +1,5 @@
 {
-  "identite_execution": "cf3f25a8e3ce47b2",
+  "identite_execution": "637ed701b4b63d1c",
   "decision": "P4 option c et jeu de test option i, décidées par le porteur le 03/10/2026",
   "descriptif_modele": {
     "famille": "regression_logistique",
@@ -28,14 +28,14 @@
     "champion évalué (5 copies calibrées)": {
       "PR-AUC (25 plis)": 0.7934,
       "erreur de calibration (25 plis)": 0.0298,
-      "un compte (ms)": 34.19,
-      "lot de 5 000 comptes (s)": 0.082
+      "un compte (ms)": 61.0,
+      "lot de 5 000 comptes (s)": 0.132
     },
     "modèle servi (une copie calibrée)": {
       "PR-AUC (25 plis)": 0.7933,
       "erreur de calibration (25 plis)": 0.0303,
-      "un compte (ms)": 6.83,
-      "lot de 5 000 comptes (s)": 0.019
+      "un compte (ms)": 13.42,
+      "lot de 5 000 comptes (s)": 0.036
     }
   },
   "equivalence": {
@@ -49,7 +49,7 @@
     "calibration conforme": true,
     "budget d'un compte respecté": true,
     "budget du lot respecté": true,
-    "accélération d'un compte": 5.0
+    "accélération d'un compte": 4.5
   },
   "test_du_champion_evalue": {
     "metriques": {
@@ -88,6 +88,7 @@
     },
     "date": "2026-10-03 00:44"
   },
-  "artefact": "models/churn_saas_servi_v1.1_20261003.joblib",
-  "date": "2026-10-03 15:42"
+  "artefact": "models/churn_saas_servi_v1.1_20261004.joblib",
+  "date": "2026-10-04 04:24",
+  "scores_echantillon_reference": "resultats/scores_echantillon_reference.csv"
 }

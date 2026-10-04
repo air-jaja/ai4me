@@ -129,7 +129,7 @@ def executer(refaire: str | None = None, sortie: Path = DESTINATION, publier: bo
             retenu,
             methode,
             reglages,
-            X_a,
+            (X_a, y_a),
             sortie,
             ecrire=False,
         )
@@ -152,7 +152,9 @@ def executer(refaire: str | None = None, sortie: Path = DESTINATION, publier: bo
         "historique": historique,
     }
 
-    return _publier(modele, bilan, metriques, etiquettes, retenu, methode, reglages, X_a, sortie)
+    return _publier(
+        modele, bilan, metriques, etiquettes, retenu, methode, reglages, (X_a, y_a), sortie
+    )
 
 
 def _publier(
@@ -163,11 +165,12 @@ def _publier(
     retenu,
     methode,
     reglages,
-    X_a,
+    entrainement,
     sortie,
     ecrire: bool = True,
 ) -> dict:
     """Model and card under models/, results file, `champion` alias when MLflow is there."""
+    X_a = entrainement[0]
     from churn_saas.packaging import FicheModele, sauvegarder_modele
 
     fiche = FicheModele(
@@ -179,7 +182,7 @@ def _publier(
         variables=list(X_a.columns),
         responsable_validation="porteur du projet",
     )
-    chemin = sauvegarder_modele(modele, fiche)
+    chemin = sauvegarder_modele(modele, fiche, entrainement=entrainement, lignage=etiquettes)
     bilan["artefact"] = chemin.relative_to(RACINE).as_posix()
     from churn_saas.packaging import decrire_modele
 

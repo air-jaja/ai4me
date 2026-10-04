@@ -1,0 +1,14 @@
+[
+ {
+  "nom": "churn_saas_servi",
+  "version": "1.1",
+  "date_entrainement": "2026-10-04",
+  "fichier": "churn_saas_servi_v1.1_20261004.joblib",
+  "fichier_sha256": "02798b5c12ce99e7df5f69e851e11f245a2888be3fb28a226d0330b715ac9861",
+  "famille": "regression_logistique",
+  "copies": 1,
+  "empreinte_entrainement": "f5556d76df1470d5f9dd7e33a2762a8f5448d710fd749901d511ccd94a281bc5",
+  "empreinte_gold": "f97c430bcdfcd750bea4170413683f1cf6b7770a61e20b3e5fdbadfe060546f6",
+  "commit": "cf83fad"
+ }
+]

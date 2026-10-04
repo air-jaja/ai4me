@@ -75,7 +75,9 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
         variables=list(X.columns),
         responsable_validation="porteur du projet",
     )
-    chemin = sauvegarder_modele(modele, fiche)
+    chemin = sauvegarder_modele(
+        modele, fiche, entrainement=(X.loc[garder], valeur.loc[garder]), lignage=etiquettes
+    )
     bilan = {
         "identite_execution": identite,
         "regle": "B5 validée le 02/10/2026 (commit « decision(phase 7) »)",

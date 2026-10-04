@@ -15,3 +15,6 @@ dvc.yaml   		text eol=lf
 *.zip
 *.parquet 		filter=lfs diff=lfs merge=lfs -text
 /data/**/*.parquet  	filter=lfs diff=lfs merge=lfs -text
+
+# Archive
+docs/livraisons/preuves/*.patch -text

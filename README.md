@@ -30,6 +30,9 @@ make ressources         # mesure CE poste : ressources et temps de calcul (docs/
 make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter (+ run « données » MLflow)
 make mlflow             # interface MLflow sur le magasin du projet (mlruns/mlflow.db)
 make mlflow-nettoyer    # vide le magasin MLflow local (il se reconstruit : MLflow n'est qu'un journal)
+uv run python tools/liste_operationnelle.py   # liste du mois pour les conseillers (sorties/)
+uv run python tools/promouvoir.py --etat     # modèle en service ; --retour-arriere pour revenir au précédent
+uv run python tools/livraison.py --verifier  # paquet de livraison vérifié (docs/LIVRAISON.md)
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
@@ -129,9 +132,11 @@ churn-saas-cisia/
     │   ├── model_card.py         génération depuis le gabarit
     │   ├── modelcard_template.md gabarit Hugging Face
     │   ├── dependances.py        graphe d'imports des outils (identité), descriptif lu sur le modèle
-    │   └── suivi.py              MLflow — expériences et registre de modèles
+    │   ├── suivi.py              MLflow — expériences et registre de modèles
+    │   └── versions.py           version X.Y.Z, alias champion et précédent, retour arrière
     │
     ├── industrialisation/  6. SERVICES D'INDUSTRIALISATION
+    │   ├── liste.py              liste opérationnelle : libellés métier, motifs rédigés
     │   ├── scoring.py            lot mensuel — décide, voit tout le portefeuille
     │   ├── service.py            appel unitaire — ne décide pas
     │   ├── api.py                service HTTP FastAPI (/health, /ready, /score)
@@ -253,3 +258,8 @@ verrou.
 uv add nom-du-paquet          # ajoute et met à jour le verrou
 uv lock --upgrade-package X   # met à jour une seule dépendance
 ```
+
+## Licence
+
+Code et modèle sous licence MIT (`LICENSE`), comme indiqué dans la model card (`docs/MODEL_CARD.md`).
+Les jeux de données fournis pour la certification n'en relèvent pas.
