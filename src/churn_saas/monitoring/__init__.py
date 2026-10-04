@@ -20,7 +20,7 @@ from .derive import (
     psi_contre_profil,
     rapport_derive,
 )
-from .exporteur import publier_lot
+from .exporteur import publier_lot, publier_suivi
 from .reentrainement import decider_reentrainement, selectionner_donnees_reentrainement
 from .simulation import (
     completer_lot,
@@ -53,6 +53,7 @@ __all__ = [
     "table_regles",
     "evaluer_alertes",
     "publier_lot",
+    "publier_suivi",
     "derive_combinee",
     "manquants_relatifs",
     "ecart_volume",

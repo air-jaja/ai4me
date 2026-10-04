@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**793 cas de test** issus de 418 fonctions, répartis sur 25 fichiers.
+**794 cas de test** issus de 419 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -35,7 +35,7 @@ soutenance.
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
-| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 35 |
+| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
 | [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 305 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
@@ -323,9 +323,10 @@ soutenance.
 | 30 | `test_les_donnees_de_reentrainement_excluent_les_contactes_et_suivent_la_fenetre` | M2: contacted accounts out, control group and non-contacted in; unknown outcomes out; M4: twelve sliding months before the reference date. | — |
 | 31 | `test_le_reentrainement_suit_l_echeance_et_les_seules_derives_reelles` | M3: due at three months; earlier only for an alert qualified as real drift. | a collection incident sends back to the data, never to retraining. |
 | 32 | `test_le_rapport_simule_trace_la_selection_et_les_decisions_de_reentrainement` | Part C in the recorded report: no contacted account among the retained, and month 3 retrains while month 2's collection incident goes back to the data. | — |
-| 33 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
-| 34 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
-| 35 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
+| 33 | `test_les_verdicts_du_mois_sont_exposes_a_prometheus` | A6: each verdict reaches its gauge, each rule its 0/1 alert. | when the observability group is installed; without it, publishing is a silent no-op that never breaks a batch. |
+| 34 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
+| 35 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
+| 36 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
 
 ### Contrat d'affichage des notebooks
 

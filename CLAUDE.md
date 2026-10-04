@@ -33,10 +33,12 @@ logistique calibrée, une copie), alias `champion` (`tools/promouvoir.py --etat`
    prend environ 80 ms à cause de la préparation du compte (`docs/API.md`).
 2. **D-09** : harmonisation de la casse des catégories dépendante du lot (`donnees/silver.py`). L'API la contourne ;
    la corriger à la source impose un recalcul complet.
-3. **Phase 11 (suivi et réentraînement)** — valeurs par défaut **validées le 04/10/2026** (M1 à M10,
-   `docs/00.README_choix_methodologiques.md` § 7 nonies ; `monitoring/alertes.py`, figées par un test). Reste à
-   implémenter : dérive combinée (M5), manquants relatifs (M8), volume des comptes signalés (M9), surveillance de la Suisse (M7),
-   sélection des données de réentraînement (M2, M4). À demander au commanditaire : l'issue de **tous** les comptes,
-   les responsables nommés.
+3. **Phase 11 (suivi et réentraînement)** — implémentée et démontrée sur lots simulés (M1 à M10, S1 à S8 ;
+   carnet `notebooks/11_suivi.ipynb`). Reste : **exécuter le notebook de certification sur le poste du porteur**
+   (`make executer-notebook`, § 13 à reporter) — le correctif CI du 04/10 a modifié `tools/modele_servi.py`, ce qui
+   relance `modele_servi` et `regle_decision` : les latences doivent être mesurées sur le poste, pas ailleurs.
+   Incohérence à trancher : l'alias `champion` désigne le fichier du 03/10, absent du registre (`f427144`).
+   À demander au commanditaire : l'issue de **tous** les comptes, les responsables nommés ; taille du groupe témoin
+   (48 témoins par trimestre ne suffisent pas à prouver l'efficacité).
 4. **Support de soutenance** : reproposer la table de correspondance des noms de modèles, français du dépôt ↔ anglais
    (D-08).

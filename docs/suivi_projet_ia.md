@@ -753,7 +753,7 @@ non installé — le cas d'usage ne comporte pas d'environnement réel.)*
 
 ---
 
-## 11 · Suivi & ré-entraînement *(conçu, non mis en service)*
+## 11 · Suivi & ré-entraînement *(implémenté, démontré sur lots simulés)*
 
 > **De quoi s'agit-il ?** Un modèle se dégrade avec le temps, parce que la réalité évolue. La **dérive**
 > désigne ce décalage progressif entre les données d'aujourd'hui et celles sur lesquelles le modèle a
@@ -762,7 +762,11 @@ non installé — le cas d'usage ne comporte pas d'environnement réel.)*
 - [x] Définir les indicateurs, leurs seuils d'alerte et l'action associée
 - [x] Définir la fréquence de ré-entraînement
 - [x] Formaliser le retour vers la phase Données en cas d'alerte
-- [ ] Implémenter le calcul de dérive
+- [x] Implémenter le calcul de dérive — profil de référence versionné avec le modèle, verdicts M5, M8, M9
+- [x] Valider les valeurs par défaut avant tout calcul (M1 à M10, S1 à S8 — choix méthodologiques § 7 nonies)
+- [x] Démontrer le suivi sur lots simulés : mensuel, revue trimestrielle, décision de réentraînement
+- [ ] Reporter au § 13 du notebook de certification — exécution sur le poste du porteur
+- [ ] Obtenir du commanditaire l'issue de **tous** les comptes et les responsables nommés des alertes
 
 **Chaque indicateur est associé à un seuil, une action et un responsable nommé.** Un indicateur sans seuil
 ne se surveille pas ; un seuil sans action associée ne sert à rien.
@@ -778,8 +782,11 @@ détecter de nouvelles. Cette référence doit donc être versionnée au même t
 
 🔧 **Outils** : PSI *(Population Stability Index — indicateur mesurant l'écart entre deux distributions)* ·
 test de Kolmogorov-Smirnov · tableau de bord de suivi
-📦 **Artefacts** : section 13 du notebook · tableau indicateur / seuil / action / responsable
-**Statut** : **partiel** — dispositif conçu, calcul à implémenter
+📦 **Artefacts** : carnet `notebooks/11_suivi.ipynb` · `monitoring/suivi.py`, `reentrainement.py`, `simulation.py` ·
+`resultats/profil_reference.json`, `resultats/suivi_simule.json` · lots simulés `data/simulation/` · section 13 du
+notebook · tableau indicateur / seuil / action / responsable
+**Statut** : **implémenté** — démontré sur lots simulés (mécanique, jamais la performance) ; mise en service sur
+données réelles à la réception des issues de tous les comptes
 
 ---
 

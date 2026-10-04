@@ -593,6 +593,25 @@ def test_le_rapport_simule_trace_la_selection_et_les_decisions_de_reentrainement
     assert decisions["mois_3_derive_forte"]["réentraîner"]
 
 
+@pytest.mark.phase11
+def test_les_verdicts_du_mois_sont_exposes_a_prometheus():
+    """A6: each verdict reaches its gauge, each rule its 0/1 alert - when the observability
+    group is installed; without it, publishing is a silent no-op that never breaks a batch."""
+    from churn_saas.monitoring import exporteur, publier_suivi
+
+    derive = {"psi du score": 0.05, "variables au-dessus de 0,10": ["a", "b"]}
+    manquants = {"variables en alerte": ["c"]}
+    volume = {"comptes signalés": 156}
+    alertes = evaluer_alertes({"Taux de manquants à l'entrée": True})
+    publier_suivi(derive, manquants, volume, alertes)
+    if not exporteur._DISPONIBLE:
+        return
+    assert exporteur.PSI_SCORE._value.get() == 0.05
+    assert exporteur.VARIABLES_PSI_MODERE._value.get() == 2
+    assert exporteur.COMPTES_SIGNALES._value.get() == 156
+    assert exporteur.ALERTE.labels(indicateur="Taux de manquants à l'entrée")._value.get() == 1
+
+
 # --- Phase 5 · Categorical stability ------------------------------------------------------
 @pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():

@@ -26,6 +26,17 @@ if _DISPONIBLE:
     )
     PSI_MAX = Gauge("churn_psi_max", "PSI le plus élevé observé sur les variables suivies")
     PR_AUC = Gauge("churn_pr_auc", "PR-AUC de la dernière évaluation disponible")
+    # Phase 11: the monthly verdicts (M5, M8, M9) and the alerts they raise.
+    PSI_SCORE = Gauge("churn_psi_score", "PSI de la distribution du score contre le profil")
+    VARIABLES_PSI_MODERE = Gauge(
+        "churn_variables_psi_au_dessus_de_0_10", "Variables du modèle au-dessus de 0,10 (M5)"
+    )
+    VARIABLES_MANQUANTS_EN_ALERTE = Gauge(
+        "churn_variables_manquants_en_alerte",
+        "Variables au-dessus du double de l'entraînement (M8)",
+    )
+    COMPTES_SIGNALES = Gauge("churn_comptes_signales", "Comptes retenus par la liste (M9)")
+    ALERTE = Gauge("churn_alerte", "Règle d'alerte déclenchée (1) ou non (0)", ["indicateur"])
     TAUX_MANQUANTS_MAX = Gauge(
         "churn_taux_manquants_max", "Taux de manquants le plus élevé à l'entrée"
     )
@@ -57,3 +68,18 @@ def publier_lot(
         PSI_MAX.set(float(psi_max))
     if pr_auc is not None:
         PR_AUC.set(float(pr_auc))
+
+
+def publier_suivi(derive: dict, manquants: dict, volume: dict, alertes: Any) -> None:
+    """Refresh the phase 11 gauges after the monthly verdicts (`monitoring.suivi`).
+
+    Exposes, does not decide: the thresholds and their actions stay in `monitoring.alertes`.
+    """
+    if not _DISPONIBLE:
+        return
+    PSI_SCORE.set(float(derive["psi du score"]))
+    VARIABLES_PSI_MODERE.set(len(derive["variables au-dessus de 0,10"]))
+    VARIABLES_MANQUANTS_EN_ALERTE.set(len(manquants["variables en alerte"]))
+    COMPTES_SIGNALES.set(int(volume["comptes signalés"]))
+    for _, ligne in alertes.iterrows():
+        ALERTE.labels(indicateur=ligne["indicateur"]).set(int(bool(ligne["declenchee"])))

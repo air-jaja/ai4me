@@ -74,7 +74,7 @@ repos:
         entry: uv run python tools/model_card.py
         language: system
         pass_filenames: false
-        files: ^(resultats/.*\.json|data/manifeste_v1\.0\.json|src/churn_saas/packaging/.*|tools/model_card\.py)$
+        files: ^(resultats/.*\.json|data/manifeste_v1\.0\.json|src/churn_saas/(packaging/.*|monitoring/alertes\.py|config\.py)|tools/model_card\.py)$
 
       - id: contrat-openapi
         name: contrat OpenAPI à jour
