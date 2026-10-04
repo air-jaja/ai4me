@@ -1,15 +1,15 @@
 {
- "identite_execution": "ac170fc6939620ad",
+ "identite_execution": "c9ed847c56199a28",
  "mention": "SIMULÉ — démonstration",
  "portee": "mécanique du suivi démontrée ; aucune conclusion sur la performance (S6)",
  "profil": {
   "modele": {
    "nom": "churn_saas_servi",
    "version": "1.1",
-   "fichier": "churn_saas_servi_v1.1_20261003.joblib",
-   "fichier_sha256": "fa3e0efef90e1b5427c750a6649227bdbf937c2ad3f89bfc5fd6501adee21ce2"
+   "fichier": "churn_saas_servi_v1.1_20261004.joblib",
+   "fichier_sha256": "02798b5c12ce99e7df5f69e851e11f245a2888be3fb28a226d0330b715ac9861"
   },
-  "identite_execution": "84c5f01e93da59a2"
+  "identite_execution": "a8812dd8e44da50a"
  },
  "lots": {
   "lot_simule_mois_1_sans_derive.csv": {
@@ -897,5 +897,5 @@
   ]
  },
  "duree_s": 6.1,
- "date": "2026-10-04 07:03"
+ "date": "2026-10-04 08:27"
 }

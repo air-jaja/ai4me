@@ -1,12 +1,12 @@
 {
- "identite_execution": "84c5f01e93da59a2",
+ "identite_execution": "a8812dd8e44da50a",
  "decision": "M1 à M10 et S1 à S7, validées par le porteur le 04/10/2026",
  "source": "partie d'entraînement ; score du modèle servi réentraîné à l'identique",
  "modele": {
   "nom": "churn_saas_servi",
   "version": "1.1",
-  "fichier": "churn_saas_servi_v1.1_20261003.joblib",
-  "fichier_sha256": "fa3e0efef90e1b5427c750a6649227bdbf937c2ad3f89bfc5fd6501adee21ce2"
+  "fichier": "churn_saas_servi_v1.1_20261004.joblib",
+  "fichier_sha256": "02798b5c12ce99e7df5f69e851e11f245a2888be3fb28a226d0330b715ac9861"
  },
  "comptes": 4000,
  "variables_cles": [
@@ -418,6 +418,6 @@
   "retards_paiement_12m": 0.04925,
   "revenu_mensuel_recurrent_eur": 0.02725
  },
- "duree_s": 0.8,
- "date": "2026-10-04 06:52"
+ "duree_s": 0.9,
+ "date": "2026-10-04 08:27"
 }
