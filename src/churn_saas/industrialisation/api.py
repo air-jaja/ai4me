@@ -195,7 +195,9 @@ def instrumenter() -> None:
         from prometheus_fastapi_instrumentator import Instrumentator
     except ImportError:
         return
-    Instrumentator().instrument(app).expose(app)
+    # Out of the OpenAPI contract: /metrics exists only where the observability group is
+    # installed, and the contract must not depend on the environment that exports it.
+    Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
 
 instrumenter()

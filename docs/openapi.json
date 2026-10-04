@@ -396,23 +396,6 @@
     "summary": "Le processus répond"
    }
   },
-  "/metrics": {
-   "get": {
-    "description": "Endpoint that serves Prometheus metrics.",
-    "operationId": "metrics_metrics_get",
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      },
-      "description": "Successful Response"
-     }
-    },
-    "summary": "Metrics"
-   }
-  },
   "/ready": {
    "get": {
     "description": "The champion is loaded: the service can actually serve.",
