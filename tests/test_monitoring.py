@@ -122,6 +122,28 @@ def test_les_variables_cles_sont_les_quatre_premieres_de_la_phase_9():
     assert alertes.VARIABLES_CLES == premieres
 
 
+@pytest.mark.phase11
+def test_les_donnees_de_demonstration_sont_figees():
+    """S1 to S7, validated by the project owner on 04/10/2026 before any simulation (rule 8):
+    the simulated batches cannot be resized or re-drifted without a new decision."""
+    from churn_saas import config
+    from churn_saas.monitoring import simulation
+
+    assert simulation.TAILLE_LOT_SIMULE == 5_000
+    assert simulation.GRAINE_SIMULATION == config.GRAINE == 42
+    assert simulation.MOIS_SIMULES == ("mois_1_sans_derive", "mois_2_avec_derive")
+    assert simulation.DERIVE_CONNEXION == {
+        "variable": "derniere_connexion_jours",
+        "part": 0.30,
+        "facteur": 2.0,
+    }
+    assert simulation.DERIVE_MANQUANTS == {"variable": "delai_reponse_support_h", "part": 0.25}
+    assert simulation.REDUCTION_RISQUE_CONTACT == config.EFFICACITE_RETENTION
+    assert simulation.PART_TEMOIN_SIMULE == 0.10
+    assert simulation.DOSSIER_SIMULATION == config.RACINE / "data" / "simulation"
+    assert simulation.MENTION == "SIMULÉ — démonstration"
+
+
 # --- Phase 5 · Categorical stability ------------------------------------------------------
 @pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():
