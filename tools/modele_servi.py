@@ -254,6 +254,39 @@ def executer(forcer: bool = False, sortie: Path = DESTINATION) -> dict:
     return bilan
 
 
+def reconstruire() -> Path:
+    """Rebuild the served model's FILE only, as recorded - no result, no registry written.
+
+    For the CI, where models/ is not versioned: the model is refitted from code and data
+    (deterministic) under the recorded file name, so the fidelity test runs too. Nothing
+    measured on this machine reaches resultats/.
+    """
+    sys.path.insert(0, str(RACINE / "src"))
+    warnings.simplefilter("ignore")
+    from churn_saas import config
+    from churn_saas.features import executer_pipeline, parties_du_decoupage
+    from churn_saas.modelisation import construire_baseline
+    from churn_saas.packaging import FicheModele, sauvegarder_modele
+
+    attendu = RACINE / json.loads(DESTINATION.read_text(encoding="utf-8"))["artefact"]
+    registre = json.loads(
+        (RACINE / "resultats" / "registre_modeles.json").read_text(encoding="utf-8")
+    )
+    entree = next(e for e in registre if e["fichier"] == attendu.name)
+    parties = parties_du_decoupage(
+        executer_pipeline(config.FICHIER_COMPLET, config.FICHIER_CATALOGUE)
+    )
+    X, y = parties.X_entrainement, parties.y_entrainement.astype(int)
+    modele = construire_servi(construire_baseline, "sigmoid", config)(X).fit(X, y)
+    fiche = FicheModele(
+        nom=entree["nom"], version=entree["version"], date_entrainement=entree["date_entrainement"]
+    )
+    chemin = sauvegarder_modele(modele, fiche, attendu.parent, entrainement=(X, y), registre=None)
+    if chemin != attendu:
+        raise SystemExit(f"Nom inattendu : {chemin.name} au lieu de {attendu.name}")
+    return chemin
+
+
 def main(argv: list[str] | None = None) -> int:
     # A Windows terminal hands a piped child process cp1252, whatever the document holds:
     # the tool's output must not depend on who runs it - its errors on stderr included.
@@ -265,7 +298,15 @@ def main(argv: list[str] | None = None) -> int:
     analyseur = argparse.ArgumentParser(description="Modèle servi : une copie calibrée (phase 8).")
     analyseur.add_argument("--forcer", action="store_true", help="refaire un calcul identique")
     analyseur.add_argument("--sortie", default=str(DESTINATION))
+    analyseur.add_argument(
+        "--reconstruire-seulement",
+        action="store_true",
+        help="refaire le fichier du modèle à l'identique, sans écrire de résultat (CI)",
+    )
     arguments = analyseur.parse_args(argv)
+    if arguments.reconstruire_seulement:
+        print(f"Modèle reconstruit : {reconstruire().relative_to(RACINE)}")
+        return 0
     bilan = executer(arguments.forcer, Path(arguments.sortie))
     print(
         json.dumps(

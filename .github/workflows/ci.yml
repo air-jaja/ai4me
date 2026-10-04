@@ -61,3 +61,31 @@ jobs:
           uv run python tools/ressources_calcul.py --sortie /tmp/SOBRIETE.md
           diff -q /tmp/SOBRIETE.md docs/06.SOBRIETE_calcul.md \
             || (echo '::error::Document de sobriété obsolète — lancer make sobriete-doc' && exit 1)
+
+  # Second job: every optional group installed (MLflow, XGBoost, SQLAlchemy, SHAP...) and
+  # the served model's file rebuilt from code and data, so that NO test is skipped. With
+  # CHURN_EXIGER_TOUT=1 a single skip fails the job: 100 % of the cases must run.
+  complet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Installer Python
+        run: uv python install
+
+      - name: Synchroniser tous les groupes depuis le verrou
+        run: uv sync --frozen --all-groups
+
+      - name: Reconstruire le fichier du modèle servi (models/ n'est pas versionné)
+        run: uv run python tools/modele_servi.py --reconstruire-seulement
+
+      - name: Tests — aucun cas ignoré toléré
+        env:
+          CHURN_EXIGER_TOUT: "1"
+          MPLBACKEND: Agg
+        run: uv run pytest -rs

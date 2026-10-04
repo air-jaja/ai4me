@@ -258,3 +258,8 @@ verrou.
 uv add nom-du-paquet          # ajoute et met à jour le verrou
 uv lock --upgrade-package X   # met à jour une seule dépendance
 ```
+
+## Licence
+
+Code et modèle sous licence MIT (`LICENSE`), comme indiqué dans la model card (`docs/MODEL_CARD.md`).
+Les jeux de données fournis pour la certification n'en relèvent pas.

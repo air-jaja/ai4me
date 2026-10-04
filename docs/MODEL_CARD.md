@@ -97,7 +97,7 @@ risk = model.predict_proba(X)[:, 1]
 
 <!-- This should link to a Dataset Card, perhaps with a short stub of information on what the training data is all about as well as documentation related to data pre-processing or additional filtering. -->
 
-5000 accounts after cleaning (gold, 19 columns, data manifest v1.0); frozen 80/20 stratified split; 1bdec226c82f4e48... is the fingerprint of the exact training rows (resultats/registre_modeles.json).
+5000 accounts after cleaning (gold, 19 columns, data manifest v1.0); frozen 80/20 stratified split; f5556d76df1470d5... is the fingerprint of the exact training rows (resultats/registre_modeles.json).
 
 ### Training Procedure
 
@@ -116,7 +116,7 @@ Shared chain bronze -> silver -> gold; variables after the decision date removed
 
 <!-- This section provides information about throughput, start/end time, checkpoint size if relevant, etc. -->
 
-27.2 kB; training 0.483 s; one account 15.28 ms (x3.9 faster than the evaluated five-copy champion).
+27.2 kB; training 0.483 s; one account 13.42 ms (x4.5 faster than the evaluated five-copy champion).
 
 ## Evaluation
 

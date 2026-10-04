@@ -49,7 +49,11 @@ def empreinte_entrainement(X, y) -> dict[str, Any]:
 
     import pandas as pd
 
-    contenu = X.assign(__cible__=pd.Series(y, index=X.index)).to_csv(index=True)
+    # Explicit line ending: to_csv defaults to os.linesep, so the same rows gave another
+    # fingerprint on Windows (CRLF) than on Linux (LF) - found on 04/10/2026.
+    contenu = X.assign(__cible__=pd.Series(y, index=X.index)).to_csv(
+        index=True, lineterminator="\n"
+    )
     comptes = "\n".join(map(str, sorted(X.index.astype(str))))
     return {
         "comptes": int(len(X)),
@@ -116,7 +120,12 @@ def enregistrer_au_registre(carte: dict, chemin: Path, registre: Path) -> None:
         "empreinte_gold": carte["lignage"].get("empreinte_gold"),
         "commit": carte["lignage"].get("commit"),
     }
-    lignes = [x for x in lignes if x["fichier_sha256"] != ligne["fichier_sha256"]] + [ligne]
+    # Same hash or same file name: the file on disk is this one, the older line is stale.
+    lignes = [
+        x
+        for x in lignes
+        if x["fichier_sha256"] != ligne["fichier_sha256"] and x["fichier"] != ligne["fichier"]
+    ] + [ligne]
     registre.parent.mkdir(parents=True, exist_ok=True)
     registre.write_text(
         json.dumps(lignes, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"

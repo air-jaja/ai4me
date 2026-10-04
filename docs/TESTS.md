@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**732 cas de test** issus de 384 fonctions, répartis sur 24 fichiers.
+**733 cas de test** issus de 385 fonctions, répartis sur 24 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -44,7 +44,7 @@ soutenance.
 | [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 107 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
 | [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 11 |
-| [test_exploitation.py](#test_exploitationpy) | `test_exploitation.py` | — | — | 13 |
+| [test_exploitation.py](#test_exploitationpy) | `test_exploitation.py` | — | — | 14 |
 | [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
@@ -530,6 +530,7 @@ soutenance.
 | 11 | `test_un_compte_contacte_recemment_est_en_carence_sauf_hausse_du_gain` | _(sans description)_ | — |
 | 12 | `test_l_efficacite_se_mesure_contre_le_groupe_temoin` | 40 % churn in the control group, 30 % among contacted accounts: efficacy 0.25. | — |
 | 13 | `test_la_model_card_est_a_jour_et_complete` | Generated from the recorded results only: the versioned card must equal a fresh generation (no figure typed by hand, none left stale), carry the MIT licence, and leave no section of the template unanswered. | — |
+| 14 | `test_l_empreinte_d_entrainement_ne_depend_pas_du_systeme` | The registry fingerprint written on Windows differed from the one recomputed on Linux for the same rows: to_csv followed os.linesep. | It must not. |
 
 ### test_industrialisation.py
 
