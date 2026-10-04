@@ -116,7 +116,7 @@ Shared chain bronze -> silver -> gold; variables after the decision date removed
 
 <!-- This section provides information about throughput, start/end time, checkpoint size if relevant, etc. -->
 
-27.2 kB; training 0.483 s; one account 14.36 ms (x5.1 faster than the evaluated five-copy champion).
+27.2 kB; training 0.483 s; one account 12.0 ms (x4.9 faster than the evaluated five-copy champion).
 
 ## Evaluation
 

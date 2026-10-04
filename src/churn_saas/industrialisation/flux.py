@@ -73,9 +73,12 @@ def etape_scoring(
 ) -> tuple[pd.DataFrame, str]:
     """Score and prioritise by expected value, with the accounts' recorded value."""
     modele, fiche = charger_modele(chemin_modele)
-    valeur = pd.to_numeric(brut["valeur_vie_client_eur"], errors="coerce")
     table = scorer_lot_mensuel(
-        modele, brut, valeur_vie_client=valeur, catalogue=catalogue, capacite=capacite
+        modele,
+        brut,
+        valeur_vie_client="valeur_vie_client_eur",
+        catalogue=catalogue,
+        capacite=capacite,
     )
     return table, fiche.get("version", "inconnue")
 

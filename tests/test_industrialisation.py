@@ -8,6 +8,7 @@ guarantee holds in CI; the behavioural ones run wherever the platform group is i
 import ast
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 RACINE = Path(__file__).resolve().parents[1]
@@ -33,9 +34,10 @@ def test_le_lot_mensuel_appelle_la_chaine_partagee():
     Until phase 4 it called `construire_silver` without the column lists: the batch would
     have been scored on numbers left as text while training used converted ones.
     """
-    appels = _appels("preparer")
-    assert {"construire_silver_standard", "preparer_gold"} <= appels
-    assert "construire_silver" not in appels
+    for fonction in ("preparer", "preparer_lot"):
+        appels = _appels(fonction)
+        assert {"construire_silver_standard", "preparer_gold"} <= appels, fonction
+        assert "construire_silver" not in appels, fonction
 
 
 def test_le_lot_mensuel_passe_le_contrat_de_donnees():
@@ -124,3 +126,59 @@ def test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi(
     assert verdicts[0] == set()
     assert verdicts[1] == {"Taux de manquants à l'entrée"}
     assert verdicts[2] == {"Dérive des entrées et du score (PSI)"}
+
+
+def test_chaque_compte_de_la_liste_porte_son_propre_score_malgre_les_doublons(
+    modele_servi_temporaire,
+):
+    """The full portfolio holds 35 duplicate rows, which silver drops and renumbers. Until
+    04/10/2026 the identifiers and values were read from the batch by position: from the
+    third row on, they shifted, the list held 5,035 rows and 9 of its first 10 accounts
+    carried another account's score. Each listed account is scored here again, alone, as
+    the API scores it - categories spelt as in training first (D-09) - and must find its
+    own score and its own value."""
+    from churn_saas import config
+    from churn_saas.donnees import charger_bronze, typer_pour_modele
+    from churn_saas.features import executer_pipeline, parties_du_decoupage
+    from churn_saas.industrialisation import (
+        harmoniser,
+        preparer,
+        scorer_lot_mensuel,
+        vocabulaire,
+    )
+    from churn_saas.packaging import charger_modele
+
+    modele, _ = charger_modele(modele_servi_temporaire)
+    brut = charger_bronze(config.FICHIER_COMPLET)
+    catalogue = charger_bronze(config.FICHIER_CATALOGUE)
+    assert brut.duplicated().sum() > 0, "le portefeuille complet n'a plus de doublons"
+
+    table = scorer_lot_mensuel(
+        modele, brut, valeur_vie_client="valeur_vie_client_eur", catalogue=catalogue
+    )
+    assert len(table) == brut["client_id"].nunique() == 5_000
+    assert table["client_id"].is_unique and table["proba_churn"].notna().all()
+    assert int(table["a_traiter"].sum()) == config.CAPACITE_MENSUELLE
+
+    orthographe = vocabulaire(
+        parties_du_decoupage(
+            executer_pipeline(config.FICHIER_COMPLET, config.FICHIER_CATALOGUE)
+        ).X_entrainement
+    )
+    valeurs = brut.drop_duplicates("client_id").set_index("client_id")["valeur_vie_client_eur"]
+    for _, compte in table.nsmallest(20, "rang").iterrows():
+        ligne = brut[brut["client_id"] == compte["client_id"]].iloc[0].to_dict()
+        seul = pd.DataFrame([harmoniser(ligne, orthographe)])
+        X = typer_pour_modele(preparer(seul, catalogue=catalogue).drop(columns=["churn"]))
+        assert modele.predict_proba(X)[0, 1] == pytest.approx(compte["proba_churn"], abs=1e-9)
+        assert compte["valeur_vie_client_eur"] == float(valeurs[compte["client_id"]])
+
+    # The value may also come as a series indexed by account: same list, never by position.
+    par_compte = scorer_lot_mensuel(
+        modele, brut, valeur_vie_client=valeurs.astype(float), catalogue=catalogue
+    )
+    pd.testing.assert_frame_equal(par_compte, table, check_dtype=False)
+    with pytest.raises(ValueError, match="indexée par `client_id`"):
+        scorer_lot_mensuel(
+            modele, brut, valeur_vie_client=valeurs.astype(float).iloc[:-1], catalogue=catalogue
+        )

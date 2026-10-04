@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**798 cas de test** issus de 423 fonctions, répartis sur 25 fichiers.
+**799 cas de test** issus de 424 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -46,7 +46,7 @@ soutenance.
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
 | [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 11 |
 | [test_exploitation.py](#test_exploitationpy) | `test_exploitation.py` | — | — | 14 |
-| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 5 |
+| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 6 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
@@ -592,6 +592,7 @@ soutenance.
 | 3 | `test_le_lot_mensuel_prepare_comme_l_entrainement` | On the full dataset, the batch preparation yields the training gold, byte for byte. | — |
 | 4 | `test_le_contrat_du_lot_n_exige_pas_les_colonnes_posterieures` | A monthly batch has no outcome yet: its contract must not demand `churn`. | — |
 | 5 | `test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi` | The Prefect flow, called as production calls it, on the three simulated batches: data contract, scoring with the accounts' value and the catalogue, prioritisation, then the phase 11 verdicts. | Month 1 raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5); the flagged volume is compared month to month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so. |
+| 6 | `test_chaque_compte_de_la_liste_porte_son_propre_score_malgre_les_doublons` | The full portfolio holds 35 duplicate rows, which silver drops and renumbers. | Until 04/10/2026 the identifiers and values were read from the batch by position: from the third row on, they shifted, the list held 5,035 rows and 9 of its first 10 accounts carried another account's score. Each listed account is scored here again, alone, as the API scores it - categories spelt as in training first (D-09) - and must find its own score and its own value. |
 
 ### test_modelisation.py
 

@@ -25,23 +25,20 @@ def executer(
     import pandas as pd
 
     from churn_saas import config
-    from churn_saas.donnees import typer_pour_modele
     from churn_saas.features import executer_pipeline, parties_du_decoupage
     from churn_saas.industrialisation.liste import construire_liste
-    from churn_saas.industrialisation.scoring import preparer
+    from churn_saas.industrialisation.scoring import preparer_lot
     from churn_saas.packaging import charger_champion, lire_aliases
 
     modele, _ = charger_champion()
     champion = lire_aliases()["champion"]
     brut = pd.read_csv(entree, dtype=str, encoding="utf-8-sig")
     catalogue = pd.read_csv(config.FICHIER_CATALOGUE, dtype=str, encoding="utf-8-sig")
-    X = typer_pour_modele(
-        preparer(brut, catalogue=catalogue).drop(columns=["churn"], errors="ignore")
-    )
-    valeur = pd.to_numeric(brut["valeur_vie_client_eur"], errors="coerce").set_axis(X.index)
-    mrr = pd.to_numeric(
-        brut["revenu_mensuel_recurrent_eur"].str.replace(",", "."), errors="coerce"
-    ).set_axis(X.index)
+    # Identifier, value and MRR read from silver, aligned with X: the portfolio holds
+    # duplicate rows, which silver drops - read from `brut` by position, they shift.
+    silver, X = preparer_lot(brut, catalogue=catalogue)
+    valeur = silver["valeur_vie_client_eur"]
+    mrr = silver["revenu_mensuel_recurrent_eur"]
     fond = parties_du_decoupage(
         executer_pipeline(config.FICHIER_COMPLET, config.FICHIER_CATALOGUE)
     ).X_entrainement
@@ -53,7 +50,7 @@ def executer(
     liste = construire_liste(
         modele,
         X,
-        brut["client_id"].set_axis(X.index),
+        silver["client_id"],
         valeur,
         mrr,
         fond,
