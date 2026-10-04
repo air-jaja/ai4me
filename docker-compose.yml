@@ -28,13 +28,21 @@ services:
       # `db:5432` : nom de service et port interne. PostgreSQL écoute toujours sur
       # 5432 dans le conteneur, quel que soit le port publié sur le poste.
       CHURN_DB_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
-      CHURN_MODEL_PATH: ${CHURN_MODEL_PATH:-/app/models/churn_model.joblib}
+      # Secret: from .env only. Without it, /score answers 503 (the API fails closed).
+      CHURN_API_KEY: ${CHURN_API_KEY}
+      # The champion is loaded by alias (file hash checked), with the catalogue (D-02).
+      CHURN_ALIASES: /app/resultats/aliases_modeles.json
+      CHURN_MODELES: /app/models
+      CHURN_CATALOGUE: /app/data/raw/catalogue_plans.csv
+      CHURN_DONNEES: /app/data/raw/churn_saas_complet.csv
       # Port interne du serveur MLflow, fixe : MLFLOW_PORT ne règle que le port publié.
       MLFLOW_TRACKING_URI: http://mlflow:5000
     volumes:
       # Le modèle est monté, pas embarqué : un réentraînement ne force pas la
       # reconstruction de l'image (voir le commentaire du Dockerfile).
       - ./models:/app/models:ro
+      - ./resultats:/app/resultats:ro
+      - ./data/raw:/app/data/raw:ro
     depends_on:
       db:
         # `service_healthy` et non `service_started` : l'API ne doit pas tenter de

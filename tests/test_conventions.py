@@ -266,6 +266,8 @@ OUTILS_ET_ARGUMENTS = {
     "journal_modifications.py": ["--help"],
     "retours_terrain.py": ["--help"],
     "model_card.py": ["--help"],
+    "exporter_openapi.py": ["--help"],
+    "documenter_champs.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],

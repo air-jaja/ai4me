@@ -139,7 +139,8 @@ churn-saas-cisia/
     │   ├── liste.py              liste opérationnelle : libellés métier, motifs rédigés
     │   ├── scoring.py            lot mensuel — décide, voit tout le portefeuille
     │   ├── service.py            appel unitaire — ne décide pas
-    │   ├── api.py                service HTTP FastAPI (/health, /ready, /score)
+    │   ├── api.py                service HTTP FastAPI (/health, /ready, /score), clé d'API
+    │   ├── dictionnaire.py       dictionnaire des variables : libellés métier, types, exemples
     │   ├── flux.py               orchestration Prefect du lot mensuel
     │   └── entrepot.py           entrepôt des scores produits (SQLAlchemy)
     │
