@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**805 cas de test** issus de 430 fonctions, répartis sur 25 fichiers.
+**808 cas de test** issus de 433 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,7 +37,7 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 312 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 315 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
@@ -366,11 +366,14 @@ soutenance.
 | 16 | `test_chaque_phase_close_a_son_carnet_de_travail` | Rule 4 (revised 02/10): each phase has its executed working notebook. | Phases 7 (the modelling part) and 8 had none, and nothing noticed: the project tracker now says which phases are closed, and each of them must have a `notebooks/0N*_*.ipynb`. |
 | 17 | `test_le_notebook_de_certification_n_a_plus_de_texte_provisoire` | Placeholders survived several phases unnoticed (summary, conclusion, 'not deployed yet'): a deliverable must not promise text it does not contain. | — |
 | 18 | `test_l_annexe_b_couvre_les_47_criteres_de_la_grille` | Annex B lists every criterion of the evaluation grid, competency by competency. | — |
-| 19 | `test_le_notebook_de_certification_ne_cite_plus_d_element_perime` | Sketches and conventions written before phase 10 survived next to the real service: a `/score-churn` pseudo-API, `staging`/`production` aliases, model and snapshot names nobody uses, an MLflow image the compose no longer builds (corrected 04/10/2026). | A reader comparing the notebook with the repository would find two versions of the truth. |
-| 20 | `test_les_documents_livres_ne_citent_plus_d_element_perime` | The certification notebook was cleaned on 04/10/2026, but the same obsolete facts lived on elsewhere. | an MLflow 3.1.1 image in two READMEs, file names nobody uses in the phase 2 notebook, a staging alias in a comment, a ROC-AUC rounded by hand to 0,882 where the tool writes 0,881, a test set said to be read once although the phase 9 report read it again. |
-| 21 | `test_chaque_intervalle_de_la_pr_auc_du_test_est_un_intervalle_calcule` | Two bootstrap draws on the same 1,000 test scores give two intervals, [0,712 ; 0,806] at the final evaluation and [0,710 ; 0,807] in the phase 9 report. | Both may be quoted, each with its source; a third one would have been typed by hand. |
-| 22 | `test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne` | Until 04/10/2026 section 10 described a textbook chain - unit tests at each commit - while the repository runs fast checks at commit, the test campaign at push and both CI jobs on GitHub. | The section now shows the real levels, with a capture of each. |
-| 23 | `test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee` | Section 11 carries the architecture diagram (C7). | its cell was an empty comment until 04/10/2026 - and the captures that prove the platform ran, attached to the notebook so that it stays readable on its own. |
+| 19 | `test_le_notebook_de_certification_ne_cite_plus_d_element_perime` | Sketches and conventions written before phase 10 survived next to the real service: a `/score-churn` pseudo-API, `staging`/`production` aliases, model and snapshot names nobody uses, an MLflow image the compose no longer builds (corrected 04/10/2026). | A reader comparing the notebook with the repository would find two versions of the truth. The oral preparation document is the candidate's, not the jury's: the notebook does not cite it. |
+| 20 | `test_chaque_iteration_de_l_annexe_d_est_rattachee_a_une_boucle_du_cycle` | Section 2 listed five loops while Annex D logged fifteen iterations, and labelled the modelling-to-framing loop "weak signal" although the real trigger was a too-good score (AUC 0.999, a leak). | Every logged iteration now appears in the section 2 loop table. |
+| 21 | `test_le_notebook_n_affiche_pas_deux_fois_la_meme_information` | The cell audit of 04/10/2026 found tables repeating the figure next to them, the test metrics shown twice with two intervals, an exclusion table listing decisions taken two sections later, a probability rounded to "100 %", and a reading placed after the demonstration that followed what it commented. | None of them may come back. |
+| 22 | `test_aucune_cellule_de_texte_ne_depasse_la_lecture_en_trente_secondes` | Outside the annexes, the longest text cells reached 11,000 characters before the 04/10/2026 audit: a cell the candidate cannot justify in thirty seconds. | They were condensed to at most about 7,000; this ceiling keeps them there. |
+| 23 | `test_les_documents_livres_ne_citent_plus_d_element_perime` | The certification notebook was cleaned on 04/10/2026, but the same obsolete facts lived on elsewhere. | an MLflow 3.1.1 image in two READMEs, file names nobody uses in the phase 2 notebook, a staging alias in a comment, a ROC-AUC rounded by hand to 0,882 where the tool writes 0,881, a test set said to be read once although the phase 9 report read it again. |
+| 24 | `test_l_intervalle_de_la_pr_auc_du_test_est_celui_de_l_evaluation_finale` | Two bootstrap draws on the same 1,000 test scores gave two intervals, [0,712 ; 0,806] at the final evaluation and [0,710 ; 0,807] in the phase 9 report, both quoted until 04/10/2026. | One test evaluation, one interval: every document quotes the final one. |
+| 25 | `test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne` | Until 04/10/2026 section 10 described a textbook chain - unit tests at each commit - while the repository runs fast checks at commit, the test campaign at push and both CI jobs on GitHub. | The section now shows the real levels, with a capture of each. |
+| 26 | `test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee` | Section 11 carries the architecture diagram (C7). | its cell was an empty comment until 04/10/2026 - and the captures that prove the platform ran, attached to the notebook so that it stays readable on its own. |
 
 ### Stockage et cache des figures
 

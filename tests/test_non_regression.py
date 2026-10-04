@@ -1780,6 +1780,7 @@ def test_les_chiffres_du_resume_et_de_la_conclusion_sont_ceux_des_resultats():
         return json.loads((RACINE / "resultats" / f"{nom}.json").read_text(encoding="utf-8"))
 
     validation, selection = lire("validation_phase9"), lire("selection_modele")
+    finale = lire("evaluation_finale")
     suivi = lire("suivi_simule")
     pr = {c["modèle"]: c["PR-AUC"] for c in selection["comparaison"]}
     m = validation["metriques"]
@@ -1791,8 +1792,10 @@ def test_les_chiffres_du_resume_et_de_la_conclusion_sont_ceux_des_resultats():
     attendus = [
         f"PR-AUC {_fr(pr['régression logistique'], 3)} contre "
         f"{_fr(pr['forêt aléatoire'], 3)} et {_fr(pr['xgboost'], 3)}",
+        # One test evaluation, one interval: the final evaluation's (section 9.C).
         "PR-AUC {} [{} ; {}]".format(
-            _fr(m["PR-AUC"]["valeur"], 3), *(_fr(b, 3) for b in m["PR-AUC"]["intervalle_95"])
+            _fr(finale["metriques"]["PR-AUC"], 3),
+            *(_fr(b, 3) for b in finale["intervalles_95"]["PR-AUC"]),
         ),
         f"ROC-AUC {_fr(m['ROC-AUC']['valeur'], 3)}",
         f"erreur de calibration {_fr(m['erreur de calibration']['valeur'], 3)}",

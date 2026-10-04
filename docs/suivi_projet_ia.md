@@ -678,7 +678,7 @@ CO₂e — quelques minutes et quelques grammes pour toute la phase (`docs/06.SO
 > capacité à dire *pourquoi* un client précis a été signalé — sans elle, un conseiller ne peut pas agir de
 > façon pertinente.
 
-- [x] Évaluer sur le jeu de test — *lecture unique de restitution (R6) : PR-AUC 0,761 [0,710 ; 0,807], validation croisée dans l'intervalle*
+- [x] Évaluer sur le jeu de test — *lecture de restitution (R6), sans décision ; PR-AUC 0,761 [0,712 ; 0,806] (évaluation finale), validation croisée dans l'intervalle*
 - [x] Appliquer la règle de décision économique — *valeur nette, seuil par compte (×356), liste stable (Jaccard 0,87)*
 - [x] Produire l'analyse d'importance des variables — *permutation sur le test, contributions exactes, comparaison SHAP*
 - [x] Vérifier l'absence de traitement défavorable par secteur, pays et taille d'entreprise — *18 segments, un écart (Suisse) documenté et surveillé*

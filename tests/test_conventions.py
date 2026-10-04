@@ -523,7 +523,9 @@ def test_le_notebook_de_certification_ne_cite_plus_d_element_perime():
     """Sketches and conventions written before phase 10 survived next to the real service:
     a `/score-churn` pseudo-API, `staging`/`production` aliases, model and snapshot names
     nobody uses, an MLflow image the compose no longer builds (corrected 04/10/2026). A
-    reader comparing the notebook with the repository would find two versions of the truth."""
+    reader comparing the notebook with the repository would find two versions of the truth.
+    The oral preparation document is the candidate's, not the jury's: the notebook does not
+    cite it."""
     import re
 
     import nbformat
@@ -531,9 +533,78 @@ def test_le_notebook_de_certification_ne_cite_plus_d_element_perime():
     nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
     motif = re.compile(
         r"/score-churn|API_SKETCH|\*staging\*|churn_model_v|churn_train_AAAAMMJJ|mlflow:v3\.1\.1"
+        r"|04\.SOUTENANCE"
     )
     perimes = [i for i, c in enumerate(nb.cells) if motif.search(c.source)]
     assert not perimes, f"Éléments périmés dans les cellules {perimes}."
+
+
+def test_chaque_iteration_de_l_annexe_d_est_rattachee_a_une_boucle_du_cycle():
+    """Section 2 listed five loops while Annex D logged fifteen iterations, and labelled the
+    modelling-to-framing loop "weak signal" although the real trigger was a too-good score
+    (AUC 0.999, a leak). Every logged iteration now appears in the section 2 loop table."""
+    import re
+
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    cycle = next((c.source for c in nb.cells if "**Les boucles de rétroaction.**" in c.source), "")
+    assert cycle, "Le § 2 n'a pas de table des boucles de rétroaction."
+    rattachees = {
+        int(n)
+        for ligne in cycle.split("\n")
+        if (m := re.match(r"^\|[^|]+\|\s*([\d, ]+) —", ligne))
+        for n in m.group(1).split(",")
+    }
+    annexes = next(c.source for c in nb.cells if "### Annexe D" in c.source)
+    journal = annexes[annexes.index("### Annexe D") : annexes.index("### Annexe E")]
+    iterations = {int(n) for n in re.findall(r"^\| (\d+) \|", journal, re.M)}
+    assert iterations and rattachees == iterations, (
+        f"Itérations non rattachées : {sorted(iterations - rattachees)} ; "
+        f"inconnues de l'Annexe D : {sorted(rattachees - iterations)}"
+    )
+    assert "Annexe D" in cycle and "signal faible" in cycle
+
+
+def test_le_notebook_n_affiche_pas_deux_fois_la_meme_information():
+    """The cell audit of 04/10/2026 found tables repeating the figure next to them, the test
+    metrics shown twice with two intervals, an exclusion table listing decisions taken two
+    sections later, a probability rounded to "100 %", and a reading placed after the
+    demonstration that followed what it commented. None of them may come back."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    code = "\n".join(c.source for c in nb.cells if c.cell_type == "code")
+    for titre in (
+        "Manquants des ratios construits",
+        "Nombre de catégories par colonne",
+        "Distribution des seuils rationnels par compte",
+        "Grille de la régression logistique (25 plis)",
+        "Jeu de test — 1 000 comptes",
+        "Revenu récurrent mensuel (€) — ",
+    ):
+        assert titre not in code, f"Tableau redondant revenu : « {titre} »."
+    assert "Colonnes exclues à la préparation (phase 4)" in code
+    assert "risque {_risque[compte]:.0%}" not in code
+    textes = [c.source for c in nb.cells]
+    lecture = next(i for i, s in enumerate(textes) if s.startswith("**Lecture.** La séparation"))
+    fuite = next(i for i, s in enumerate(textes) if s.startswith("**La fuite, démontrée.**"))
+    assert lecture < fuite, "La lecture du découpage doit précéder la démonstration de la fuite."
+
+
+def test_aucune_cellule_de_texte_ne_depasse_la_lecture_en_trente_secondes():
+    """Outside the annexes, the longest text cells reached 11,000 characters before the
+    04/10/2026 audit: a cell the candidate cannot justify in thirty seconds. They were
+    condensed to at most about 7,000; this ceiling keeps them there."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    trop_longues = [
+        (i, len(c.source))
+        for i, c in enumerate(nb.cells)
+        if c.cell_type == "markdown" and not c.source.startswith("## 15.") and len(c.source) > 7_500
+    ]
+    assert not trop_longues, f"Cellules de texte trop longues (indice, caractères) : {trop_longues}"
 
 
 def _textes_livres() -> dict[str, str]:
@@ -574,10 +645,10 @@ def test_les_documents_livres_ne_citent_plus_d_element_perime():
     assert not perimes, f"Éléments périmés : {perimes}"
 
 
-def test_chaque_intervalle_de_la_pr_auc_du_test_est_un_intervalle_calcule():
-    """Two bootstrap draws on the same 1,000 test scores give two intervals, [0,712 ; 0,806]
-    at the final evaluation and [0,710 ; 0,807] in the phase 9 report. Both may be quoted,
-    each with its source; a third one would have been typed by hand."""
+def test_l_intervalle_de_la_pr_auc_du_test_est_celui_de_l_evaluation_finale():
+    """Two bootstrap draws on the same 1,000 test scores gave two intervals, [0,712 ; 0,806]
+    at the final evaluation and [0,710 ; 0,807] in the phase 9 report, both quoted until
+    04/10/2026. One test evaluation, one interval: every document quotes the final one."""
     import json
     import re
 
@@ -587,10 +658,8 @@ def test_chaque_intervalle_de_la_pr_auc_du_test_est_un_intervalle_calcule():
     resultats = RACINE / "resultats"
     finale = json.loads((resultats / "evaluation_finale.json").read_text(encoding="utf-8"))
     phase9 = json.loads((resultats / "validation_phase9.json").read_text(encoding="utf-8"))
-    calcules = {
-        fr(finale["intervalles_95"]["PR-AUC"]),
-        fr(phase9["metriques"]["PR-AUC"]["intervalle_95"]),
-    }
+    calcules = {fr(finale["intervalles_95"]["PR-AUC"])}
+    assert fr(phase9["metriques"]["PR-AUC"]["intervalle_95"]) not in calcules
     motif = re.compile(r"0,761\*{0,2} (\[0,7\d\d ; 0,8\d\d\])")
     cites = {
         (nom, m.group(1)) for nom, texte in _textes_livres().items() for m in motif.finditer(texte)
