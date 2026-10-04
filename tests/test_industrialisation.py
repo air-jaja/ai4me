@@ -99,15 +99,27 @@ def modele_servi_temporaire(tmp_path_factory):
 
 
 def test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi(
-    modele_servi_temporaire,
+    modele_servi_temporaire, monkeypatch
 ):
-    """The Prefect flow, called as production calls it, on the three simulated batches:
+    """The monthly flow, its steps in production order, on the three simulated batches:
     data contract, scoring with the accounts' value and the catalogue, prioritisation, then
     the phase 11 verdicts. Month 1 raises no alert, month 2's collection incident is caught
     (M8), month 3's strong disengagement too (M5); the flagged volume is compared month to
-    month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so."""
+    month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so.
+
+    The steps run without the Prefect engine: a flow run starts a temporary Prefect server,
+    a child process that writes its Windows messages in cp1252 into the output pytest
+    captures - the session then crashed on closing it (04/10/2026), and the server cost 18 s.
+    The flow's own code, step by step, is what this test checks; the orchestration is
+    Prefect's."""
     from churn_saas import config
-    from churn_saas.industrialisation.flux import lot_mensuel
+    from churn_saas.industrialisation import flux
+
+    for nom in dir(flux):
+        if nom.startswith("etape_"):
+            etape = getattr(flux, nom)
+            monkeypatch.setattr(flux, nom, getattr(etape, "fn", etape))
+    lot_mensuel = getattr(flux.lot_mensuel, "fn", flux.lot_mensuel)
 
     simulation = RACINE / "data" / "simulation"
     precedent, verdicts = None, []
