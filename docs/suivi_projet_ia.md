@@ -749,7 +749,7 @@ service · chaîne d'intégration continue décrite
 *(MLflow Model Registry, qui gère le passage d'un modèle du test à la production, est décrit comme cible mais
 non installé — le cas d'usage ne comporte pas d'environnement réel.)*
 📦 **Artefacts** : sections 10 et 11 du notebook · modèle enregistré · schéma d'architecture *(à produire)*
-**Statut** : **terminé** (03/10) — reste à confirmer avec le commanditaire : CRM, identifiants, retours (`docs/INTEGRATION_CRM.md`)
+**Statut** : **terminé** (03/10) — model card version 1 (`docs/MODEL_CARD.md`, MIT, générée depuis les résultats) ; reste à confirmer avec le commanditaire : CRM, identifiants, retours (`docs/INTEGRATION_CRM.md`)
 
 ---
 

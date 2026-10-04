@@ -24,13 +24,20 @@ RACINE = Path(__file__).resolve().parents[1]
 
 # Changed file -> action the project owner must take after `git am`.
 ACTIONS = (
-    ("uv.lock", "uv sync --frozen --group dev --group notebook --group plateforme (VS Code fermé)"),
+    (
+        "uv.lock",
+        "uv sync --frozen --group dev --group notebook --group plateforme   # VS Code fermé",
+    ),
     ("data/manifeste_v1.0.json", "uv run python tools/materialiser.py"),
     (
         "tools/reglage_modele.py",
-        "uv run python tools/reglage_modele.py --forcer (ressources du poste)",
+        "uv run python tools/reglage_modele.py --forcer   # ressources du poste",
     ),
     ("tools/modele_servi.py", "uv run python tools/modele_servi.py --forcer"),
+    (
+        "docs/MODEL_CARD.md",
+        "uv run python tools/model_card.py   # après les --forcer : la carte reprend vos mesures",
+    ),
     (".pre-commit-config.yaml", "uv run pre-commit install"),
     ("docker/", "docker compose build"),
 )
