@@ -108,3 +108,53 @@ def rapport_derive(
         rapport["alerte"] = rapport["psi"] > seuil
         rapport = rapport.sort_values("psi", ascending=False).reset_index(drop=True)
     return rapport
+
+
+# --- Reference profile (phase 11, A1) -------------------------------------------------------
+# The PSI needs the reference distribution. Keeping the training rows next to the service
+# would carry account data into production; the profile keeps only what the index reads -
+# bin edges and shares - versioned with the model it describes (notebook section 13).
+MANQUANT = "<manquant>"
+
+
+def profil_variable(reference: pd.Series, n_quantiles: int = 10) -> dict:
+    """What `psi` or `psi_categoriel` reads from a reference series, and nothing more."""
+    serie = pd.Series(reference)
+    if pd.api.types.is_numeric_dtype(serie):
+        valeurs = pd.to_numeric(serie, errors="coerce").dropna()
+        bornes = np.unique(np.quantile(valeurs, np.linspace(0, 1, n_quantiles + 1)))
+        if valeurs.empty or len(bornes) < 2:
+            return {"type": "numérique", "bornes_internes": [], "parts": []}
+        bornes[0], bornes[-1] = -np.inf, np.inf
+        parts = np.histogram(valeurs, bins=bornes)[0] / len(valeurs)
+        # Outer edges are open (+-inf): only the inner ones are stored, JSON has no infinity.
+        return {
+            "type": "numérique",
+            "bornes_internes": [float(b) for b in bornes[1:-1]],
+            "parts": [float(p) for p in parts],
+        }
+    parts = serie.astype("string").fillna(MANQUANT).value_counts(normalize=True)
+    return {"type": "catégoriel", "parts": {str(k): float(v) for k, v in parts.items()}}
+
+
+def psi_contre_profil(profil: dict, courant: pd.Series, epsilon: float = 1e-6) -> float:
+    """The same index as `psi` / `psi_categoriel`, the reference read from its profile."""
+    if profil["type"] == "numérique":
+        courant = pd.to_numeric(pd.Series(courant), errors="coerce").dropna()
+        if courant.empty or not profil["parts"]:
+            return float("nan")
+        bornes = np.array([-np.inf, *profil["bornes_internes"], np.inf])
+        part_ref = np.clip(np.array(profil["parts"]), epsilon, None)
+        part_cur = np.clip(np.histogram(courant, bins=bornes)[0] / len(courant), epsilon, None)
+        return float(np.sum((part_cur - part_ref) * np.log(part_cur / part_ref)))
+    cur = pd.Series(courant).astype("string").fillna(MANQUANT)
+    if cur.empty:
+        return float("nan")
+    modalites = sorted(set(profil["parts"]) | set(cur))
+    part_ref = np.clip(
+        pd.Series(profil["parts"]).reindex(modalites, fill_value=0).to_numpy(), epsilon, None
+    )
+    part_cur = np.clip(
+        cur.value_counts(normalize=True).reindex(modalites, fill_value=0).to_numpy(), epsilon, None
+    )
+    return float(np.sum((part_cur - part_ref) * np.log(part_cur / part_ref)))

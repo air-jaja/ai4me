@@ -144,6 +144,73 @@ def test_les_donnees_de_demonstration_sont_figees():
     assert simulation.MENTION == "SIMULÉ — démonstration"
 
 
+# --- Phase 11 · Reference profile (A1) -----------------------------------------------------
+@pytest.mark.phase11
+def test_le_psi_lu_sur_le_profil_est_celui_des_donnees():
+    """The profile replaces the training rows: read from it - after a JSON round trip, as the
+    service reads it - the PSI must be the one computed on the rows themselves."""
+    import json
+
+    from churn_saas.monitoring import profil_variable, psi_categoriel, psi_contre_profil
+
+    rng = np.random.default_rng(11)
+    reference = pd.Series(rng.normal(size=3_000))
+    courant = pd.Series(rng.normal(0.4, size=2_000))
+    courant[:150] = np.nan
+    profil = json.loads(json.dumps(profil_variable(reference)))
+    assert psi_contre_profil(profil, courant) == pytest.approx(psi(reference, courant), abs=1e-12)
+
+    reference = pd.Series(["a"] * 600 + ["b"] * 300 + [None] * 100)
+    courant = pd.Series(["a"] * 300 + ["b"] * 500 + ["c"] * 200)
+    profil = json.loads(json.dumps(profil_variable(reference)))
+    assert psi_contre_profil(profil, courant) == pytest.approx(
+        psi_categoriel(reference, courant), abs=1e-12
+    )
+
+
+@pytest.fixture(scope="module")
+def profil_enregistre():
+    import json
+    from pathlib import Path
+
+    chemin = Path(__file__).resolve().parents[1] / "resultats" / "profil_reference.json"
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+@pytest.mark.phase11
+def test_le_profil_de_reference_appartient_au_champion(profil_enregistre):
+    """Section 13: a reference left behind by a retraining compares the present to an old
+    state. The profile names its model; a new champion without a new profile fails here."""
+    from pathlib import Path
+
+    from churn_saas.packaging import lire_aliases
+
+    champion = lire_aliases(
+        Path(__file__).resolve().parents[1] / "resultats" / "aliases_modeles.json"
+    )["champion"]
+    assert profil_enregistre["modele"]["fichier_sha256"] == champion["fichier_sha256"]
+
+
+@pytest.mark.phase11
+def test_le_profil_de_reference_decrit_la_partie_d_entrainement(profil_enregistre):
+    """Every model variable, as the training part holds it - recomputed now from the
+    manifest's data and the frozen split; missing shares as received (M8)."""
+    from churn_saas import config
+    from churn_saas.features import executer_pipeline, parties_du_decoupage
+    from churn_saas.monitoring import profil_variable
+    from churn_saas.monitoring.alertes import VARIABLES_CLES
+
+    resultat = executer_pipeline(config.FICHIER_COMPLET, config.FICHIER_CATALOGUE)
+    X = parties_du_decoupage(resultat).X_entrainement
+    assert profil_enregistre["comptes"] == len(X)
+    assert set(VARIABLES_CLES) <= set(profil_enregistre["variables"]) == set(X.columns)
+    for colonne in X.columns:
+        assert profil_enregistre["variables"][colonne] == profil_variable(X[colonne]), colonne
+    recus = resultat.silver.loc[X.index]
+    for colonne, part in profil_enregistre["manquants_a_l_entree"].items():
+        assert part == pytest.approx(recus[colonne].isna().mean(), abs=1e-6), colonne
+
+
 # --- Phase 5 · Categorical stability ------------------------------------------------------
 @pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():
