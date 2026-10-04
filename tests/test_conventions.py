@@ -607,18 +607,22 @@ def test_aucune_cellule_de_texte_ne_depasse_la_lecture_en_trente_secondes():
     assert not trop_longues, f"Cellules de texte trop longues (indice, caractères) : {trop_longues}"
 
 
+DOCUMENTS_DE_TRAVAIL = {"TESTS.md", "audit_cellules_notebook.md", "trame_support_annexe_D.md"}
+
+
 def _textes_livres() -> dict[str, str]:
     """Every delivered text: README, project file, documents, and the notebooks' cells.
 
-    The generated test catalogue is left out: it quotes the docstrings below, obsolete
-    patterns included."""
+    Left out: the generated test catalogue, which quotes the docstrings below, and the
+    working documents of the 04/10/2026 review (cell audit, presentation outline), which
+    describe the obsolete facts they asked to correct."""
     import nbformat
 
     textes = {
         nom: (RACINE / nom).read_text(encoding="utf-8") for nom in ("README.md", "pyproject.toml")
     }
     for document in sorted((RACINE / "docs").glob("*.md")):
-        if document.name != "TESTS.md":
+        if document.name not in DOCUMENTS_DE_TRAVAIL:
             textes[f"docs/{document.name}"] = document.read_text(encoding="utf-8")
     for carnet in sorted((RACINE / "notebooks").glob("*.ipynb")):
         nb = nbformat.read(carnet, as_version=4)
