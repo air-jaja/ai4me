@@ -538,7 +538,7 @@ soutenance.
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
 | 1 | `test_le_modele_servi_se_reconstruit_a_l_identique` | Reproducibility (CI included, no models/ needed): refitting the served model from code and data gives the reference scores of the 50 sample accounts, to 1e-9. | — |
-| 2 | `test_le_modele_publie_redonne_les_scores_de_reference` | Fidelity: the file in service is the validated one (hash of the card) and gives the reference scores. | Skipped where models/ is empty (CI). |
+| 2 | `test_le_modele_publie_redonne_les_scores_de_reference` | Fidelity: the file in service - the one the `champion` alias names, as the API loads it - is the validated one (hash of the card) and gives the reference scores. | Skipped where models/ is empty. |
 | 3 | `test_la_carte_du_modele_servi_designe_ses_donnees_d_entrainement` | Lineage: the training fingerprint written in the registry is the one recomputed now from the manifest's data and the frozen split. | — |
 | 4 | `test_la_version_s_incremente_selon_la_nature_du_changement` | _(sans description)_ | — |
 | 5 | `test_retour_arriere_immediat_et_verifie` | Promote 1.0 then 1.1; rollback brings 1.0 back after checking its file; a tampered previous file refuses the rollback. | — |
