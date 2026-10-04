@@ -132,9 +132,9 @@
         "type": "null"
        }
       ],
-      "description": "Jour de la semaine de la souscription.",
+      "description": "Jour de la semaine de la souscription, en minuscules.",
       "examples": [
-       "Mardi"
+       "mardi"
       ],
       "title": "Jour de souscription"
      },
@@ -237,7 +237,7 @@
         "type": "null"
        }
       ],
-      "description": "TPE, PME, ETI ou Grand compte.",
+      "description": "TPE, PME, ETI ou GE (grande entreprise).",
       "examples": [
        "PME"
       ],
