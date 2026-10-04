@@ -488,3 +488,32 @@ def test_chaque_phase_close_a_son_carnet_de_travail():
     assert closes, "Aucune phase close trouvée dans le suivi."
     sans_carnet = [n for n in closes if not list((RACINE / "notebooks").glob(f"{n:02d}*_*.ipynb"))]
     assert not sans_carnet, f"Phases closes sans carnet de travail : {sans_carnet}"
+
+
+def test_le_notebook_de_certification_n_a_plus_de_texte_provisoire():
+    """Placeholders survived several phases unnoticed (summary, conclusion, 'not deployed
+    yet'): a deliverable must not promise text it does not contain."""
+    import re
+
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    motif = re.compile(r"à rédiger|rédigés? en dernier|pas encore déployé|todo\b", re.I)
+    provisoires = [
+        i for i, c in enumerate(nb.cells) if c.cell_type == "markdown" and motif.search(c.source)
+    ]
+    assert not provisoires, f"Texte provisoire dans les cellules {provisoires}."
+
+
+def test_l_annexe_b_couvre_les_47_criteres_de_la_grille():
+    """Annex B lists every criterion of the evaluation grid, competency by competency."""
+    import re
+
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    annexes = next(c.source for c in nb.cells if "### Annexe B" in c.source)
+    bloc = annexes[annexes.index("### Annexe B") : annexes.index("### Annexe C")]
+    lignes = re.findall(r"^\| \*\*(C\d)\*\* \|", bloc, flags=re.M)
+    grille = {"C1": 5, "C2": 6, "C3": 7, "C4": 10, "C5": 6, "C6": 3, "C7": 3, "C8": 4, "C9": 3}
+    assert {c: lignes.count(c) for c in grille} == grille

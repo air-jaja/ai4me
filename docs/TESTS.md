@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**794 cas de test** issus de 419 fonctions, répartis sur 25 fichiers.
+**798 cas de test** issus de 423 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,16 +37,16 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 305 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 307 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
-| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 107 |
+| [Non-régression des phases terminées](#non-régression-des-phases-terminées) | `test_non_regression.py` | Transverse | C1, C2, C3, C4, C5 | 108 |
 | [test_api.py](#test_apipy) | `test_api.py` | — | — | 7 |
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
 | [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 11 |
 | [test_exploitation.py](#test_exploitationpy) | `test_exploitation.py` | — | — | 14 |
-| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 4 |
+| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 5 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
@@ -364,6 +364,8 @@ soutenance.
 | 14 | `test_le_notebook_de_certification_lit_les_calculs_de_la_phase_5_sans_les_refaire` | B1: sections 8.A to 8.C read tools/selection_variables.py's recorded results. | A notebook committed from an older working copy brought the computations back once (11 minutes here, 15 to 20 on the laptop) without any test noticing. |
 | 15 | `test_la_session_de_tests_n_utilise_jamais_le_dossier_temporaire_partage` | Windows: the shared %TEMP%\pytest-of-<user> tree made every campaign fail at the very end (PermissionError on `pytest-current`), all tests having passed. | Every session now works in a unique directory of its own (tests/conftest.py), which pytest never scans. |
 | 16 | `test_chaque_phase_close_a_son_carnet_de_travail` | Rule 4 (revised 02/10): each phase has its executed working notebook. | Phases 7 (the modelling part) and 8 had none, and nothing noticed: the project tracker now says which phases are closed, and each of them must have a `notebooks/0N*_*.ipynb`. |
+| 17 | `test_le_notebook_de_certification_n_a_plus_de_texte_provisoire` | Placeholders survived several phases unnoticed (summary, conclusion, 'not deployed yet'): a deliverable must not promise text it does not contain. | — |
+| 18 | `test_l_annexe_b_couvre_les_47_criteres_de_la_grille` | Annex B lists every criterion of the evaluation grid, competency by competency. | — |
 
 ### Stockage et cache des figures
 
@@ -499,6 +501,7 @@ soutenance.
 | 61 | `test_les_scores_enregistres_redonnent_l_evaluation_de_la_phase_7` | The reporting read scored the same evaluated champion: same PR-AUC and ROC-AUC as the single evaluation of phase 7, and cross-validation inside the test interval. | — |
 | 62 | `test_les_niveaux_de_mrr_sont_emboites` | R8: preserved <= covered <= exposed; capacity-limited, the business point covers more revenue with 28 accounts (57 %) than the protocol point with 100 (28 %). | — |
 | 63 | `test_le_critere_d_equite_est_applique_tel_que_valide` | R9, recomputed from the recorded rows: one conclusive segment out of the criterion, Switzerland. | documented, not corrected (R12). |
+| 64 | `test_les_chiffres_du_resume_et_de_la_conclusion_sont_ceux_des_resultats` | Every figure the executive summary and the conclusion quote is recomputed here from resultats/ and must appear in the text as written: a recomputed result that moved makes this test fail, and the message names the sentence to rewrite. | — |
 
 ### test_api.py
 
@@ -588,6 +591,7 @@ soutenance.
 | 2 | `test_le_lot_mensuel_passe_le_contrat_de_donnees` | _(sans description)_ | — |
 | 3 | `test_le_lot_mensuel_prepare_comme_l_entrainement` | On the full dataset, the batch preparation yields the training gold, byte for byte. | — |
 | 4 | `test_le_contrat_du_lot_n_exige_pas_les_colonnes_posterieures` | A monthly batch has no outcome yet: its contract must not demand `churn`. | — |
+| 5 | `test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi` | The Prefect flow, called as production calls it, on the three simulated batches: data contract, scoring with the accounts' value and the catalogue, prioritisation, then the phase 11 verdicts. | Month 1 raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5); the flagged volume is compared month to month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so. |
 
 ### test_modelisation.py
 
