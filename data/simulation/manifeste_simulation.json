@@ -1,0 +1,36 @@
+{
+ "mention": "SIMULÉ — démonstration",
+ "decision": "S1 à S7, validées par le porteur le 04/10/2026",
+ "graine": 42,
+ "taille_lot": 5000,
+ "comptes_reels": {
+  "retenus (partie d'entraînement)": 36,
+  "écartés (jeu de test)": 14
+ },
+ "derive_mois_2": {
+  "M5": {
+   "variable": "derniere_connexion_jours",
+   "part": 0.3,
+   "facteur": 2.0
+  },
+  "M8": {
+   "variable": "delai_reponse_support_h",
+   "part": 0.25
+  },
+  "M9": "aucune"
+ },
+ "colonnes_retirees": [
+  "churn",
+  "sante_compte_fin_periode"
+ ],
+ "fichiers": {
+  "lot_simule_mois_1_sans_derive.csv": {
+   "lignes": 5000,
+   "sha256": "61e5f664ab9c091f6d11adc1cce59fe125a8ef13324f62dc17a0c068ed3282a3"
+  },
+  "lot_simule_mois_2_avec_derive.csv": {
+   "lignes": 5000,
+   "sha256": "acc0e5272991cc4ccc868bf880b8b86158880979a62f2411362e37ea011bc3d9"
+  }
+ }
+}

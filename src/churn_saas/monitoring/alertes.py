@@ -10,6 +10,28 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+# Phase 11 defaults, validated by the project owner on 04/10/2026 before any implementation
+# (rule 8; docs/00.README_choix_methodologiques.md, M1 to M10). Kept here, not in config.py:
+# config.py belongs to every tool's identity, and a monitoring setting must not invalidate
+# the recorded results.
+CIBLE_COUVERTURE_REVENU = 0.50  # M1: share of the at-risk MRR the monthly list must cover
+FREQUENCE_REENTRAINEMENT_MOIS = 3  # M3: quarterly, and earlier on a qualified alert
+FENETRE_REENTRAINEMENT_MOIS = 12  # M4: sliding window of training data
+# M5: the four strongest variables of the phase 9 permutation importance (R10).
+VARIABLES_CLES = (
+    "derniere_connexion_jours",
+    "anciennete_mois",
+    "nb_integrations",
+    "tickets_support_90j",
+)
+SEUIL_PSI_VARIABLE_CLE = 0.25  # M5: one key variable above it...
+SEUIL_PSI_MODERE = 0.10  # ...or NB_VARIABLES_PSI_MODERE model variables above this one...
+NB_VARIABLES_PSI_MODERE = 3
+SEUIL_PSI_SCORE = 0.10  # ...or the score distribution above this one
+FACTEUR_MANQUANTS = 2.0  # M8: missing share above twice the training share
+ECART_VOLUME_SIGNALES = 0.30  # M9: gap in flagged accounts against the previous month
+SEGMENTS_SURVEILLES = (("pays", "Suisse"),)  # M7: phase 9 fairness exception (R9, R12)
+
 
 @dataclass(frozen=True)
 class RegleAlerte:
@@ -31,16 +53,16 @@ REGLES_ALERTE: tuple[RegleAlerte, ...] = (
         "Équipe Data",
     ),
     RegleAlerte(
-        "Rappel au point de fonctionnement",
-        "technique",
-        "< cible métier",
+        "Couverture du revenu à risque",
+        "métier",
+        "< 50 % du MRR des comptes partis",
         "révision de la capacité ou du modèle",
         "Équipe Data + CSM",
     ),
     RegleAlerte(
-        "PSI sur variables clés",
+        "Dérive des entrées et du score (PSI)",
         "dérive",
-        "> 0,25",
+        "> 0,25 sur une variable clé, ou > 0,10 sur trois variables, ou > 0,10 sur le score",
         "qualification de l'alerte puis retour aux données",
         "Équipe Data",
     ),
@@ -54,9 +76,16 @@ REGLES_ALERTE: tuple[RegleAlerte, ...] = (
     RegleAlerte(
         "Taux de manquants à l'entrée",
         "qualité",
-        "> 10 % sur une variable clé",
-        "blocage du scoring et alerte",
-        "Pipeline (automatique)",
+        "> 2 × le taux d'entraînement, sur une variable",
+        "avertissement, scoring maintenu ; qualification de la collecte",
+        "Équipe Data",
+    ),
+    RegleAlerte(
+        "Rappel sur le segment Suisse",
+        "équité",
+        "< 0,8 × rappel global, intervalle excluant le rappel global (critère R9)",
+        "revue du segment avec les CSM, sans correction automatique",
+        "Équipe Data + CSM",
     ),
     RegleAlerte(
         "Rétention des comptes traités",

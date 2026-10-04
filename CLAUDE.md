@@ -32,10 +32,10 @@ logistique calibrée, une copie), alias `champion` (`tools/promouvoir.py --etat`
    prend environ 80 ms à cause de la préparation du compte (`docs/API.md`).
 2. **D-09** : harmonisation de la casse des catégories dépendante du lot (`donnees/silver.py`). L'API la contourne ;
    la corriger à la source impose un recalcul complet.
-3. **Phase 11 (suivi et réentraînement)** — valeurs par défaut proposées, **en attente de validation** : cible de
-   couverture du revenu ≥ 50 % ; comptes contactés exclus du réentraînement ; trimestriel + sur alerte ; fenêtre
-   glissante de 12 mois ; alerte de dérive combinée (une variable clé > 0,25, ou trois > 0,10, ou score > 0,10) ;
-   avertissement plutôt que blocage. À demander au commanditaire : l'issue de **tous** les comptes, les responsables.
-   Corriger les règles d'alerte incohérentes (`monitoring/alertes.py`) ; ajouter la surveillance de la Suisse (phase 9).
+3. **Phase 11 (suivi et réentraînement)** — valeurs par défaut **validées le 04/10/2026** (M1 à M10,
+   `docs/00.README_choix_methodologiques.md` § 7 nonies ; `monitoring/alertes.py`, figées par un test). Reste à
+   implémenter : dérive combinée (M5), manquants relatifs (M8), volume des comptes signalés (M9), surveillance de la Suisse (M7),
+   sélection des données de réentraînement (M2, M4). À demander au commanditaire : l'issue de **tous** les comptes,
+   les responsables nommés.
 4. **Support de soutenance** : reproposer la table de correspondance des noms de modèles, français du dépôt ↔ anglais
    (D-08).

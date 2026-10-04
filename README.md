@@ -71,6 +71,7 @@ churn-saas-cisia/
 │   ├── raw/                      CSV sources — **versionnés** (2 Mo, référence de tout)
 │   ├── processed/                Instantanés Parquet — non versionnés, recalculables
 │   ├── interim/                  Travail intermédiaire — non versionné
+│   ├── simulation/               Lots de démonstration **simulés** (phase 11) — versionnés
 │   └── manifeste_v1.0.json       Empreintes des sources et des instantanés — versionné
 │
 ├── notebooks/              Carnets de phase et livrable remis au jury
@@ -147,7 +148,9 @@ churn-saas-cisia/
     └── monitoring/         7. SERVICES DE MONITORING
         ├── derive.py             PSI, Kolmogorov-Smirnov, rapport
         ├── alertes.py            indicateur → seuil → action → responsable
-        └── exporteur.py          exposition des indicateurs à Prometheus
+        ├── exporteur.py          exposition des indicateurs à Prometheus
+        ├── suivi.py              verdicts mensuels M5, M8, M9 contre le profil de référence
+        └── simulation.py         lots de démonstration simulés, dérive injectée (S1 à S7)
 ```
 
 Le découpage suit les **activités du cycle de vie**, pas les types d'objets. Une activité,

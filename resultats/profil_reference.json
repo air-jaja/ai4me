@@ -1,0 +1,423 @@
+{
+ "identite_execution": "7008f6b7fd948950",
+ "decision": "M1 à M10 et S1 à S7, validées par le porteur le 04/10/2026",
+ "source": "partie d'entraînement ; score du modèle servi réentraîné à l'identique",
+ "modele": {
+  "nom": "churn_saas_servi",
+  "version": "1.1",
+  "fichier": "churn_saas_servi_v1.1_20261003.joblib",
+  "fichier_sha256": "fa3e0efef90e1b5427c750a6649227bdbf937c2ad3f89bfc5fd6501adee21ce2"
+ },
+ "comptes": 4000,
+ "variables_cles": [
+  "derniere_connexion_jours",
+  "anciennete_mois",
+  "nb_integrations",
+  "tickets_support_90j"
+ ],
+ "variables": {
+  "jour_souscription": {
+   "type": "catégoriel",
+   "parts": {
+    "lundi": 0.1525,
+    "mardi": 0.14925,
+    "samedi": 0.144,
+    "vendredi": 0.1425,
+    "mercredi": 0.13975,
+    "dimanche": 0.13625,
+    "jeudi": 0.13575
+   }
+  },
+  "secteur": {
+   "type": "catégoriel",
+   "parts": {
+    "Commerce": 0.18575,
+    "Tech": 0.17325,
+    "Finance": 0.14975,
+    "Industrie": 0.129,
+    "Éducation": 0.11725,
+    "Santé": 0.11125,
+    "Public": 0.08475,
+    "<manquant>": 0.049
+   }
+  },
+  "taille_entreprise": {
+   "type": "catégoriel",
+   "parts": {
+    "PME": 0.418,
+    "TPE": 0.33825,
+    "ETI": 0.174,
+    "GE": 0.06975
+   }
+  },
+  "plan": {
+   "type": "catégoriel",
+   "parts": {
+    "Pro": 0.35675,
+    "Starter": 0.274,
+    "Business": 0.2575,
+    "Enterprise": 0.11175
+   }
+  },
+  "anciennete_mois": {
+   "type": "numérique",
+   "bornes_internes": [
+    4.0,
+    6.0,
+    8.0,
+    10.0,
+    12.0,
+    15.0,
+    17.0,
+    21.0
+   ],
+   "parts": [
+    0.19875,
+    0.0755,
+    0.09125,
+    0.0905,
+    0.10025,
+    0.139,
+    0.07525,
+    0.1265,
+    0.103
+   ]
+  },
+  "sieges_souscrits": {
+   "type": "numérique",
+   "bornes_internes": [
+    4.0,
+    7.0,
+    9.0,
+    14.0,
+    27.0,
+    40.0,
+    50.0,
+    77.20000000000027,
+    183.0
+   ],
+   "parts": [
+    0.09725,
+    0.09375,
+    0.07575,
+    0.12975,
+    0.09775,
+    0.1055,
+    0.0935,
+    0.10675,
+    0.09875,
+    0.10125
+   ]
+  },
+  "utilisateurs_actifs": {
+   "type": "numérique",
+   "bornes_internes": [
+    1.0,
+    2.0,
+    4.0,
+    6.0,
+    9.0,
+    15.0,
+    23.0,
+    36.0,
+    80.0
+   ],
+   "parts": [
+    0.05925,
+    0.1095,
+    0.126,
+    0.1,
+    0.09525,
+    0.10325,
+    0.1045,
+    0.09925,
+    0.10075,
+    0.10225
+   ]
+  },
+  "taux_adoption_pct": {
+   "type": "numérique",
+   "bornes_internes": [
+    14.0,
+    25.9,
+    33.3,
+    42.9,
+    50.0,
+    56.4,
+    64.6,
+    72.7,
+    83.3
+   ],
+   "parts": [
+    0.0995,
+    0.10025,
+    0.07125,
+    0.12,
+    0.07825,
+    0.13025,
+    0.0995,
+    0.09775,
+    0.103,
+    0.10025
+   ]
+  },
+  "connexions_30j": {
+   "type": "numérique",
+   "bornes_internes": [
+    1.0,
+    5.0,
+    10.0,
+    16.0,
+    23.0,
+    31.0,
+    43.0,
+    60.0
+   ],
+   "parts": [
+    0.05925,
+    0.23875,
+    0.0945,
+    0.09525,
+    0.1075,
+    0.09925,
+    0.10125,
+    0.10025,
+    0.104
+   ]
+  },
+  "heures_usage_30j": {
+   "type": "numérique",
+   "bornes_internes": [
+    0.1,
+    0.3,
+    1.0,
+    2.7,
+    5.5,
+    9.1,
+    14.0,
+    22.0,
+    36.1
+   ],
+   "parts": [
+    0.05993606819392648,
+    0.11001598295151838,
+    0.12946190729888118,
+    0.09669685668620139,
+    0.10175812466702185,
+    0.0988279168886521,
+    0.10255727224294087,
+    0.09962706446457112,
+    0.10042621204049014,
+    0.10069259456579649
+   ]
+  },
+  "fonctionnalites_utilisees": {
+   "type": "numérique",
+   "bornes_internes": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0,
+    6.0,
+    8.0,
+    10.0,
+    14.0
+   ],
+   "parts": [
+    0.08425,
+    0.06275,
+    0.08675,
+    0.111,
+    0.105,
+    0.0865,
+    0.13925,
+    0.099,
+    0.11925,
+    0.10625
+   ]
+  },
+  "nb_integrations": {
+   "type": "numérique",
+   "bornes_internes": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "parts": [
+    0.30454070981210857,
+    0.1714509394572025,
+    0.1589248434237996,
+    0.12708768267223383,
+    0.09055323590814196,
+    0.14744258872651356
+   ]
+  },
+  "derniere_connexion_jours": {
+   "type": "numérique",
+   "bornes_internes": [
+    1.0,
+    2.0,
+    4.0,
+    8.0,
+    24.0
+   ],
+   "parts": [
+    0.2315,
+    0.26425,
+    0.188,
+    0.107,
+    0.10875,
+    0.1005
+   ]
+  },
+  "tickets_support_90j": {
+   "type": "numérique",
+   "bornes_internes": [
+    1.0,
+    2.0,
+    3.0,
+    3.300000000000182,
+    5.0,
+    6.0
+   ],
+   "parts": [
+    0.26575,
+    0.16825,
+    0.14875,
+    0.11725,
+    0.0985,
+    0.07725,
+    0.12425
+   ]
+  },
+  "delai_reponse_support_h": {
+   "type": "numérique",
+   "bornes_internes": [
+    2.9,
+    4.8,
+    6.590000000000009,
+    8.5,
+    10.6,
+    12.8,
+    15.7,
+    19.8,
+    26.6
+   ],
+   "parts": [
+    0.0996126175982291,
+    0.0949086884338683,
+    0.10542335362479248,
+    0.09988931931377974,
+    0.09684560044272275,
+    0.10071942446043165,
+    0.10154952960708356,
+    0.0996126175982291,
+    0.10071942446043165,
+    0.10071942446043165
+   ]
+  },
+  "csat": {
+   "type": "numérique",
+   "bornes_internes": [
+    2.0,
+    3.0,
+    4.0
+   ],
+   "parts": [
+    0.046245919477693145,
+    0.14961915125136016,
+    0.30195865070729055,
+    0.5021762785636561
+   ]
+  },
+  "retards_paiement_12m": {
+   "type": "numérique",
+   "bornes_internes": [
+    1.0,
+    2.0
+   ],
+   "parts": [
+    0.5908493294767289,
+    0.2114120431238496,
+    0.1977386273994215
+   ]
+  },
+  "revenu_mensuel_recurrent_eur": {
+   "type": "numérique",
+   "bornes_internes": [
+    57.954,
+    107.33800000000001,
+    198.60600000000014,
+    373.454,
+    674.79,
+    1092.7320000000004,
+    1676.3730000000014,
+    3156.0240000000013,
+    8543.261999999997
+   ],
+   "parts": [
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+   ]
+  }
+ },
+ "score": {
+  "type": "numérique",
+  "bornes_internes": [
+   0.013078413497982522,
+   0.029527145445076595,
+   0.05459049951467188,
+   0.09592317044148439,
+   0.15340575856321703,
+   0.2387581721881141,
+   0.35700657080892245,
+   0.5473436303214629,
+   0.8040163525257731
+  ],
+  "parts": [
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1
+  ]
+ },
+ "manquants_a_l_entree": {
+  "jour_souscription": 0.0,
+  "secteur": 0.049,
+  "taille_entreprise": 0.0,
+  "plan": 0.0,
+  "anciennete_mois": 0.0,
+  "sieges_souscrits": 0.0,
+  "utilisateurs_actifs": 0.0,
+  "taux_adoption_pct": 0.0475,
+  "connexions_30j": 0.0,
+  "heures_usage_30j": 0.0615,
+  "fonctionnalites_utilisees": 0.0,
+  "nb_integrations": 0.042,
+  "derniere_connexion_jours": 0.0,
+  "tickets_support_90j": 0.0,
+  "delai_reponse_support_h": 0.0965,
+  "csat": 0.081,
+  "retards_paiement_12m": 0.04925,
+  "revenu_mensuel_recurrent_eur": 0.02725
+ },
+ "duree_s": 0.9,
+ "date": "2026-10-04 05:42"
+}

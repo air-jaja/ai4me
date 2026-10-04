@@ -260,19 +260,23 @@ def reconstruire() -> Path:
     For the CI, where models/ is not versioned: the model is refitted from code and data
     (deterministic) under the recorded file name, so the fidelity test runs too. Nothing
     measured on this machine reaches resultats/.
+
+    The file rebuilt is the one the `champion` alias names - the one the API loads, hash
+    checked - not the last run's artefact in modele_servi.json: on 04/10/2026 a run named
+    its file after that day while the champion stayed the 03/10 file, the API found no
+    model, and the CI job that tolerates no skipped test failed on every push.
     """
+    import hashlib
+
     sys.path.insert(0, str(RACINE / "src"))
     warnings.simplefilter("ignore")
     from churn_saas import config
     from churn_saas.features import executer_pipeline, parties_du_decoupage
     from churn_saas.modelisation import construire_baseline
-    from churn_saas.packaging import FicheModele, sauvegarder_modele
+    from churn_saas.packaging import FicheModele, lire_aliases, sauvegarder_modele
 
-    attendu = RACINE / json.loads(DESTINATION.read_text(encoding="utf-8"))["artefact"]
-    registre = json.loads(
-        (RACINE / "resultats" / "registre_modeles.json").read_text(encoding="utf-8")
-    )
-    entree = next(e for e in registre if e["fichier"] == attendu.name)
+    entree = lire_aliases(RACINE / "resultats" / "aliases_modeles.json")["champion"]
+    attendu = config.MODELES / entree["fichier"]
     parties = parties_du_decoupage(
         executer_pipeline(config.FICHIER_COMPLET, config.FICHIER_CATALOGUE)
     )
@@ -284,6 +288,13 @@ def reconstruire() -> Path:
     chemin = sauvegarder_modele(modele, fiche, attendu.parent, entrainement=(X, y), registre=None)
     if chemin != attendu:
         raise SystemExit(f"Nom inattendu : {chemin.name} au lieu de {attendu.name}")
+    # The bytes of a saved model depend on the platform that wrote them: a file rebuilt here
+    # that differs from the champion's recorded hash would be refused by the API anyway.
+    if hashlib.sha256(chemin.read_bytes()).hexdigest() != entree["fichier_sha256"]:
+        raise SystemExit(
+            f"Empreinte de {chemin.name} différente de celle du champion : "
+            "fichier non reproductible sur cette machine."
+        )
     return chemin
 
 
