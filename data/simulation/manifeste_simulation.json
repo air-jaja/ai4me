@@ -19,6 +19,14 @@
   },
   "M9": "aucune"
  },
+ "derive_mois_3": {
+  "M5": {
+   "variable": "derniere_connexion_jours",
+   "part": 0.3,
+   "ajout_jours": 30
+  },
+  "S8": "seule injection du mois"
+ },
  "colonnes_retirees": [
   "churn",
   "sante_compte_fin_periode"
@@ -31,6 +39,10 @@
   "lot_simule_mois_2_avec_derive.csv": {
    "lignes": 5000,
    "sha256": "acc0e5272991cc4ccc868bf880b8b86158880979a62f2411362e37ea011bc3d9"
+  },
+  "lot_simule_mois_3_derive_forte.csv": {
+   "lignes": 5000,
+   "sha256": "e51ae9b8c871029b3fbbad9fae613e9ff635c404b20e8f3121fc32d34810d060"
   }
  }
 }

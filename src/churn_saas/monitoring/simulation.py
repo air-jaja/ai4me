@@ -74,3 +74,18 @@ def injecter_derive(lot, generateur):
     lignes = generateur.choice(len(lot), size=round(part * len(lot)), replace=False)
     lot.loc[lot.index[lignes], variable] = pd.NA
     return lot
+
+
+def injecter_derive_forte(lot, generateur):
+    """S8: a marked disengagement - 30 days added to the last login of 30 % of the accounts."""
+    import pandas as pd
+
+    lot = lot.copy()
+    variable, part, ajout = (DERIVE_CONNEXION_FORTE[k] for k in ("variable", "part", "ajout_jours"))
+    lignes = generateur.choice(len(lot), size=round(part * len(lot)), replace=False)
+    valeurs = pd.to_numeric(lot[variable].iloc[lignes], errors="coerce") + ajout
+    lot.loc[lot.index[lignes], variable] = [
+        lot[variable].iloc[i] if pd.isna(v) else str(int(v))
+        for i, v in zip(lignes, valeurs, strict=True)
+    ]
+    return lot

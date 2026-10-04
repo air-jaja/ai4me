@@ -4,9 +4,10 @@
     uv run python tools/suivi_simule.py --forcer        # redo an identical report
     uv run python tools/suivi_simule.py --regenerer     # rebuild the batches (same seed)
 
-Decision S1 to S7 (04/10/2026). The batches - raw CRM format, 5,000 accounts each - are
+Decision S1 to S8 (04/10/2026). The batches - raw CRM format, 5,000 accounts each - are
 written to data/simulation/ with their manifest: the sample's 36 training accounts plus
-rows drawn from the training part, month 1 as is, month 2 with the documented drift. The
+rows drawn from the training part, month 1 as is, month 2 with the documented drift, month
+3 with the strong one decided after month 2 left M5 silent (S8). The
 report runs each batch through the production chain (silver, gold, the served model, the
 operational list) and the rules M5, M8 and M9 against the reference profile, and writes
 resultats/suivi_simule.json. It proves the mechanics, never the model's performance (S6).
@@ -27,7 +28,7 @@ RACINE = Path(__file__).resolve().parents[1]
 DESTINATION = RACINE / "resultats" / "suivi_simule.json"
 PROFIL = RACINE / "resultats" / "profil_reference.json"
 # The first day of each simulated month: the list's date, so the report is reproducible.
-DATES_DES_MOIS = ("2026-11-01", "2026-12-01")
+DATES_DES_MOIS = ("2026-11-01", "2026-12-01", "2027-01-01")
 
 
 def _outil_servi():
@@ -47,6 +48,11 @@ def _fichier(mois: str) -> str:
     return f"lot_simule_{mois}.csv"
 
 
+def _mois(s) -> tuple[str, ...]:
+    """S3 months, then the S8 one."""
+    return (*s.MOIS_SIMULES, s.MOIS_DERIVE_FORTE)
+
+
 def generer(regenerer: bool = False) -> dict:
     """S1-S4, S7: the two raw batches and their manifest, unless already there."""
     sys.path.insert(0, str(RACINE / "src"))
@@ -58,9 +64,12 @@ def generer(regenerer: bool = False) -> dict:
     from churn_saas.monitoring import simulation as s
 
     manifeste = s.DOSSIER_SIMULATION / "manifeste_simulation.json"
+    attendus = [_fichier(mois) for mois in _mois(s)]
     if manifeste.exists() and not regenerer:
         contenu = json.loads(manifeste.read_text(encoding="utf-8"))
-        if all((s.DOSSIER_SIMULATION / f).exists() for f in contenu["fichiers"]):
+        if list(contenu["fichiers"]) == attendus and all(
+            (s.DOSSIER_SIMULATION / f).exists() for f in attendus
+        ):
             return contenu
 
     resultat = executer_pipeline(config.FICHIER_COMPLET, config.FICHIER_CATALOGUE)
@@ -77,9 +86,13 @@ def generer(regenerer: bool = False) -> dict:
     mois_2 = s.injecter_derive(
         s.completer_lot(reels, reservoir, s.TAILLE_LOT_SIMULE, generateur), generateur
     )
+    # S8 comes after: drawn last from the same generator, months 1 and 2 stay identical.
+    mois_3 = s.injecter_derive_forte(
+        s.completer_lot(reels, reservoir, s.TAILLE_LOT_SIMULE, generateur), generateur
+    )
     s.DOSSIER_SIMULATION.mkdir(parents=True, exist_ok=True)
     fichiers = {}
-    for mois, lot in zip(s.MOIS_SIMULES, (mois_1, mois_2), strict=True):
+    for mois, lot in zip(_mois(s), (mois_1, mois_2, mois_3), strict=True):
         chemin = s.DOSSIER_SIMULATION / _fichier(mois)
         lot.to_csv(chemin, index=False, encoding="utf-8-sig", lineterminator="\n")
         fichiers[chemin.name] = {"lignes": len(lot), "sha256": _empreinte(chemin)}
@@ -93,6 +106,7 @@ def generer(regenerer: bool = False) -> dict:
             "écartés (jeu de test)": int(echantillon["client_id"].isin(ids_test).sum()),
         },
         "derive_mois_2": {"M5": s.DERIVE_CONNEXION, "M8": s.DERIVE_MANQUANTS, "M9": "aucune"},
+        "derive_mois_3": {"M5": s.DERIVE_CONNEXION_FORTE, "S8": "seule injection du mois"},
         "colonnes_retirees": list(s.COLONNES_POSTERIEURES),
         "fichiers": fichiers,
     }
@@ -154,7 +168,7 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
     retenus = {"À contacter ce mois", "Groupe témoin (pas de contact)"}
 
     mois_rapportes, precedent = [], None
-    for mois, date_liste in zip(s.MOIS_SIMULES, DATES_DES_MOIS, strict=True):
+    for mois, date_liste in zip(_mois(s), DATES_DES_MOIS, strict=True):
         brut = pd.read_csv(s.DOSSIER_SIMULATION / _fichier(mois), dtype=str, encoding="utf-8-sig")
         silver = construire_silver_standard(brut, catalogue=catalogue)
         X = typer_pour_modele(preparer_gold(silver).gold.drop(columns=["churn"], errors="ignore"))

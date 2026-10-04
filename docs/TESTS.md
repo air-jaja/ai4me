@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**779 cas de test** issus de 407 fonctions, répartis sur 25 fichiers.
+**780 cas de test** issus de 408 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -35,7 +35,7 @@ soutenance.
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
-| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 24 |
+| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 25 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
 | [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 302 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
@@ -311,10 +311,11 @@ soutenance.
 | 18 | `test_un_compte_du_jeu_de_test_est_refuse_dans_un_lot_simule` | S1: the test part is never read a third time. | a test account is refused, loudly. |
 | 19 | `test_un_lot_simule_a_sa_taille_ses_identifiants_et_aucune_issue` | S2: the real accounts first, drawn rows renamed SIM-..., no outcome column. | — |
 | 20 | `test_la_derive_injectee_touche_les_parts_decidees` | S4: last login doubled on 30 % of the accounts, support delay blanked on 25 %. | — |
-| 21 | `test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet` | S3, S6, S7: the report says it is simulated and what it proves; the drift-free month raises no alert, the collection incident of month 2 is caught (M8). | — |
-| 22 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
-| 23 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
-| 24 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
+| 21 | `test_la_derive_forte_ajoute_trente_jours_a_trente_pour_cent_des_comptes` | S8: 30 days added to the last login of 30 % of the accounts, nothing else touched. | — |
+| 22 | `test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet` | S3, S6, S7, S8: the report says it is simulated and what it proves; the drift-free month raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5). | — |
+| 23 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
+| 24 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
+| 25 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
 
 ### Contrat d'affichage des notebooks
 

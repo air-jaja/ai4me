@@ -350,18 +350,39 @@ def test_la_derive_injectee_touche_les_parts_decidees():
 
 
 @pytest.mark.phase11
+def test_la_derive_forte_ajoute_trente_jours_a_trente_pour_cent_des_comptes():
+    """S8: 30 days added to the last login of 30 % of the accounts, nothing else touched."""
+    from churn_saas.monitoring import injecter_derive_forte
+
+    lot = pd.DataFrame(
+        {"derniere_connexion_jours": ["2"] * 1_000, "delai_reponse_support_h": ["5.0"] * 1_000}
+    )
+    derive = injecter_derive_forte(lot, np.random.default_rng(0))
+    assert (derive["derniere_connexion_jours"] == "32").sum() == 300
+    assert derive["delai_reponse_support_h"].equals(lot["delai_reponse_support_h"])
+
+
+@pytest.mark.phase11
 def test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet():
-    """S3, S6, S7: the report says it is simulated and what it proves; the drift-free month
-    raises no alert, the collection incident of month 2 is caught (M8)."""
+    """S3, S6, S7, S8: the report says it is simulated and what it proves; the drift-free
+    month raises no alert, month 2's collection incident is caught (M8), month 3's strong
+    disengagement too (M5)."""
     import json
     from pathlib import Path
 
     racine = Path(__file__).resolve().parents[1]
     rapport = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))
     assert rapport["mention"] == "SIMULÉ — démonstration" and "performance" in rapport["portee"]
-    mois_1, mois_2 = rapport["mois"]
+    mois_1, mois_2, mois_3 = rapport["mois"]
     assert not any(a["declenchee"] for a in mois_1["alertes"])
     assert mois_2["M8_manquants"]["verdict"]["variables en alerte"] == ["delai_reponse_support_h"]
+    # The month 2 finding, kept as is: doubling the last login left M5 silent.
+    assert not mois_2["M5_derive"]["verdict"]["déclenchée"]
+    # S8: the strong disengagement is caught on its key variable; M8 is silent again.
+    assert mois_3["M5_derive"]["verdict"]["variables clés au-dessus de 0,25"] == [
+        "derniere_connexion_jours"
+    ]
+    assert not mois_3["M8_manquants"]["verdict"]["déclenchée"]
     manifeste = json.loads(
         (racine / "data" / "simulation" / "manifeste_simulation.json").read_text(encoding="utf-8")
     )

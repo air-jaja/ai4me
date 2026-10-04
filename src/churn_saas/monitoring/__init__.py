@@ -19,7 +19,7 @@ from .derive import (
     rapport_derive,
 )
 from .exporteur import publier_lot
-from .simulation import completer_lot, comptes_reels, injecter_derive
+from .simulation import completer_lot, comptes_reels, injecter_derive, injecter_derive_forte
 from .suivi import derive_combinee, ecart_volume, manquants_relatifs, mesures_du_mois
 
 __all__ = [
@@ -40,4 +40,5 @@ __all__ = [
     "comptes_reels",
     "completer_lot",
     "injecter_derive",
+    "injecter_derive_forte",
 ]
