@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**816 cas de test** issus de 441 fonctions, répartis sur 25 fichiers.
+**817 cas de test** issus de 442 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,7 +37,7 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 323 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 324 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
@@ -382,6 +382,7 @@ soutenance.
 | 32 | `test_la_taille_des_sources_citee_est_celle_du_manifeste` | The three source files weigh 0.7 MB according to the manifest; "2 Mo" lived in the notebooks and five documents until 04/10/2026. | — |
 | 33 | `test_la_soutenance_de_l_annexe_c_tient_en_trente_minutes` | Annex C planned a 30-minute defence whose durations added up to 32 (until 04/10/2026). | — |
 | 34 | `test_l_annexe_e_rattache_chaque_dossier_a_ses_tests` | Annex E showed "—" (no tests) for `modelisation/` and `industrialisation/`, which have theirs, and an obsolete count of test files (until 04/10/2026). | — |
+| 35 | `test_chaque_element_du_registre_cite_par_le_notebook_existe` | On 04/10/2026 the notebook started citing D-11, the deferred deployment of the batch and its monitoring into the Docker stack: a register identifier quoted in the certification notebook must name an entry of `docs/registre_ecarts.toml`. | — |
 
 ### Stockage et cache des figures
 

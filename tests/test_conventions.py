@@ -874,3 +874,20 @@ def test_l_annexe_e_rattache_chaque_dossier_a_ses_tests():
         assert all((RACINE / "tests" / nom).exists() for nom in noms), noms
     nombre = len(list((RACINE / "tests").glob("test_*.py")))
     assert f"({nombre} au total)" in annexe_e
+
+
+def test_chaque_element_du_registre_cite_par_le_notebook_existe():
+    """On 04/10/2026 the notebook started citing D-11, the deferred deployment of the batch and
+    its monitoring into the Docker stack: a register identifier quoted in the certification
+    notebook must name an entry of `docs/registre_ecarts.toml`."""
+    import tomllib
+
+    import nbformat
+
+    registre = tomllib.loads((RACINE / "docs" / "registre_ecarts.toml").read_text(encoding="utf-8"))
+    connus = {e["id"] for e in registre["element"]}
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    texte = "\n".join(c.source for c in nb.cells if c.cell_type == "markdown")
+    cites = set(re.findall(r"\b[ED]-\d{2,3}\b", texte))
+    assert {"D-06", "D-10", "D-11"} <= cites
+    assert not cites - connus, f"Identifiants absents du registre : {sorted(cites - connus)}"

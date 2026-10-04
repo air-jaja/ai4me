@@ -785,3 +785,17 @@ motif = "Le lot mensuel est un flux Prefect : six étapes, lecture relancée en 
 preuve = "src/churn_saas/industrialisation/flux.py"
 source = "arbitrage du porteur, 04/10/2026"
 condition = "Mise en production, si l'historique des exécutions devient nécessaire à l'exploitation."
+
+[[element]]
+id = "D-11"
+titre = "Lot mensuel et suivi dans la pile Docker ; carence et contrôle de promotion branchés"
+nature = "architecture"
+statut = "différé"
+phase = "11 · Suivi"
+date = "04/10/2026"
+competence = "C7"
+section = "11"
+motif = "La pile Docker était la cible dès le début de la mise en œuvre ; seule l'API y est démontrée. Le lot mensuel, la liste et le suivi tournent en local : le flux met à jour ses indicateurs sans démarrer l'exporteur, si bien que Prometheus ne collecte que l'API. La carence est codée dans construire_liste mais l'outil de liste ne lui transmet pas l'historique ; la comparaison avant promotion est une procédure que promouvoir.py ne vérifie pas."
+preuve = "src/churn_saas/industrialisation/flux.py · tools/liste_operationnelle.py · tools/promouvoir.py"
+source = "arbitrage du porteur, 04/10/2026"
+condition = "Mise en production : le lot tourne dans la pile, ses indicateurs sont collectés, l'historique des contacts est fourni par le CRM."
