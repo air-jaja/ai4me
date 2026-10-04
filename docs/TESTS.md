@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**802 cas de test** issus de 427 fonctions, répartis sur 25 fichiers.
+**803 cas de test** issus de 428 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,7 +37,7 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 309 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 310 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
@@ -367,7 +367,8 @@ soutenance.
 | 17 | `test_le_notebook_de_certification_n_a_plus_de_texte_provisoire` | Placeholders survived several phases unnoticed (summary, conclusion, 'not deployed yet'): a deliverable must not promise text it does not contain. | — |
 | 18 | `test_l_annexe_b_couvre_les_47_criteres_de_la_grille` | Annex B lists every criterion of the evaluation grid, competency by competency. | — |
 | 19 | `test_le_notebook_de_certification_ne_cite_plus_d_element_perime` | Sketches and conventions written before phase 10 survived next to the real service: a `/score-churn` pseudo-API, `staging`/`production` aliases, model and snapshot names nobody uses, an MLflow image the compose no longer builds (corrected 04/10/2026). | A reader comparing the notebook with the repository would find two versions of the truth. |
-| 20 | `test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee` | Section 11 carries the architecture diagram (C7). | its cell was an empty comment until 04/10/2026 - and the captures that prove the platform ran, attached to the notebook so that it stays readable on its own. |
+| 20 | `test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne` | Until 04/10/2026 section 10 described a textbook chain - unit tests at each commit - while the repository runs fast checks at commit, the test campaign at push and both CI jobs on GitHub. | The section now shows the real levels, with a capture of each. |
+| 21 | `test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee` | Section 11 carries the architecture diagram (C7). | its cell was an empty comment until 04/10/2026 - and the captures that prove the platform ran, attached to the notebook so that it stays readable on its own. |
 
 ### Stockage et cache des figures
 

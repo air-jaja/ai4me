@@ -536,6 +536,25 @@ def test_le_notebook_de_certification_ne_cite_plus_d_element_perime():
     assert not perimes, f"Éléments périmés dans les cellules {perimes}."
 
 
+def test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne():
+    """Until 04/10/2026 section 10 described a textbook chain - unit tests at each commit -
+    while the repository runs fast checks at commit, the test campaign at push and both CI
+    jobs on GitHub. The section now shows the real levels, with a capture of each."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    titres = [c.source.split("\n", 1)[0] for c in nb.cells]
+    debut = next(i for i, t in enumerate(titres) if t.startswith("## 10."))
+    fin = next(i for i, t in enumerate(titres) if t.startswith("## 11."))
+    section = nb.cells[debut:fin]
+    texte = "".join(c.source for c in section)
+    assert "Tests unitaires des fonctions de nettoyage" not in texte
+    assert all(niveau in texte for niveau in ("pre-commit", "pre-push", "`qualite`", "`complet`"))
+    jointes = {nom for c in section for nom in c.get("attachments", {})}
+    assert {"ci_precommit.png", "ci_actions.png"} <= jointes
+    assert "attachment:ci_precommit.png" in texte and "attachment:ci_actions.png" in texte
+
+
 def test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee():
     """Section 11 carries the architecture diagram (C7) - its cell was an empty comment until
     04/10/2026 - and the captures that prove the platform ran, attached to the notebook so
