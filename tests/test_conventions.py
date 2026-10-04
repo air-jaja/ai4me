@@ -536,6 +536,69 @@ def test_le_notebook_de_certification_ne_cite_plus_d_element_perime():
     assert not perimes, f"Éléments périmés dans les cellules {perimes}."
 
 
+def _textes_livres() -> dict[str, str]:
+    """Every delivered text: README, project file, documents, and the notebooks' cells.
+
+    The generated test catalogue is left out: it quotes the docstrings below, obsolete
+    patterns included."""
+    import nbformat
+
+    textes = {
+        nom: (RACINE / nom).read_text(encoding="utf-8") for nom in ("README.md", "pyproject.toml")
+    }
+    for document in sorted((RACINE / "docs").glob("*.md")):
+        if document.name != "TESTS.md":
+            textes[f"docs/{document.name}"] = document.read_text(encoding="utf-8")
+    for carnet in sorted((RACINE / "notebooks").glob("*.ipynb")):
+        nb = nbformat.read(carnet, as_version=4)
+        textes[f"notebooks/{carnet.name}"] = "\n".join(c.source for c in nb.cells)
+    return textes
+
+
+def test_les_documents_livres_ne_citent_plus_d_element_perime():
+    """The certification notebook was cleaned on 04/10/2026, but the same obsolete facts lived
+    on elsewhere - an MLflow 3.1.1 image in two READMEs, file names nobody uses in the phase 2
+    notebook, a staging alias in a comment, a ROC-AUC rounded by hand to 0,882 where the tool
+    writes 0,881, a test set said to be read once although the phase 9 report read it again."""
+    import re
+
+    motif = re.compile(
+        r"/score-churn|API_SKETCH|\bstaging\b|churn_model_v|churn_train_AAAAMMJJ|v3\.1\.1\b"
+        r"|ROC-AUC 0,882|\b(lu|ouvert) une seule fois"
+    )
+    perimes = {
+        nom: sorted({m.group(0) for m in motif.finditer(texte)})
+        for nom, texte in _textes_livres().items()
+        if motif.search(texte)
+    }
+    assert not perimes, f"Éléments périmés : {perimes}"
+
+
+def test_chaque_intervalle_de_la_pr_auc_du_test_est_un_intervalle_calcule():
+    """Two bootstrap draws on the same 1,000 test scores give two intervals, [0,712 ; 0,806]
+    at the final evaluation and [0,710 ; 0,807] in the phase 9 report. Both may be quoted,
+    each with its source; a third one would have been typed by hand."""
+    import json
+    import re
+
+    def fr(intervalle):
+        return "[{} ; {}]".format(*(f"{b:.3f}".replace(".", ",") for b in intervalle))
+
+    resultats = RACINE / "resultats"
+    finale = json.loads((resultats / "evaluation_finale.json").read_text(encoding="utf-8"))
+    phase9 = json.loads((resultats / "validation_phase9.json").read_text(encoding="utf-8"))
+    calcules = {
+        fr(finale["intervalles_95"]["PR-AUC"]),
+        fr(phase9["metriques"]["PR-AUC"]["intervalle_95"]),
+    }
+    motif = re.compile(r"0,761\*{0,2} (\[0,7\d\d ; 0,8\d\d\])")
+    cites = {
+        (nom, m.group(1)) for nom, texte in _textes_livres().items() for m in motif.finditer(texte)
+    }
+    inconnus = sorted(c for c in cites if c[1] not in calcules)
+    assert cites and not inconnus, f"Intervalles saisis à la main : {inconnus}"
+
+
 def test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne():
     """Until 04/10/2026 section 10 described a textbook chain - unit tests at each commit -
     while the repository runs fast checks at commit, the test campaign at push and both CI
@@ -553,6 +616,7 @@ def test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne():
     jointes = {nom for c in section for nom in c.get("attachments", {})}
     assert {"ci_precommit.png", "ci_actions.png"} <= jointes
     assert "attachment:ci_precommit.png" in texte and "attachment:ci_actions.png" in texte
+    assert "docs/MODEL_CARD.md" in texte, "Le § 10 ne renvoie pas à la model card."
 
 
 def test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee():

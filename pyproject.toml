@@ -89,7 +89,7 @@ optimisation = [
 
 # C5/C6/C9 — Traçabilité des expérimentations et registre de modèles.
 # Remplace la convention de versioning manuelle décrite au § 10 par un dispositif
-# outillé : promotion staging -> production, comparaison de versions, rollback.
+# outillé : promotion par alias (champion, precedent), comparaison de versions, retour arrière.
 suivi = [
     "mlflow>=2.14",
 ]

@@ -731,7 +731,7 @@ phase = "8 · Optimisation"
 date = "03/10/2026"
 competence = "C5"
 section = "9"
-motif = "Décision du porteur (option i). Le test reste lu une seule fois ; le modèle servi ne diffère du modèle évalué que par la combinaison de régressions identiques, et son équivalence est démontrée sur les 25 plis du protocole."
+motif = "Décision du porteur (option i). Le test n'est pas relu pour le modèle servi ; le modèle servi ne diffère du modèle évalué que par la combinaison de régressions identiques, et son équivalence est démontrée sur les 25 plis du protocole."
 source = "resultats/modele_servi.json · resultats/evaluation_finale.json"
 
 [[element]]
