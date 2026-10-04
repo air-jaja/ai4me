@@ -209,7 +209,7 @@ au délégué à la protection des données, pas à l'équipe technique.
 
 | Type de donnée | Support retenu | Motif |
 |---|---|---|
-| CSV sources (2 Mo) | **Git simple** | Sous 50 Mo, Git suffit et n'exige rien de particulier |
+| CSV sources (0,7 Mo) | **Git simple** | Sous 50 Mo, Git suffit et n'exige rien de particulier |
 | Instantanés d'entraînement | **Parquet, suivi Git-LFS** | Fichiers volumineux et immuables : le cas où LFS est pertinent |
 | Scores produits | **PostgreSQL** | On les interroge, on ne les versionne pas |
 | Fiches de version | **Git simple** | Minuscules, textuelles, et ce sont elles le contrat |
@@ -365,7 +365,7 @@ contrôle compare ces empreintes avant tout entraînement.
 
 | Jeu | Support | Conservé dans l'historique |
 |---|---|---|
-| Fichiers de départ | `data/raw/*.csv` | **Oui** — 2 Mo, référence de tout le reste |
+| Fichiers de départ | `data/raw/*.csv` | **Oui** — 0,7 Mo, référence de tout le reste |
 | Jeu nettoyé | `data/processed/*.parquet` | Non — recalculable |
 | Jeu d'entraînement | `data/processed/*.parquet` | Non — recalculable |
 | Fiche de version | `data/manifeste_v1.0.json` | **Oui** — c'est elle le contrat |

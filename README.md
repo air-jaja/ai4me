@@ -39,8 +39,8 @@ uv run python tools/livraison.py --verifier  # paquet de livraison vérifié (do
 ```
 
 Les fichiers CSV sources sont versionnés dans `data/raw/` : l'énoncé exige que les jeux de données
-soient « intégrés ou clairement référencés et accessibles », et leur volume le permet ici (moins de
-2 Mo). Les instantanés d'entraînement et les fichiers dérivés, eux, restent hors dépôt — voir le
+soient « intégrés ou clairement référencés et accessibles », et leur volume le permet ici (0,7 Mo
+au total). Les instantanés d'entraînement et les fichiers dérivés, eux, restent hors dépôt — voir le
 cycle de vie des données dans `docs/00.README_choix_methodologiques.md` § 3.
 
 ---
@@ -71,7 +71,7 @@ churn-saas-cisia/
 │   └── ressources_poste.toml     Ressources du poste et hypothèses d'énergie — entrée du projet
 │
 ├── data/
-│   ├── raw/                      CSV sources — **versionnés** (2 Mo, référence de tout)
+│   ├── raw/                      CSV sources — **versionnés** (0,7 Mo, référence de tout)
 │   ├── processed/                Instantanés Parquet — non versionnés, recalculables
 │   ├── interim/                  Travail intermédiaire — non versionné
 │   ├── simulation/               Lots de démonstration **simulés** (phase 11) — versionnés
@@ -171,8 +171,9 @@ versions divergentes, dont une seule testée.
 Le notebook importe le paquet et **affiche le code au moment où il l'explique** :
 
 ```python
-from churn_saas.notebook import preparer_import, afficher_source
-preparer_import()   # importable même sans `uv sync`, depuis l'archive décompressée
+# Cellule 1 : src/ est ajouté au chemin d'import, que le paquet soit installé ou non
+# (sans `uv sync`, depuis l'archive décompressée)
+from churn_saas.notebook import afficher_source
 
 from churn_saas.donnees.silver import nettoyer_decimal_texte
 afficher_source(nettoyer_decimal_texte)   # le code s'affiche, coloré
@@ -181,7 +182,7 @@ afficher_source(nettoyer_decimal_texte)   # le code s'affiche, coloré
 Le code affiché est lu dans le module : c'est celui qui s'exécute, et celui que `pytest`
 vérifie. `tests/test_notebook.py` garantit cet invariant.
 
-Détail complet et procédure de migration : `docs/ORGANISATION_CODE.md`.
+Détail complet et procédure de migration : `docs/00.ORGANISATION_CODE.md`.
 
 ---
 

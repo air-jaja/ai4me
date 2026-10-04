@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**808 cas de test** issus de 433 fonctions, répartis sur 25 fichiers.
+**816 cas de test** issus de 441 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,7 +37,7 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 315 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 323 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
@@ -374,6 +374,14 @@ soutenance.
 | 24 | `test_l_intervalle_de_la_pr_auc_du_test_est_celui_de_l_evaluation_finale` | Two bootstrap draws on the same 1,000 test scores gave two intervals, [0,712 ; 0,806] at the final evaluation and [0,710 ; 0,807] in the phase 9 report, both quoted until 04/10/2026. | One test evaluation, one interval: every document quotes the final one. |
 | 25 | `test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne` | Until 04/10/2026 section 10 described a textbook chain - unit tests at each commit - while the repository runs fast checks at commit, the test campaign at push and both CI jobs on GitHub. | The section now shows the real levels, with a capture of each. |
 | 26 | `test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee` | Section 11 carries the architecture diagram (C7). | its cell was an empty comment until 04/10/2026 - and the captures that prove the platform ran, attached to the notebook so that it stays readable on its own. |
+| 27 | `test_la_latence_citee_au_9g_est_celle_du_modele_servi` | Section 9.G quoted 57 ms for one account, a figure from an earlier run, beside a table showing 58.5 ms (04/10/2026). | The text quotes the served model's results, so that a new measurement makes this test fail until the text follows. |
+| 28 | `test_le_schema_du_11_ne_dessine_que_les_liaisons_que_le_code_realise` | Until 04/10/2026 the section 11 diagram drew the monthly batch feeding Prometheus and MLflow handing the model over. | The flow updates its gauges without starting the exporter, and the model in service is named by the alias file, MLflow being a mirror: a link the code does not make is not drawn, neither in the Mermaid source nor in the figure. |
+| 29 | `test_la_carence_de_la_liste_est_decrite_telle_que_l_outil_l_applique` | `tools/liste_operationnelle.py` accepts `--historique` but does not hand it to `construire_liste`: the two-month cooling-off period is coded, not applied. | Until 04/10/2026 the notebook said it was. While the tool ignores the history, section 10 says so. |
+| 30 | `test_la_promotion_n_est_pas_decrite_comme_conditionnee_par_l_outil` | `tools/promouvoir.py` moves the alias without comparing any score. | Until 04/10/2026 the notebook announced a promotion blocked by an automated comparison: while the promotion code reads no PR-AUC, no delivered text claims it. |
+| 31 | `test_les_doublons_de_cle_annonces_stricts_le_sont` | Section 6.1 shows 35 strict duplicates and 35 key duplicates, the second row warning that no automatic deduplication is possible; the text reads them as the same 35 rows. | That holds only if no key is left duplicated once the strict copies are dropped. |
+| 32 | `test_la_taille_des_sources_citee_est_celle_du_manifeste` | The three source files weigh 0.7 MB according to the manifest; "2 Mo" lived in the notebooks and five documents until 04/10/2026. | — |
+| 33 | `test_la_soutenance_de_l_annexe_c_tient_en_trente_minutes` | Annex C planned a 30-minute defence whose durations added up to 32 (until 04/10/2026). | — |
+| 34 | `test_l_annexe_e_rattache_chaque_dossier_a_ses_tests` | Annex E showed "—" (no tests) for `modelisation/` and `industrialisation/`, which have theirs, and an obsolete count of test files (until 04/10/2026). | — |
 
 ### Stockage et cache des figures
 

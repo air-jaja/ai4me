@@ -607,22 +607,19 @@ def test_aucune_cellule_de_texte_ne_depasse_la_lecture_en_trente_secondes():
     assert not trop_longues, f"Cellules de texte trop longues (indice, caractères) : {trop_longues}"
 
 
-DOCUMENTS_DE_TRAVAIL = {"TESTS.md", "audit_cellules_notebook.md", "trame_support_annexe_D.md"}
-
-
 def _textes_livres() -> dict[str, str]:
     """Every delivered text: README, project file, documents, and the notebooks' cells.
 
     Left out: the generated test catalogue, which quotes the docstrings below, and the
-    working documents of the 04/10/2026 review (cell audit, presentation outline), which
-    describe the obsolete facts they asked to correct."""
+    working documents, prefixed "99." (cell audit, verification report, presentation
+    outline), which describe the obsolete facts they asked to correct."""
     import nbformat
 
     textes = {
         nom: (RACINE / nom).read_text(encoding="utf-8") for nom in ("README.md", "pyproject.toml")
     }
     for document in sorted((RACINE / "docs").glob("*.md")):
-        if document.name not in DOCUMENTS_DE_TRAVAIL:
+        if document.name != "TESTS.md" and not document.name.startswith("99."):
             textes[f"docs/{document.name}"] = document.read_text(encoding="utf-8")
     for carnet in sorted((RACINE / "notebooks").glob("*.ipynb")):
         nb = nbformat.read(carnet, as_version=4)
@@ -717,3 +714,163 @@ def test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee():
     assert attendues <= jointes, f"Captures absentes : {sorted(attendues - jointes)}"
     citees = "".join(c.source for c in section)
     assert all(f"attachment:{nom}" in citees for nom in attendues)
+
+
+def _section_certification(debut: str, fin: str) -> list:
+    """Cells of the certification notebook from the heading `debut` to the heading `fin`."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    titres = [c.source.split("\n", 1)[0] for c in nb.cells]
+    i = next(k for k, t in enumerate(titres) if t.startswith(debut))
+    j = next(k for k, t in enumerate(titres) if t.startswith(fin))
+    return nb.cells[i:j]
+
+
+def test_la_latence_citee_au_9g_est_celle_du_modele_servi():
+    """Section 9.G quoted 57 ms for one account, a figure from an earlier run, beside a table
+    showing 58.5 ms (04/10/2026). The text quotes the served model's results, so that a new
+    measurement makes this test fail until the text follows."""
+    import json
+
+    servi = json.loads((RACINE / "resultats" / "modele_servi.json").read_text(encoding="utf-8"))
+    champion, servi_seul = (
+        next(v for k, v in servi["mesures"].items() if k.startswith(prefixe))
+        for prefixe in ("champion", "modèle servi")
+    )
+    lecture = next(
+        c.source
+        for c in _section_certification("## 9.", "## 10.")
+        if c.source.startswith("**Lecture.** Appliquée à la lettre, P4")
+    )
+    assert f"{champion['un compte (ms)']:.1f} ms".replace(".", ",") in lecture
+    assert f"({servi_seul['un compte (ms)']:.0f} ms)" in lecture
+
+
+def _aretes_mermaid(source: str) -> set[tuple[str, str, bool]]:
+    """(origin, target, directed) for each link of a Mermaid flowchart, node labels removed."""
+    aretes = set()
+    for ligne in source.split("\n"):
+        ligne = re.sub(r"\[[^\]]*\]|\([^)]*\)", "", ligne)
+        if "--" not in ligne and "-." not in ligne:
+            continue
+        noeuds = re.findall(r"\b\w+\b", ligne.replace("si CHURN_DB_URL", ""))
+        dirigee = "->" in ligne
+        aretes.add((noeuds[0], noeuds[-1], dirigee))
+    return aretes
+
+
+def test_le_schema_du_11_ne_dessine_que_les_liaisons_que_le_code_realise():
+    """Until 04/10/2026 the section 11 diagram drew the monthly batch feeding Prometheus and
+    MLflow handing the model over. The flow updates its gauges without starting the exporter,
+    and the model in service is named by the alias file, MLflow being a mirror: a link the
+    code does not make is not drawn, neither in the Mermaid source nor in the figure."""
+    paquet = RACINE / "src" / "churn_saas"
+    flux = (paquet / "industrialisation" / "flux.py").read_text(encoding="utf-8")
+    # The exporter's starters: the functions of exporteur.py that open the HTTP endpoint.
+    exporteur = ast.parse((paquet / "monitoring" / "exporteur.py").read_text(encoding="utf-8"))
+    demarreurs = {
+        f.name
+        for f in ast.walk(exporteur)
+        if isinstance(f, ast.FunctionDef)
+        and any(
+            getattr(n.func, "id", "") == "start_http_server"
+            for n in ast.walk(f)
+            if isinstance(n, ast.Call)
+        )
+    }
+    assert demarreurs
+    section = _section_certification("## 11.", "## 12.")
+    mermaid = next(c.source for c in section if "```mermaid" in c.source)
+    figure = next(c.source for c in section if "FancyBboxPatch" in c.source)
+    aretes = _aretes_mermaid(mermaid[mermaid.index("flowchart") :].split("```")[0])
+    assert ("R", "M", True) not in aretes, "MLflow ne fournit pas le modèle : l'alias le désigne."
+    assert not re.search(r'\("mlflow", "\w", "modele"', figure)
+    if not any(nom in flux for nom in demarreurs):
+        assert ("L", "P", True) not in aretes, "Le flux ne démarre pas l'exporteur."
+        assert not re.search(r'\("lot", "\w", "prometheus"', figure)
+
+
+def test_la_carence_de_la_liste_est_decrite_telle_que_l_outil_l_applique():
+    """`tools/liste_operationnelle.py` accepts `--historique` but does not hand it to
+    `construire_liste`: the two-month cooling-off period is coded, not applied. Until
+    04/10/2026 the notebook said it was. While the tool ignores the history, section 10 says so."""
+    arbre = ast.parse((RACINE / "tools" / "liste_operationnelle.py").read_text(encoding="utf-8"))
+    appel = next(
+        n
+        for n in ast.walk(arbre)
+        if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "construire_liste"
+    )
+    transmis = "historique" in {k.arg for k in appel.keywords} or len(appel.args) >= 10
+    texte = "".join(c.source for c in _section_certification("## 10.", "## 11."))
+    if not transmis:
+        assert "`--historique`" in texte and "non branchée" in texte
+
+
+def test_la_promotion_n_est_pas_decrite_comme_conditionnee_par_l_outil():
+    """`tools/promouvoir.py` moves the alias without comparing any score. Until 04/10/2026 the
+    notebook announced a promotion blocked by an automated comparison: while the promotion
+    code reads no PR-AUC, no delivered text claims it."""
+    code = "".join(
+        (RACINE / chemin).read_text(encoding="utf-8")
+        for chemin in ("tools/promouvoir.py", "src/churn_saas/packaging/versions.py")
+    )
+    if "pr_auc" in code.lower() or "PR-AUC" in code:
+        return
+    motif = re.compile(r"comparaison automatisée|pas de promotion si dégradation", re.I)
+    affirmations = sorted(nom for nom, texte in _textes_livres().items() if motif.search(texte))
+    assert not affirmations, f"Promotion présentée comme bloquée par l'outil : {affirmations}"
+
+
+def test_les_doublons_de_cle_annonces_stricts_le_sont():
+    """Section 6.1 shows 35 strict duplicates and 35 key duplicates, the second row warning that
+    no automatic deduplication is possible; the text reads them as the same 35 rows. That holds
+    only if no key is left duplicated once the strict copies are dropped."""
+    from churn_saas.config import FICHIER_COMPLET
+    from churn_saas.donnees import charger_bronze, profil_doublons
+
+    bronze = charger_bronze(FICHIER_COMPLET)
+    assert profil_doublons(bronze, cle="client_id")["nombre"].nunique() == 1
+    assert not bronze.drop_duplicates()["client_id"].duplicated().any()
+
+
+def test_la_taille_des_sources_citee_est_celle_du_manifeste():
+    """The three source files weigh 0.7 MB according to the manifest; "2 Mo" lived in the
+    notebooks and five documents until 04/10/2026."""
+    import json
+
+    manifeste = json.loads((RACINE / "data" / "manifeste_v1.0.json").read_text(encoding="utf-8"))
+    octets = sum(f["octets"] for f in manifeste["fichiers"].values())
+    taille = f"{octets / 1e6:.1f} Mo".replace(".", ",")
+    assert taille == "0,7 Mo"
+    faux = sorted(nom for nom, texte in _textes_livres().items() if re.search(r"\b2 Mo\b", texte))
+    assert not faux, f"Taille des sources fausse (manifeste : {taille}) : {faux}"
+
+
+def test_la_soutenance_de_l_annexe_c_tient_en_trente_minutes():
+    """Annex C planned a 30-minute defence whose durations added up to 32 (until 04/10/2026)."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    annexes = next(c.source for c in nb.cells if c.source.startswith("## 15."))
+    annexe_c = annexes[annexes.index("### Annexe C") : annexes.index("### Annexe D")]
+    assert "30 minutes" in annexe_c
+    assert sum(int(m) for m in re.findall(r"^\| (\d+) min \|", annexe_c, re.M)) == 30
+
+
+def test_l_annexe_e_rattache_chaque_dossier_a_ses_tests():
+    """Annex E showed "—" (no tests) for `modelisation/` and `industrialisation/`, which have
+    theirs, and an obsolete count of test files (until 04/10/2026)."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    annexes = next(c.source for c in nb.cells if c.source.startswith("## 15."))
+    annexe_e = annexes[annexes.index("### Annexe E") :]
+    lignes = re.findall(r"^\| \d · [^|]+\| `(\w+)/` \| ([^|]+) \|", annexe_e, re.M)
+    assert len(lignes) == 7
+    for dossier, tests in lignes:
+        noms = re.findall(r"`(test_\w+\.py)`", tests)
+        assert noms, f"Aucun fichier de tests cité pour {dossier}/."
+        assert all((RACINE / "tests" / nom).exists() for nom in noms), noms
+    nombre = len(list((RACINE / "tests").glob("test_*.py")))
+    assert f"({nombre} au total)" in annexe_e
