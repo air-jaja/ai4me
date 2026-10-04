@@ -1,5 +1,5 @@
 {
- "identite_execution": "7d9b4b34069fd029",
+ "identite_execution": "ac170fc6939620ad",
  "mention": "SIMULÉ — démonstration",
  "portee": "mécanique du suivi démontrée ; aucune conclusion sur la performance (S6)",
  "profil": {
@@ -839,6 +839,63 @@
    }
   ]
  },
- "duree_s": 6.3,
- "date": "2026-10-04 06:58"
+ "reentrainement": {
+  "mention": "SIMULÉ — démonstration",
+  "selection": {
+   "fenêtre": [
+    "2026-04-01",
+    "2027-04-01"
+   ],
+   "lignes reçues": 15000,
+   "hors fenêtre": 0,
+   "contactés, exclus (M2)": 420,
+   "issue inconnue, écartés": 0,
+   "retenus": 14580,
+   "dont témoins": 48,
+   "taux de départ des retenus": 0.2999
+  },
+  "decisions": [
+   {
+    "mois": "mois_1_sans_derive",
+    "alertes qualifiées (SIMULÉ)": [],
+    "mois écoulés": 1,
+    "réentraîner": false,
+    "motifs": [],
+    "retour aux données (incidents de collecte)": []
+   },
+   {
+    "mois": "mois_2_avec_derive",
+    "alertes qualifiées (SIMULÉ)": [
+     {
+      "indicateur": "Taux de manquants à l'entrée",
+      "qualification": "incident de collecte"
+     }
+    ],
+    "mois écoulés": 2,
+    "réentraîner": false,
+    "motifs": [],
+    "retour aux données (incidents de collecte)": [
+     "Taux de manquants à l'entrée"
+    ]
+   },
+   {
+    "mois": "mois_3_derive_forte",
+    "alertes qualifiées (SIMULÉ)": [
+     {
+      "indicateur": "Dérive des entrées et du score (PSI)",
+      "qualification": "dérive réelle"
+     }
+    ],
+    "mois écoulés": 3,
+    "réentraîner": true,
+    "motifs": [
+     "échéance trimestrielle (3 mois depuis le dernier entraînement)",
+     "dérive réelle qualifiée : Dérive des entrées et du score (PSI)"
+    ],
+    "retour aux données (incidents de collecte)": []
+   }
+  ]
+ },
+ "duree_s": 6.1,
+ "date": "2026-10-04 07:03"
 }

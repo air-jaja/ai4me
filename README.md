@@ -150,6 +150,7 @@ churn-saas-cisia/
         ├── alertes.py            indicateur → seuil → action → responsable
         ├── exporteur.py          exposition des indicateurs à Prometheus
         ├── suivi.py              verdicts mensuels M5, M8, M9 contre le profil de référence
+        ├── reentrainement.py     données de réentraînement (M2, M4) et déclenchement (M3)
         └── simulation.py         lots de démonstration simulés, dérive injectée (S1 à S7)
 ```
 

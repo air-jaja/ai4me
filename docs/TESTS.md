@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**788 cas de test** issus de 415 fonctions, répartis sur 25 fichiers.
+**793 cas de test** issus de 418 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -35,9 +35,9 @@ soutenance.
 | [Matérialisation des jeux dérivés](#matérialisation-des-jeux-dérivés) | `test_materialisation.py` | 2 · Features | C3, C6 | 15 |
 | [Métriques, décision et impact](#métriques-décision-et-impact) | `test_evaluation.py` | 4 · Évaluation | C5, C8 | 21 |
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
-| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 32 |
+| [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 35 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 303 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 305 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
@@ -320,9 +320,12 @@ soutenance.
 | 27 | `test_la_retention_contre_temoin_exige_un_effet_significatif` | A clear effect on large groups passes; the same effect on a handful of control accounts is not significant. | the rule triggers. |
 | 28 | `test_le_pr_auc_en_production_ignore_les_comptes_contactes` | A contact changes the outcome it would score: contacted accounts are left out. | — |
 | 29 | `test_la_revue_trimestrielle_simulee_est_enregistree_et_marquee` | Part B in the recorded report: simulated outcomes on file (hashes match), the four quarterly verdicts tied to existing rules, the simulated mark. | — |
-| 30 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
-| 31 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
-| 32 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
+| 30 | `test_les_donnees_de_reentrainement_excluent_les_contactes_et_suivent_la_fenetre` | M2: contacted accounts out, control group and non-contacted in; unknown outcomes out; M4: twelve sliding months before the reference date. | — |
+| 31 | `test_le_reentrainement_suit_l_echeance_et_les_seules_derives_reelles` | M3: due at three months; earlier only for an alert qualified as real drift. | a collection incident sends back to the data, never to retraining. |
+| 32 | `test_le_rapport_simule_trace_la_selection_et_les_decisions_de_reentrainement` | Part C in the recorded report: no contacted account among the retained, and month 3 retrains while month 2's collection incident goes back to the data. | — |
+| 33 | `test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon` | _(sans description)_ | — |
+| 34 | `test_une_hausse_des_manquants_categoriels_est_une_derive` | Missing values form their own category: more of them is a drift. | — |
+| 35 | `test_une_derive_categorielle_declenche_une_alerte` | A sector mix moving from 50/50 to 95/5 must raise an alert. | Until phase 5 the numeric index was applied to every column: on text it returned NaN, and NaN compared to the threshold gave "no alert". The largest possible drift on a categorical variable was reported as none, without any error. |
 
 ### Contrat d'affichage des notebooks
 
@@ -344,8 +347,8 @@ soutenance.
 
 | # | Cas de test | Ce qu'il vérifie | Pourquoi il existe |
 |---|---|---|---|
-| 1 | `test_les_commentaires_sont_en_anglais` _(×111)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
-| 2 | `test_les_docstrings_sont_en_anglais` _(×111)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
+| 1 | `test_les_commentaires_sont_en_anglais` _(×112)_ | Comments stay in English across the whole source tree. | Mixed-language comments make a file harder to scan than either language alone: the reader switches context line by line. |
+| 2 | `test_les_docstrings_sont_en_anglais` _(×112)_ | Docstrings stay in English: they document the implementation, not the deliverable. | — |
 | 3 | `test_le_contenu_affiche_reste_en_francais` | Displayed labels stay in French: the deliverable is read by a French-speaking jury. | Checked on the governance and alerting tables, which are rendered as-is in the notebooks. An English column heading there would be a mistake, not a convention. |
 | 4 | `test_les_carnets_respectent_le_format_notebook` _(×12)_ | Every notebook validates against the nbformat schema. | A markdown cell carrying an `outputs` field is accepted by Jupyter and rejected by stricter readers - the linter caught one that had survived several executions. A deliverable that some tools refuse to open is a risk not worth running the week of submission. |
 | 5 | `test_le_notebook_de_certification_est_execute_en_entier_sans_erreur` | The certification notebook is versioned WITH its outputs (rule 3, revised 03/10/2026). | Outputs in the repository are only worth something if they are trustworthy: either the notebook carries none, or it carries ONE complete run, top to bottom - execution counts 1, 2, ..., n with no gap or reordering (cells re-run by hand would show results the code in order does not produce) - with no error, and no path of the machine it ran on. |

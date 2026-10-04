@@ -539,6 +539,60 @@ def test_la_revue_trimestrielle_simulee_est_enregistree_et_marquee():
     )
 
 
+# --- Phase 11 · Retraining (part C) --------------------------------------------------------
+@pytest.mark.phase11
+def test_les_donnees_de_reentrainement_excluent_les_contactes_et_suivent_la_fenetre():
+    """M2: contacted accounts out, control group and non-contacted in; unknown outcomes out;
+    M4: twelve sliding months before the reference date."""
+    from churn_saas.monitoring import selectionner_donnees_reentrainement
+
+    issues = pd.DataFrame(
+        {
+            "mois_liste": ["2025-12-01", "2026-06-01", "2026-06-01", "2026-06-01", "2026-06-01"],
+            "groupe": ["non_retenu", "contact", "temoin", "non_retenu", "non_retenu"],
+            "resultat_3_mois": ["parti", "parti", "reste", "parti", "inconnu"],
+        }
+    )
+    selection, bilan = selectionner_donnees_reentrainement(issues, "2027-01-01")
+    assert selection.index.tolist() == [2, 3]
+    assert bilan["hors fenêtre"] == 1 and bilan["contactés, exclus (M2)"] == 1
+    assert bilan["issue inconnue, écartés"] == 1 and bilan["dont témoins"] == 1
+
+
+@pytest.mark.phase11
+def test_le_reentrainement_suit_l_echeance_et_les_seules_derives_reelles():
+    """M3: due at three months; earlier only for an alert qualified as real drift - a
+    collection incident sends back to the data, never to retraining."""
+    from churn_saas.monitoring import decider_reentrainement
+
+    derive = [{"indicateur": "Dérive", "qualification": "dérive réelle"}]
+    incident = [{"indicateur": "Manquants", "qualification": "incident de collecte"}]
+    assert not decider_reentrainement("2026-10-03", "2026-11-01", [])["réentraîner"]
+    assert decider_reentrainement("2026-10-03", "2026-11-01", derive)["réentraîner"]
+    verdict = decider_reentrainement("2026-10-03", "2026-12-01", incident)
+    assert not verdict["réentraîner"]
+    assert verdict["retour aux données (incidents de collecte)"] == ["Manquants"]
+    assert decider_reentrainement("2026-10-03", "2027-01-01", [])["réentraîner"]
+
+
+@pytest.mark.phase11
+def test_le_rapport_simule_trace_la_selection_et_les_decisions_de_reentrainement():
+    """Part C in the recorded report: no contacted account among the retained, and month 3
+    retrains while month 2's collection incident goes back to the data."""
+    import json
+    from pathlib import Path
+
+    racine = Path(__file__).resolve().parents[1]
+    rapport = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))
+    partie_c = rapport["reentrainement"]
+    selection = partie_c["selection"]
+    assert selection["retenus"] + selection["contactés, exclus (M2)"] == selection["lignes reçues"]
+    decisions = {d["mois"]: d for d in partie_c["decisions"]}
+    assert not decisions["mois_2_avec_derive"]["réentraîner"]
+    assert decisions["mois_2_avec_derive"]["retour aux données (incidents de collecte)"]
+    assert decisions["mois_3_derive_forte"]["réentraîner"]
+
+
 # --- Phase 5 · Categorical stability ------------------------------------------------------
 @pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():

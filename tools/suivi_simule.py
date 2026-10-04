@@ -29,6 +29,14 @@ DESTINATION = RACINE / "resultats" / "suivi_simule.json"
 PROFIL = RACINE / "resultats" / "profil_reference.json"
 # The first day of each simulated month: the list's date, so the report is reproducible.
 DATES_DES_MOIS = ("2026-11-01", "2026-12-01", "2027-01-01")
+# The last list's outcomes are known three months after it: the retraining data's date.
+DATE_ISSUES_CONNUES = "2027-04-01"
+# Who qualifies an alert is a person; the simulation knows which scenario produced each one.
+QUALIFICATIONS_SIMULEES = {
+    "Taux de manquants à l'entrée": "incident de collecte",  # S4: a field no longer sent
+    "Dérive des entrées et du score (PSI)": "dérive réelle",  # S8: customers disengaging
+    "Volume de comptes signalés": "incident de collecte",
+}
 
 
 def _outil_servi():
@@ -135,6 +143,7 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
     from churn_saas.modelisation import construire_baseline
     from churn_saas.monitoring import (
         couverture_revenu,
+        decider_reentrainement,
         derive_combinee,
         ecart_volume,
         evaluer_alertes,
@@ -144,6 +153,7 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
         pr_auc_en_production,
         rappel_segment,
         retention_contre_temoin,
+        selectionner_donnees_reentrainement,
         simuler_issues,
     )
     from churn_saas.monitoring import simulation as s
@@ -272,6 +282,36 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
     retention = retention_contre_temoin(trimestre, generateur_revue)
     pr_auc = pr_auc_en_production(trimestre, reference)
     alertes_trimestre = evaluer_alertes(mesures_du_trimestre(couverture, suisse, retention, pr_auc))
+    # Part C: the retraining data (M2, M4) once the last list's outcomes are known, three
+    # months after it; and the decision each month (M3). The qualification of an alert is a
+    # person's: here it is SIMULATED from the scenario known to have produced it (S4, S8).
+    _, selection = selectionner_donnees_reentrainement(
+        trimestre.drop(columns=["score"]), DATE_ISSUES_CONNUES
+    )
+    champion = json.loads(
+        (RACINE / "resultats" / "aliases_modeles.json").read_text(encoding="utf-8")
+    )["champion"]
+    decisions = []
+    for m in mois_rapportes:
+        qualifiees = [
+            {
+                "indicateur": a["indicateur"],
+                "qualification": QUALIFICATIONS_SIMULEES[a["indicateur"]],
+            }
+            for a in m["alertes"]
+            if a["declenchee"]
+        ]
+        decisions.append(
+            {
+                "mois": m["mois"],
+                "alertes qualifiées (SIMULÉ)": qualifiees,
+                **decider_reentrainement(
+                    champion["date_entrainement"], m["date_liste"], qualifiees
+                ),
+            }
+        )
+    reentrainement = {"mention": s.MENTION, "selection": selection, "decisions": decisions}
+
     revue = {
         "mention": s.MENTION,
         "comptes": int(len(trimestre)),
@@ -291,6 +331,7 @@ def executer(forcer: bool = False, regenerer: bool = False, sortie: Path = DESTI
         "lots": lots["fichiers"],
         "mois": mois_rapportes,
         "revue_trimestrielle": revue,
+        "reentrainement": reentrainement,
         "duree_s": round(time.perf_counter() - debut, 1),
         "date": time.strftime("%Y-%m-%d %H:%M"),
     }

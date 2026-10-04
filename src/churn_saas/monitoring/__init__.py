@@ -3,6 +3,7 @@
     derive.py   detects the gap between current data and training data
     alertes.py  turns a gap into an action, with a named owner
     suivi.py    the monthly verdicts of M5, M8 and M9 against the reference profile
+    reentrainement.py  which data a retraining learns from, and when it is due (M2-M4)
     simulation.py  demonstration batches, simulated and labelled as such (phase 11)
 
 An indicator without a threshold is not monitored; a threshold without an attached action
@@ -20,6 +21,7 @@ from .derive import (
     rapport_derive,
 )
 from .exporteur import publier_lot
+from .reentrainement import decider_reentrainement, selectionner_donnees_reentrainement
 from .simulation import (
     completer_lot,
     comptes_reels,
@@ -65,4 +67,6 @@ __all__ = [
     "retention_contre_temoin",
     "pr_auc_en_production",
     "mesures_du_trimestre",
+    "selectionner_donnees_reentrainement",
+    "decider_reentrainement",
 ]
