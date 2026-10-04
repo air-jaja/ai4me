@@ -242,7 +242,7 @@ make smoke               # vérifie /ready — modèle chargé, pas seulement pr
 |---|---|---|---|
 | `api` | construite localement | Scoring unitaire | http://localhost:8000/docs |
 | `db` | `postgres:16` | Entrepôt des scores | `localhost:5432` |
-| `mlflow` | `ghcr.io/mlflow/mlflow:v3.1.1` | Suivi et registre de modèles | http://localhost:5000 |
+| `mlflow` | `ghcr.io/mlflow/mlflow:v3.16.1` | Suivi et registre de modèles | http://localhost:5000 |
 | `prometheus` | `prom/prometheus:v2.53.0` | Collecte des indicateurs | http://localhost:9090 |
 | `grafana` | `grafana/grafana:11.1.0` | Restitution | http://localhost:3000 |
 
