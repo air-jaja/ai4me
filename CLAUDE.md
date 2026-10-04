@@ -11,6 +11,8 @@ valeur pour les conseillers, API de score à la demande. Porteur : Rakotovoalavo
 - Commits **au nom du porteur**, message `NN · type: objet` (`docs/LIVRAISON.md`) ; jamais `--no-verify`.
 - Avant tout push : `uv run python tools/campagne_tests.py` (et `make check`) ; la CI a deux jobs, le job `complet`
   ne tolère aucun test ignoré.
+- Hooks installés par `make hooks` après chaque clone : au commit, les documents générés dont une source change
+  sont régénérés ; si l'un change, le commit s'arrête — relire, `git add`, recommiter (règle 2 bis).
 - Code et docstrings en anglais ; noms de fonctions et documents en français. Modèles nommés en français dans le dépôt
   (E-714).
 - Résultats dans `resultats/` : jamais saisis à la main, toujours produits par un outil de `tools/` ; l'identité
