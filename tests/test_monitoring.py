@@ -211,6 +211,94 @@ def test_le_profil_de_reference_decrit_la_partie_d_entrainement(profil_enregistr
         assert part == pytest.approx(recus[colonne].isna().mean(), abs=1e-6), colonne
 
 
+# --- Phase 11 · Monthly verdicts (A2-A4) ------------------------------------------------
+def _profil_synthetique():
+    from churn_saas.monitoring import profil_variable
+
+    rng = np.random.default_rng(5)
+    reference = pd.DataFrame({f"v{i}": rng.normal(size=4_000) for i in range(6)})
+    reference.loc[:399, "v5"] = np.nan  # 10 % missing in training
+    score = pd.Series(rng.uniform(size=4_000))
+    profil = {
+        "variables_cles": ["v0", "v1"],
+        "variables": {c: profil_variable(reference[c]) for c in reference},
+        "score": profil_variable(score),
+        "manquants_a_l_entree": {c: float(reference[c].isna().mean()) for c in reference},
+    }
+    return profil, reference, score
+
+
+@pytest.mark.phase11
+def test_la_derive_combinee_suit_ses_trois_conditions():
+    """M5: silent on a stable batch; triggered by one key variable over 0.25, by three
+    variables over 0.10, or by the score over 0.10 - and by nothing weaker."""
+    from churn_saas.monitoring import derive_combinee
+
+    profil, reference, score = _profil_synthetique()
+    rng = np.random.default_rng(6)
+    stable = pd.DataFrame({c: rng.normal(size=5_000) for c in reference})
+    score_stable = pd.Series(rng.uniform(size=5_000))
+    assert not derive_combinee(profil, stable, score_stable)[1]["déclenchée"]
+
+    cle = stable.assign(v0=stable["v0"] + 1.5)
+    assert derive_combinee(profil, cle, score_stable)[1]["variables clés au-dessus de 0,25"] == [
+        "v0"
+    ]
+    une_seule = stable.assign(v2=stable["v2"] + 0.45)
+    verdict = derive_combinee(profil, une_seule, score_stable)[1]
+    assert verdict["variables au-dessus de 0,10"] == ["v2"] and not verdict["déclenchée"]
+    trois = stable.assign(**{c: stable[c] + 0.45 for c in ("v2", "v3", "v4")})
+    assert derive_combinee(profil, trois, score_stable)[1]["déclenchée"]
+    score_decale = pd.Series(rng.uniform(0.3, 1.0, size=5_000))
+    verdict = derive_combinee(profil, stable, score_decale)[1]
+    assert verdict["psi du score"] > 0.10 and verdict["déclenchée"]
+
+
+@pytest.mark.phase11
+def test_les_manquants_sont_juges_contre_le_double_de_l_entrainement():
+    """M8: 10 % in training tolerates up to 20 %; a variable never missing alerts at once."""
+    from churn_saas.monitoring import manquants_relatifs
+
+    profil, reference, _ = _profil_synthetique()
+    lot = reference.copy()
+    lot.loc[:599, "v5"] = np.nan  # 15 %: under twice 10 %
+    assert not manquants_relatifs(profil, lot)[1]["déclenchée"]
+    lot.loc[:899, "v5"] = np.nan  # 22.5 %: over
+    assert manquants_relatifs(profil, lot)[1]["variables en alerte"] == ["v5"]
+    lot = reference.copy()
+    lot.loc[0, "v1"] = np.nan  # one missing value where there never was any
+    assert manquants_relatifs(profil, lot)[1]["variables en alerte"] == ["v1"]
+
+
+@pytest.mark.phase11
+def test_le_volume_de_comptes_signales_compare_au_mois_precedent():
+    """M9: over 30 % either way triggers; no previous month, no verdict."""
+    from churn_saas.monitoring import ecart_volume
+
+    assert not ecart_volume(140, 140)["déclenchée"]
+    assert not ecart_volume(110, 140)["déclenchée"]
+    assert ecart_volume(90, 140)["déclenchée"]
+    assert ecart_volume(190, 140)["déclenchée"]
+    assert ecart_volume(140, None) == {
+        "comptes signalés": 140,
+        "mois précédent": None,
+        "écart": None,
+        "déclenchée": False,
+    }
+
+
+@pytest.mark.phase11
+def test_les_verdicts_du_mois_designent_des_regles_existantes():
+    """A verdict whose indicator no rule carries would trigger nothing, silently."""
+    from churn_saas.monitoring import mesures_du_mois
+
+    mesures = mesures_du_mois({"déclenchée": True}, {"déclenchée": False}, {"déclenchée": True})
+    resultat = evaluer_alertes(mesures)
+    declenchees = set(resultat.loc[resultat["declenchee"], "indicateur"])
+    assert set(mesures) <= set(table_regles()["indicateur"])
+    assert declenchees == {k for k, v in mesures.items() if v}
+
+
 # --- Phase 5 · Categorical stability ------------------------------------------------------
 @pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():

@@ -149,6 +149,7 @@ churn-saas-cisia/
         ├── derive.py             PSI, Kolmogorov-Smirnov, rapport
         ├── alertes.py            indicateur → seuil → action → responsable
         ├── exporteur.py          exposition des indicateurs à Prometheus
+        ├── suivi.py              verdicts mensuels M5, M8, M9 contre le profil de référence
         └── simulation.py         lots de démonstration simulés, dérive injectée (S1 à S7)
 ```
 
