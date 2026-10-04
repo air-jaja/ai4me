@@ -98,28 +98,34 @@ def modele_servi_temporaire(tmp_path_factory):
     )
 
 
+@pytest.fixture
+def flux_sans_prefect(monkeypatch):
+    """The flow module, its steps and the flow itself as plain functions.
+
+    A flow run starts a temporary Prefect server, a child process that writes its Windows
+    messages in cp1252 into the output pytest captures - the session then crashed on closing
+    it (04/10/2026), and the server cost 18 s. The flow's own code is what the tests check;
+    the orchestration is Prefect's."""
+    from churn_saas.industrialisation import flux
+
+    for nom in [n for n in dir(flux) if n.startswith("etape_")] + ["lot_mensuel"]:
+        objet = getattr(flux, nom)
+        monkeypatch.setattr(flux, nom, getattr(objet, "fn", objet))
+    return flux
+
+
 def test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi(
-    modele_servi_temporaire, monkeypatch
+    modele_servi_temporaire, flux_sans_prefect
 ):
     """The monthly flow, its steps in production order, on the three simulated batches:
     data contract, scoring with the accounts' value and the catalogue, prioritisation, then
     the phase 11 verdicts. Month 1 raises no alert, month 2's collection incident is caught
     (M8), month 3's strong disengagement too (M5); the flagged volume is compared month to
-    month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so.
-
-    The steps run without the Prefect engine: a flow run starts a temporary Prefect server,
-    a child process that writes its Windows messages in cp1252 into the output pytest
-    captures - the session then crashed on closing it (04/10/2026), and the server cost 18 s.
-    The flow's own code, step by step, is what this test checks; the orchestration is
-    Prefect's."""
+    month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so. The
+    steps run without the Prefect engine (fixture `flux_sans_prefect`)."""
     from churn_saas import config
-    from churn_saas.industrialisation import flux
 
-    for nom in dir(flux):
-        if nom.startswith("etape_"):
-            etape = getattr(flux, nom)
-            monkeypatch.setattr(flux, nom, getattr(etape, "fn", etape))
-    lot_mensuel = getattr(flux.lot_mensuel, "fn", flux.lot_mensuel)
+    lot_mensuel = flux_sans_prefect.lot_mensuel
 
     simulation = RACINE / "data" / "simulation"
     precedent, verdicts = None, []
@@ -138,6 +144,41 @@ def test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi(
     assert verdicts[0] == set()
     assert verdicts[1] == {"Taux de manquants à l'entrée"}
     assert verdicts[2] == {"Dérive des entrées et du score (PSI)"}
+
+
+def test_make_lot_mensuel_lance_le_flux_avec_le_champion_designe_par_son_alias(
+    modele_servi_temporaire, flux_sans_prefect, monkeypatch, tmp_path, capsys
+):
+    """`make lot-mensuel` runs `python -m churn_saas.industrialisation.flux`: until 04/10/2026
+    the module had no entry point and the command did nothing. The champion is resolved as
+    the API resolves it - the alias names the file, its hash is checked first - so an
+    altered model file stops the batch before any account is scored."""
+    import hashlib
+    import json
+
+    modele = Path(modele_servi_temporaire)
+    aliases = tmp_path / "aliases.json"
+
+    def designer(empreinte):
+        aliases.write_text(
+            json.dumps({"champion": {"fichier": modele.name, "fichier_sha256": empreinte}}),
+            encoding="utf-8",
+        )
+
+    monkeypatch.setenv("CHURN_ALIASES", str(aliases))
+    monkeypatch.setenv("CHURN_MODELES", str(modele.parent))
+    monkeypatch.delenv("CHURN_DB_URL", raising=False)
+    lot = RACINE / "data" / "simulation" / "lot_simule_mois_2_avec_derive.csv"
+
+    designer(hashlib.sha256(modele.read_bytes()).hexdigest())
+    assert flux_sans_prefect.main(["--donnees", str(lot)]) == 0
+    sortie = capsys.readouterr().out
+    assert "5000 comptes scorés, 140 à traiter ce mois" in sortie
+    assert "Alertes du suivi : Taux de manquants à l'entrée" in sortie
+
+    designer("0" * 64)
+    with pytest.raises(ValueError, match="altéré"):
+        flux_sans_prefect.main(["--donnees", str(lot)])
 
 
 def test_chaque_compte_de_la_liste_porte_son_propre_score_malgre_les_doublons(

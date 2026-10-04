@@ -165,3 +165,46 @@ def lot_mensuel(
     etape_publication(table)
     table.attrs["suivi"] = etape_suivi(brut, table, catalogue, chemin_profil, signales_precedents)
     return table
+
+
+def main(argv: list[str] | None = None) -> int:
+    """`make lot-mensuel`: the flow on one batch, with the champion named by its alias."""
+    import argparse
+    import os
+    import sys
+    from pathlib import Path
+
+    from ..config import FICHIER_CATALOGUE, FICHIER_COMPLET, MODELES
+    from ..packaging import charger_champion, lire_aliases
+
+    # A Windows terminal hands a piped child process cp1252, whatever the document holds:
+    # the tool's output must not depend on who runs it - its errors on stderr included.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+    analyseur = argparse.ArgumentParser(description="Lot mensuel : contrôle, score, suivi.")
+    analyseur.add_argument("--donnees", default=str(FICHIER_COMPLET), help="lot du mois (CSV)")
+    analyseur.add_argument("--catalogue", default=str(FICHIER_CATALOGUE))
+    analyseur.add_argument("--precedent", type=int, help="comptes signalés le mois précédent")
+    arguments = analyseur.parse_args(argv)
+
+    # Same resolution as the API: the alias names the file, its hash is checked first.
+    aliases = Path(os.environ.get("CHURN_ALIASES", RACINE / "resultats" / "aliases_modeles.json"))
+    dossier = Path(os.environ.get("CHURN_MODELES", MODELES))
+    charger_champion(aliases, dossier)
+    modele = dossier / lire_aliases(aliases)["champion"]["fichier"]
+
+    table = lot_mensuel(
+        arguments.donnees,
+        str(modele),
+        chemin_catalogue=arguments.catalogue,
+        url_base=os.environ.get("CHURN_DB_URL"),
+        signales_precedents=arguments.precedent,
+    )
+    alertes = [a["indicateur"] for a in table.attrs["suivi"]["alertes"] if a["declenchee"]]
+    print(f"{len(table)} comptes scorés, {int(table['a_traiter'].sum())} à traiter ce mois")
+    print("Alertes du suivi : " + (", ".join(alertes) if alertes else "aucune"))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

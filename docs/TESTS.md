@@ -9,7 +9,7 @@
 > uv run python tools/catalogue_tests.py > docs/TESTS.md
 > ```
 
-**799 cas de test** issus de 424 fonctions, répartis sur 25 fichiers.
+**802 cas de test** issus de 427 fonctions, répartis sur 25 fichiers.
 
 _Les deux nombres diffèrent parce qu'un test paramétré est une fonction unique exécutée plusieurs fois. Le décompte des cas provient de `pytest --collect-only`, non d'une lecture du code : une liste de paramètres calculée plutôt qu'écrite en dur échapperait à toute analyse statique._
 
@@ -37,7 +37,7 @@ soutenance.
 | [Artefacts et fiche modèle](#artefacts-et-fiche-modèle) | `test_packaging.py` | 5 · Packaging | C6 | 5 |
 | [Dérive et règles d'alerte](#dérive-et-règles-dalerte) | `test_monitoring.py` | 7 · Monitoring | C8, C9 | 36 |
 | [Contrat d'affichage des notebooks](#contrat-daffichage-des-notebooks) | `test_notebook.py` | Transverse | C3, C6 | 3 |
-| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 307 |
+| [Conventions de travail](#conventions-de-travail) | `test_conventions.py` | Transverse | — | 309 |
 | [Stockage et cache des figures](#stockage-et-cache-des-figures) | `test_figures.py` | Transverse | C3, C8 | 16 |
 | [Récapitulatif de la suite](#récapitulatif-de-la-suite) | `test_recapitulatif.py` | Transverse | — | 19 |
 | [Défaut de casse des modalités](#défaut-de-casse-des-modalités) | `test_regression_casse_modalites.py` | 1 · Données | C3 | 17 |
@@ -46,7 +46,7 @@ soutenance.
 | [test_campagnes.py](#test_campagnespy) | `test_campagnes.py` | — | — | 8 |
 | [test_docker.py](#test_dockerpy) | `test_docker.py` | — | — | 11 |
 | [test_exploitation.py](#test_exploitationpy) | `test_exploitation.py` | — | — | 14 |
-| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 6 |
+| [test_industrialisation.py](#test_industrialisationpy) | `test_industrialisation.py` | — | — | 7 |
 | [test_modelisation.py](#test_modelisationpy) | `test_modelisation.py` | — | — | 19 |
 | [test_registre.py](#test_registrepy) | `test_registre.py` | — | — | 8 |
 | [test_ressources.py](#test_ressourcespy) | `test_ressources.py` | — | — | 8 |
@@ -366,6 +366,8 @@ soutenance.
 | 16 | `test_chaque_phase_close_a_son_carnet_de_travail` | Rule 4 (revised 02/10): each phase has its executed working notebook. | Phases 7 (the modelling part) and 8 had none, and nothing noticed: the project tracker now says which phases are closed, and each of them must have a `notebooks/0N*_*.ipynb`. |
 | 17 | `test_le_notebook_de_certification_n_a_plus_de_texte_provisoire` | Placeholders survived several phases unnoticed (summary, conclusion, 'not deployed yet'): a deliverable must not promise text it does not contain. | — |
 | 18 | `test_l_annexe_b_couvre_les_47_criteres_de_la_grille` | Annex B lists every criterion of the evaluation grid, competency by competency. | — |
+| 19 | `test_le_notebook_de_certification_ne_cite_plus_d_element_perime` | Sketches and conventions written before phase 10 survived next to the real service: a `/score-churn` pseudo-API, `staging`/`production` aliases, model and snapshot names nobody uses, an MLflow image the compose no longer builds (corrected 04/10/2026). | A reader comparing the notebook with the repository would find two versions of the truth. |
+| 20 | `test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee` | Section 11 carries the architecture diagram (C7). | its cell was an empty comment until 04/10/2026 - and the captures that prove the platform ran, attached to the notebook so that it stays readable on its own. |
 
 ### Stockage et cache des figures
 
@@ -591,8 +593,9 @@ soutenance.
 | 2 | `test_le_lot_mensuel_passe_le_contrat_de_donnees` | _(sans description)_ | — |
 | 3 | `test_le_lot_mensuel_prepare_comme_l_entrainement` | On the full dataset, the batch preparation yields the training gold, byte for byte. | — |
 | 4 | `test_le_contrat_du_lot_n_exige_pas_les_colonnes_posterieures` | A monthly batch has no outcome yet: its contract must not demand `churn`. | — |
-| 5 | `test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi` | The monthly flow, its steps in production order, on the three simulated batches: data contract, scoring with the accounts' value and the catalogue, prioritisation, then the phase 11 verdicts. | Month 1 raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5); the flagged volume is compared month to month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so. The steps run without the Prefect engine: a flow run starts a temporary Prefect server, a child process that writes its Windows messages in cp1252 into the output pytest captures - the session then crashed on closing it (04/10/2026), and the server cost 18 s. The flow's own code, step by step, is what this test checks; the orchestration is Prefect's. |
-| 6 | `test_chaque_compte_de_la_liste_porte_son_propre_score_malgre_les_doublons` | The full portfolio holds 35 duplicate rows, which silver drops and renumbers. | Until 04/10/2026 the identifiers and values were read from the batch by position: from the third row on, they shifted, the list held 5,035 rows and 9 of its first 10 accounts carried another account's score. Each listed account is scored here again, alone, as the API scores it - categories spelt as in training first (D-09) - and must find its own score and its own value. |
+| 5 | `test_le_flux_mensuel_tourne_de_bout_en_bout_et_rend_les_verdicts_du_suivi` | The monthly flow, its steps in production order, on the three simulated batches: data contract, scoring with the accounts' value and the catalogue, prioritisation, then the phase 11 verdicts. | Month 1 raises no alert, month 2's collection incident is caught (M8), month 3's strong disengagement too (M5); the flagged volume is compared month to month (M9). Until 04/10/2026 this flow could not run at all, and nothing said so. The steps run without the Prefect engine (fixture `flux_sans_prefect`). |
+| 6 | `test_make_lot_mensuel_lance_le_flux_avec_le_champion_designe_par_son_alias` | `make lot-mensuel` runs `python -m churn_saas.industrialisation.flux`: until 04/10/2026 the module had no entry point and the command did nothing. | The champion is resolved as the API resolves it - the alias names the file, its hash is checked first - so an altered model file stops the batch before any account is scored. |
+| 7 | `test_chaque_compte_de_la_liste_porte_son_propre_score_malgre_les_doublons` | The full portfolio holds 35 duplicate rows, which silver drops and renumbers. | Until 04/10/2026 the identifiers and values were read from the batch by position: from the third row on, they shifted, the list held 5,035 rows and 9 of its first 10 accounts carried another account's score. Each listed account is scored here again, alone, as the API scores it - categories spelt as in training first (D-09) - and must find its own score and its own value. |
 
 ### test_modelisation.py
 

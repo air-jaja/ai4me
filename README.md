@@ -17,6 +17,8 @@ destination des équipes Customer Success.
 ```bash
 # Installation de l'environnement, à l'identique du verrou
 make install            # ou : uv sync --frozen --group dev --group notebook
+make install-plateforme # tous les groupes : nécessaire pour rejouer le notebook, dont le § 8.E
+                        # refait la comparaison des candidats (MLflow, XGBoost non retenu)
 
 # Lancer le notebook
 make notebook
@@ -25,12 +27,13 @@ make notebook
 make test               # toute la suite de tests
 make test-activite      # campagne de l'activité : tests courants + non-régression
 make lint               # style du code
-make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise
+make executer-notebook  # rejoue le notebook de bout en bout — contrôle avant remise (make install-plateforme)
 make ressources         # mesure CE poste : ressources et temps de calcul (docs/06.SOBRIETE_calcul.md)
 make materialiser       # réécrit silver, gold et découpage au manifeste, sans Jupyter (+ run « données » MLflow)
 make mlflow             # interface MLflow sur le magasin du projet (mlruns/mlflow.db)
 make mlflow-nettoyer    # vide le magasin MLflow local (il se reconstruit : MLflow n'est qu'un journal)
 uv run python tools/liste_operationnelle.py   # liste du mois pour les conseillers (sorties/)
+make lot-mensuel        # flux mensuel complet : contrôle, score, liste, suivi (M5, M8, M9)
 uv run python tools/promouvoir.py --etat     # modèle en service ; --retour-arriere pour revenir au précédent
 uv run python tools/livraison.py --verifier  # paquet de livraison vérifié (docs/LIVRAISON.md)
 ```

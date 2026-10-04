@@ -863,11 +863,11 @@ argument défendable devant un jury.
 | 4 · Préparation | 🟢 Terminé | 01/10 |
 | 5 · Feature engineering | 🟢 Terminé | 02/10 |
 | 6 · Baseline | 🟢 Terminé | 02/10 |
-| 7 · Entraînement | 🔴 À faire | 25/09 |
-| 8 · Optimisation | 🔴 À faire | 25/09 |
-| 9 · Validation | 🔴 À faire | 26/09 |
-| 10 · Déploiement | 🟠 Partiel | 27/09 |
-| 11 · Suivi | 🟠 Partiel | 28/09 |
-| **Gel des livrables** | — | **28/09 au soir** |
-| Support de présentation | 🔴 À faire | 29–30/09 |
-| **Remise** | — | **01/10** |
+| 7 · Entraînement | 🟢 Terminé | 03/10 |
+| 8 · Optimisation | 🟢 Terminé | 03/10 |
+| 9 · Validation | 🟢 Terminé | 03/10 |
+| 10 · Déploiement | 🟢 Terminé | 04/10 |
+| 11 · Suivi | 🟢 Terminé — démontré sur lots simulés | 04/10 |
+| **Gel des livrables** | — | **04/10, à confirmer** |
+| Support de présentation | 🟠 En cours | 04–05/10 |
+| **Remise** | — | **05/10 au matin** |

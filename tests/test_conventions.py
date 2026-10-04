@@ -517,3 +517,47 @@ def test_l_annexe_b_couvre_les_47_criteres_de_la_grille():
     lignes = re.findall(r"^\| \*\*(C\d)\*\* \|", bloc, flags=re.M)
     grille = {"C1": 5, "C2": 6, "C3": 7, "C4": 10, "C5": 6, "C6": 3, "C7": 3, "C8": 4, "C9": 3}
     assert {c: lignes.count(c) for c in grille} == grille
+
+
+def test_le_notebook_de_certification_ne_cite_plus_d_element_perime():
+    """Sketches and conventions written before phase 10 survived next to the real service:
+    a `/score-churn` pseudo-API, `staging`/`production` aliases, model and snapshot names
+    nobody uses, an MLflow image the compose no longer builds (corrected 04/10/2026). A
+    reader comparing the notebook with the repository would find two versions of the truth."""
+    import re
+
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    motif = re.compile(
+        r"/score-churn|API_SKETCH|\*staging\*|churn_model_v|churn_train_AAAAMMJJ|mlflow:v3\.1\.1"
+    )
+    perimes = [i for i, c in enumerate(nb.cells) if motif.search(c.source)]
+    assert not perimes, f"Éléments périmés dans les cellules {perimes}."
+
+
+def test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee():
+    """Section 11 carries the architecture diagram (C7) - its cell was an empty comment until
+    04/10/2026 - and the captures that prove the platform ran, attached to the notebook so
+    that it stays readable on its own."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    titres = [c.source.split("\n", 1)[0] for c in nb.cells]
+    debut = next(i for i, t in enumerate(titres) if t.startswith("## 11."))
+    fin = next(i for i, t in enumerate(titres) if t.startswith("## 12."))
+    section = nb.cells[debut:fin]
+    assert any("```mermaid" in c.source for c in section if c.cell_type == "markdown")
+    assert any("FancyBboxPatch" in c.source for c in section if c.cell_type == "code")
+    jointes = {nom for c in section for nom in c.get("attachments", {})}
+    attendues = {
+        "v2_ready.png",
+        "v2_score.png",
+        "v4_prometheus.png",
+        "v5_grafana.png",
+        "v3_mlflow_pile.png",
+        "v3_mlflow_local.png",
+    }
+    assert attendues <= jointes, f"Captures absentes : {sorted(attendues - jointes)}"
+    citees = "".join(c.source for c in section)
+    assert all(f"attachment:{nom}" in citees for nom in attendues)

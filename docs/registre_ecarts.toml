@@ -392,20 +392,6 @@ preuve = "tests/test_conventions.py"
 source = "livraison phase 4, À LIRE"
 condition = "Après le gel, si le temps le permet ; sans effet sur le livrable."
 
-# ═══ À arbitrer ══════════════════════════════════════════════════════════════
-
-[[element]]
-id = "A-05"
-titre = "Vérification de la pile Docker (V1 à V6)"
-nature = "action"
-statut = "à arbitrer"
-phase = "10 · Déploiement"
-competence = "C7"
-section = "11"
-motif = "Le plan v4.1 interdit de la sacrifier ; le calendrier de remise (05/10) laisse peu de marge. Abandonnée, les sections 10, 11 et 13 doivent dire « conçue et versionnée, non déployée »."
-source = "00.PLAN_ACTIONS § 8"
-condition = "Arbitrage du porteur au plus tard au gel du notebook."
-
 [[element]]
 id = "D-05"
 titre = "Phrase erronée imprimée par le carnet 03 sur les valeurs extrêmes"
@@ -522,9 +508,9 @@ phase = "10 · Déploiement"
 date = "01/10/2026"
 competence = "C6"
 section = "10"
-motif = "Le suivi MLflow est actif en local, et le modèle retenu porte l'alias champion depuis l'évaluation finale (03/10). Reste différé le serveur partagé du docker-compose, image 3.1.1 à aligner sur le client 3.16.1."
+motif = "Le suivi MLflow est actif en local (magasin du projet, `make mlflow`) : le modèle retenu y porte l'alias champion depuis l'évaluation finale (03/10). Le serveur MLflow de la pile Docker tourne, image alignée sur le client 3.16.1 (03/10), vérifié le 04/10 ; aucun outil n'y écrit encore."
 source = "00.README_choix_methodologiques § 7 bis · arbitrage du porteur"
-condition = "Phase 10 (A-05)."
+condition = "Mise en production : pointer `MLFLOW_TRACKING_URI` des outils vers le serveur de la pile."
 
 [[element]]
 id = "E-508"
@@ -785,3 +771,17 @@ section = "11"
 motif = "La préparation choisit la graphie d'une catégorie ('PRO', 'pro' -> 'Pro') à partir du lot lui-même : un compte seul n'a pas de lot. L'API corrige avec le vocabulaire de l'entraînement ; la correction à la source (donnees/silver.py) imposera un recalcul complet."
 source = "tests/test_api.py (parité API et lot) · industrialisation/dictionnaire.py"
 condition = "Retour vers la phase Données (phase 11)."
+
+[[element]]
+id = "D-10"
+titre = "Serveur Prefect et déploiement planifié du lot mensuel"
+nature = "outil"
+statut = "différé"
+phase = "10 · Déploiement"
+date = "04/10/2026"
+competence = "C7"
+section = "11"
+motif = "Le lot mensuel est un flux Prefect : six étapes, lecture relancée en cas d'échec, journal des étapes. Un serveur Prefect et un déploiement planifié ajouteraient l'historique et l'interface des exécutions, au prix d'un service de plus dans la pile, à la veille de la remise. L'ordonnanceur existant lance le flux chaque mois (`make lot-mensuel`)."
+preuve = "src/churn_saas/industrialisation/flux.py"
+source = "arbitrage du porteur, 04/10/2026"
+condition = "Mise en production, si l'historique des exécutions devient nécessaire à l'exploitation."
