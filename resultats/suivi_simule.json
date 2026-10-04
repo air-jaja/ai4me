@@ -1,0 +1,492 @@
+{
+ "identite_execution": "5d23b0599e0562c6",
+ "mention": "SIMULÉ — démonstration",
+ "portee": "mécanique du suivi démontrée ; aucune conclusion sur la performance (S6)",
+ "profil": {
+  "modele": {
+   "nom": "churn_saas_servi",
+   "version": "1.1",
+   "fichier": "churn_saas_servi_v1.1_20261003.joblib",
+   "fichier_sha256": "fa3e0efef90e1b5427c750a6649227bdbf937c2ad3f89bfc5fd6501adee21ce2"
+  },
+  "identite_execution": "7008f6b7fd948950"
+ },
+ "lots": {
+  "lot_simule_mois_1_sans_derive.csv": {
+   "lignes": 5000,
+   "sha256": "61e5f664ab9c091f6d11adc1cce59fe125a8ef13324f62dc17a0c068ed3282a3"
+  },
+  "lot_simule_mois_2_avec_derive.csv": {
+   "lignes": 5000,
+   "sha256": "acc0e5272991cc4ccc868bf880b8b86158880979a62f2411362e37ea011bc3d9"
+  }
+ },
+ "mois": [
+  {
+   "mois": "mois_1_sans_derive",
+   "date_liste": "2026-11-01",
+   "comptes": 5000,
+   "M5_derive": {
+    "verdict": {
+     "variables clés au-dessus de 0,25": [],
+     "variables au-dessus de 0,10": [],
+     "psi du score": 0.0007,
+     "déclenchée": false
+    },
+    "psi": {
+     "anciennete_mois": 0.0037,
+     "revenu_mensuel_recurrent_eur": 0.0026,
+     "delai_reponse_support_h": 0.0024,
+     "fonctionnalites_utilisees": 0.0022,
+     "tickets_support_90j": 0.0019,
+     "connexions_30j": 0.0016,
+     "jour_souscription": 0.0014,
+     "taux_adoption_pct": 0.0013,
+     "secteur": 0.0012,
+     "sieges_souscrits": 0.0011,
+     "derniere_connexion_jours": 0.001,
+     "utilisateurs_actifs": 0.0007,
+     "heures_usage_30j": 0.0003,
+     "nb_integrations": 0.0003,
+     "csat": 0.0003,
+     "taille_entreprise": 0.0002,
+     "plan": 0.0002,
+     "retards_paiement_12m": 0.0001
+    }
+   },
+   "M8_manquants": {
+    "verdict": {
+     "variables en alerte": [],
+     "déclenchée": false
+    },
+    "table": [
+     {
+      "variable": "delai_reponse_support_h",
+      "part à l'entraînement": 0.0965,
+      "part du lot": 0.0892,
+      "seuil": 0.193,
+      "alerte": false
+     },
+     {
+      "variable": "csat",
+      "part à l'entraînement": 0.081,
+      "part du lot": 0.0826,
+      "seuil": 0.162,
+      "alerte": false
+     },
+     {
+      "variable": "heures_usage_30j",
+      "part à l'entraînement": 0.0615,
+      "part du lot": 0.0576,
+      "seuil": 0.123,
+      "alerte": false
+     },
+     {
+      "variable": "secteur",
+      "part à l'entraînement": 0.049,
+      "part du lot": 0.0514,
+      "seuil": 0.098,
+      "alerte": false
+     },
+     {
+      "variable": "taux_adoption_pct",
+      "part à l'entraînement": 0.0475,
+      "part du lot": 0.0488,
+      "seuil": 0.095,
+      "alerte": false
+     },
+     {
+      "variable": "retards_paiement_12m",
+      "part à l'entraînement": 0.0493,
+      "part du lot": 0.0468,
+      "seuil": 0.0985,
+      "alerte": false
+     },
+     {
+      "variable": "nb_integrations",
+      "part à l'entraînement": 0.042,
+      "part du lot": 0.0436,
+      "seuil": 0.084,
+      "alerte": false
+     },
+     {
+      "variable": "revenu_mensuel_recurrent_eur",
+      "part à l'entraînement": 0.0272,
+      "part du lot": 0.0304,
+      "seuil": 0.0545,
+      "alerte": false
+     },
+     {
+      "variable": "jour_souscription",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "taille_entreprise",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "connexions_30j",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "utilisateurs_actifs",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "anciennete_mois",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "sieges_souscrits",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "plan",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "tickets_support_90j",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "fonctionnalites_utilisees",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "derniere_connexion_jours",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     }
+    ]
+   },
+   "M9_volume": {
+    "comptes signalés": 156,
+    "mois précédent": null,
+    "écart": null,
+    "déclenchée": false
+   },
+   "alertes": [
+    {
+     "indicateur": "PR-AUC en production",
+     "seuil": "baisse > 15 % vs référence",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Couverture du revenu à risque",
+     "seuil": "< 50 % du MRR des comptes partis",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Dérive des entrées et du score (PSI)",
+     "seuil": "> 0,25 sur une variable clé, ou > 0,10 sur trois variables, ou > 0,10 sur le score",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Volume de comptes signalés",
+     "seuil": "écart > 30 % vs mois précédent",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Taux de manquants à l'entrée",
+     "seuil": "> 2 × le taux d'entraînement, sur une variable",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Rappel sur le segment Suisse",
+     "seuil": "< 0,8 × rappel global, intervalle excluant le rappel global (critère R9)",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Rétention des comptes traités",
+     "seuil": "non significative vs témoin",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Retours de faux positifs CSM",
+     "seuil": "volume anormal",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    }
+   ]
+  },
+  {
+   "mois": "mois_2_avec_derive",
+   "date_liste": "2026-12-01",
+   "comptes": 5000,
+   "M5_derive": {
+    "verdict": {
+     "variables clés au-dessus de 0,25": [],
+     "variables au-dessus de 0,10": [],
+     "psi du score": 0.0028,
+     "déclenchée": false
+    },
+    "psi": {
+     "derniere_connexion_jours": 0.0434,
+     "secteur": 0.0024,
+     "taux_adoption_pct": 0.002,
+     "delai_reponse_support_h": 0.0019,
+     "jour_souscription": 0.0018,
+     "anciennete_mois": 0.0014,
+     "utilisateurs_actifs": 0.0014,
+     "revenu_mensuel_recurrent_eur": 0.0013,
+     "tickets_support_90j": 0.0013,
+     "sieges_souscrits": 0.0013,
+     "connexions_30j": 0.0012,
+     "heures_usage_30j": 0.0011,
+     "nb_integrations": 0.0008,
+     "fonctionnalites_utilisees": 0.0005,
+     "plan": 0.0003,
+     "taille_entreprise": 0.0003,
+     "csat": 0.0002,
+     "retards_paiement_12m": 0.0001
+    }
+   },
+   "M8_manquants": {
+    "verdict": {
+     "variables en alerte": [
+      "delai_reponse_support_h"
+     ],
+     "déclenchée": true
+    },
+    "table": [
+     {
+      "variable": "delai_reponse_support_h",
+      "part à l'entraînement": 0.0965,
+      "part du lot": 0.3216,
+      "seuil": 0.193,
+      "alerte": true
+     },
+     {
+      "variable": "csat",
+      "part à l'entraînement": 0.081,
+      "part du lot": 0.0812,
+      "seuil": 0.162,
+      "alerte": false
+     },
+     {
+      "variable": "heures_usage_30j",
+      "part à l'entraînement": 0.0615,
+      "part du lot": 0.0598,
+      "seuil": 0.123,
+      "alerte": false
+     },
+     {
+      "variable": "secteur",
+      "part à l'entraînement": 0.049,
+      "part du lot": 0.055,
+      "seuil": 0.098,
+      "alerte": false
+     },
+     {
+      "variable": "retards_paiement_12m",
+      "part à l'entraînement": 0.0493,
+      "part du lot": 0.0526,
+      "seuil": 0.0985,
+      "alerte": false
+     },
+     {
+      "variable": "taux_adoption_pct",
+      "part à l'entraînement": 0.0475,
+      "part du lot": 0.0512,
+      "seuil": 0.095,
+      "alerte": false
+     },
+     {
+      "variable": "nb_integrations",
+      "part à l'entraînement": 0.042,
+      "part du lot": 0.0378,
+      "seuil": 0.084,
+      "alerte": false
+     },
+     {
+      "variable": "revenu_mensuel_recurrent_eur",
+      "part à l'entraînement": 0.0272,
+      "part du lot": 0.03,
+      "seuil": 0.0545,
+      "alerte": false
+     },
+     {
+      "variable": "jour_souscription",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "taille_entreprise",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "connexions_30j",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "utilisateurs_actifs",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "anciennete_mois",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "sieges_souscrits",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "plan",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "tickets_support_90j",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "fonctionnalites_utilisees",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     },
+     {
+      "variable": "derniere_connexion_jours",
+      "part à l'entraînement": 0.0,
+      "part du lot": 0.0,
+      "seuil": 0.0,
+      "alerte": false
+     }
+    ]
+   },
+   "M9_volume": {
+    "comptes signalés": 156,
+    "mois précédent": 156,
+    "écart": 0.0,
+    "déclenchée": false
+   },
+   "alertes": [
+    {
+     "indicateur": "PR-AUC en production",
+     "seuil": "baisse > 15 % vs référence",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Couverture du revenu à risque",
+     "seuil": "< 50 % du MRR des comptes partis",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Dérive des entrées et du score (PSI)",
+     "seuil": "> 0,25 sur une variable clé, ou > 0,10 sur trois variables, ou > 0,10 sur le score",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Volume de comptes signalés",
+     "seuil": "écart > 30 % vs mois précédent",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Taux de manquants à l'entrée",
+     "seuil": "> 2 × le taux d'entraînement, sur une variable",
+     "declenchee": true,
+     "action": "avertissement, scoring maintenu ; qualification de la collecte",
+     "responsable": "Équipe Data"
+    },
+    {
+     "indicateur": "Rappel sur le segment Suisse",
+     "seuil": "< 0,8 × rappel global, intervalle excluant le rappel global (critère R9)",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Rétention des comptes traités",
+     "seuil": "non significative vs témoin",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    },
+    {
+     "indicateur": "Retours de faux positifs CSM",
+     "seuil": "volume anormal",
+     "declenchee": false,
+     "action": "—",
+     "responsable": "—"
+    }
+   ]
+  }
+ ],
+ "duree_s": 4.2,
+ "date": "2026-10-04 06:01"
+}

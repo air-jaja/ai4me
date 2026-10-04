@@ -299,6 +299,69 @@ def test_les_verdicts_du_mois_designent_des_regles_existantes():
     assert declenchees == {k for k, v in mesures.items() if v}
 
 
+# --- Phase 11 · Simulated batches (A5) ----------------------------------------------------
+@pytest.mark.phase11
+def test_un_compte_du_jeu_de_test_est_refuse_dans_un_lot_simule():
+    """S1: the test part is never read a third time - a test account is refused, loudly."""
+    from churn_saas.monitoring.simulation import comptes_reels
+
+    echantillon = pd.DataFrame({"client_id": ["A", "B", "C"]})
+    assert comptes_reels(echantillon, {"A", "B"}, {"C"})["client_id"].tolist() == ["A", "B"]
+    with pytest.raises(ValueError, match="S1"):
+        comptes_reels(echantillon, {"A", "C"}, {"C"})
+
+
+@pytest.mark.phase11
+def test_un_lot_simule_a_sa_taille_ses_identifiants_et_aucune_issue():
+    """S2: the real accounts first, drawn rows renamed SIM-..., no outcome column."""
+    from churn_saas.monitoring.simulation import completer_lot
+
+    reels = pd.DataFrame({"client_id": ["CLI-1"], "x": ["1"], "churn": ["0"]})
+    reservoir = pd.DataFrame(
+        {"client_id": ["CLI-2", "CLI-3"], "x": ["2", "3"], "churn": ["1", "0"]}
+    )
+    lot = completer_lot(reels, reservoir, 50, np.random.default_rng(0))
+    assert len(lot) == 50 and lot["client_id"].is_unique
+    assert (
+        lot["client_id"].iloc[0] == "CLI-1"
+        and lot["client_id"].iloc[1:].str.startswith("SIM-").all()
+    )
+    assert "churn" not in lot.columns
+
+
+@pytest.mark.phase11
+def test_la_derive_injectee_touche_les_parts_decidees():
+    """S4: last login doubled on 30 % of the accounts, support delay blanked on 25 %."""
+    from churn_saas.monitoring.simulation import injecter_derive
+
+    lot = pd.DataFrame(
+        {"derniere_connexion_jours": ["10"] * 1_000, "delai_reponse_support_h": ["5.0"] * 1_000}
+    )
+    derive = injecter_derive(lot, np.random.default_rng(0))
+    assert (derive["derniere_connexion_jours"] == "20").sum() == 300
+    assert derive["delai_reponse_support_h"].isna().sum() == 250
+
+
+@pytest.mark.phase11
+def test_le_rapport_simule_est_marque_et_le_mois_temoin_est_muet():
+    """S3, S6, S7: the report says it is simulated and what it proves; the drift-free month
+    raises no alert, the collection incident of month 2 is caught (M8)."""
+    import json
+    from pathlib import Path
+
+    racine = Path(__file__).resolve().parents[1]
+    rapport = json.loads((racine / "resultats" / "suivi_simule.json").read_text(encoding="utf-8"))
+    assert rapport["mention"] == "SIMULÉ — démonstration" and "performance" in rapport["portee"]
+    mois_1, mois_2 = rapport["mois"]
+    assert not any(a["declenchee"] for a in mois_1["alertes"])
+    assert mois_2["M8_manquants"]["verdict"]["variables en alerte"] == ["delai_reponse_support_h"]
+    manifeste = json.loads(
+        (racine / "data" / "simulation" / "manifeste_simulation.json").read_text(encoding="utf-8")
+    )
+    assert manifeste["mention"] == rapport["mention"]
+    assert manifeste["fichiers"] == rapport["lots"]
+
+
 # --- Phase 5 · Categorical stability ------------------------------------------------------
 @pytest.mark.phase5
 def test_le_psi_categoriel_est_nul_sans_changement_et_positif_sinon():

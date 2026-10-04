@@ -23,3 +23,51 @@ REDUCTION_RISQUE_CONTACT = 0.25  # the retention efficacy hypothesis (R1)
 PART_TEMOIN_SIMULE = 0.10  # the control group share of the list (phase 10)
 DOSSIER_SIMULATION = RACINE / "data" / "simulation"  # S7: versioned, never data/raw
 MENTION = "SIMULÉ — démonstration"  # S7: on every simulated file and report
+
+# Columns a monthly batch cannot carry: the outcome is not known when it is scored.
+COLONNES_POSTERIEURES = ("churn", "sante_compte_fin_periode")
+PREFIXE_SIMULE = "SIM-"
+
+
+def comptes_reels(echantillon, ids_entrainement: set, ids_test: set):
+    """S1: the sample's accounts that belong to the training part - never one of the test.
+
+    The check refuses rather than filters silently: a test account reaching a simulated
+    batch would be a third reading of the test part.
+    """
+    reels = echantillon[echantillon["client_id"].isin(ids_entrainement)]
+    if reels["client_id"].isin(ids_test).any():
+        raise ValueError("Compte du jeu de test dans un lot simulé : refusé (S1).")
+    return reels.reset_index(drop=True)
+
+
+def completer_lot(reels, reservoir, taille: int, generateur):
+    """S2: real accounts, then rows drawn with replacement from the training part's raw rows.
+
+    Drawn rows get a new identifier (SIM-00001...): a drawn account is not the real one,
+    and two draws of the same row must not collapse as duplicates.
+    """
+    import pandas as pd
+
+    tires = reservoir.iloc[generateur.integers(0, len(reservoir), taille - len(reels))].copy()
+    tires["client_id"] = [f"{PREFIXE_SIMULE}{i:05d}" for i in range(1, len(tires) + 1)]
+    lot = pd.concat([reels, tires], ignore_index=True)
+    return lot.drop(columns=[c for c in COLONNES_POSTERIEURES if c in lot.columns])
+
+
+def injecter_derive(lot, generateur):
+    """S4, on the raw batch as the CRM would send it: disengagement (M5), lost field (M8)."""
+    import pandas as pd
+
+    lot = lot.copy()
+    variable, part, facteur = (DERIVE_CONNEXION[k] for k in ("variable", "part", "facteur"))
+    lignes = generateur.choice(len(lot), size=round(part * len(lot)), replace=False)
+    valeurs = pd.to_numeric(lot[variable].iloc[lignes], errors="coerce") * facteur
+    lot.loc[lot.index[lignes], variable] = [
+        lot[variable].iloc[i] if pd.isna(v) else str(int(v))
+        for i, v in zip(lignes, valeurs, strict=True)
+    ]
+    variable, part = DERIVE_MANQUANTS["variable"], DERIVE_MANQUANTS["part"]
+    lignes = generateur.choice(len(lot), size=round(part * len(lot)), replace=False)
+    lot.loc[lot.index[lignes], variable] = pd.NA
+    return lot
