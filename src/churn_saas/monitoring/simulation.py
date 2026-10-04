@@ -18,6 +18,9 @@ MOIS_SIMULES = ("mois_1_sans_derive", "mois_2_avec_derive")  # S3
 # S4: one scenario per rule. M5: disengagement; M8: collection incident; M9: nothing injected.
 DERIVE_CONNEXION = {"variable": "derniere_connexion_jours", "part": 0.30, "facteur": 2.0}
 DERIVE_MANQUANTS = {"variable": "delai_reponse_support_h", "part": 0.25}
+# S8: a third month with a strong disengagement - month 2's drift left M5 silent (PSI 0.043).
+MOIS_DERIVE_FORTE = "mois_3_derive_forte"
+DERIVE_CONNEXION_FORTE = {"variable": "derniere_connexion_jours", "part": 0.30, "ajout_jours": 30}
 # S5: simulated outcomes three months later.
 REDUCTION_RISQUE_CONTACT = 0.25  # the retention efficacy hypothesis (R1)
 PART_TEMOIN_SIMULE = 0.10  # the control group share of the list (phase 10)

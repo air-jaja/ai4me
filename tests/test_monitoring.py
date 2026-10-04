@@ -124,7 +124,7 @@ def test_les_variables_cles_sont_les_quatre_premieres_de_la_phase_9():
 
 @pytest.mark.phase11
 def test_les_donnees_de_demonstration_sont_figees():
-    """S1 to S7, validated by the project owner on 04/10/2026 before any simulation (rule 8):
+    """S1 to S8, validated by the project owner on 04/10/2026 before any simulation (rule 8):
     the simulated batches cannot be resized or re-drifted without a new decision."""
     from churn_saas import config
     from churn_saas.monitoring import simulation
@@ -142,6 +142,13 @@ def test_les_donnees_de_demonstration_sont_figees():
     assert simulation.PART_TEMOIN_SIMULE == 0.10
     assert simulation.DOSSIER_SIMULATION == config.RACINE / "data" / "simulation"
     assert simulation.MENTION == "SIMULÉ — démonstration"
+    # S8, decided after month 2 left M5 silent - month 2 itself unchanged.
+    assert simulation.MOIS_DERIVE_FORTE == "mois_3_derive_forte"
+    assert simulation.DERIVE_CONNEXION_FORTE == {
+        "variable": "derniere_connexion_jours",
+        "part": 0.30,
+        "ajout_jours": 30,
+    }
 
 
 # --- Phase 11 · Reference profile (A1) -----------------------------------------------------
