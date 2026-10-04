@@ -1,8 +1,8 @@
 # Chronologie des commits livrés
 
 Extraite des patchs de chaque livraison (`git format-patch`) : hachage, date et objet de chaque commit **tels que livrés**.
-Les commits de **décision** (règles fixées avant les calculs) et la **lecture unique du jeu de test** sont archivés en entier
-dans `preuves/`. Les dates sont celles des commits de travail ; la fusion dans `develop` a pu les regrouper.
+Les commits de **décision** (règles fixées avant les calculs) sont en gras. Les dates sont celles des commits de travail ;
+la fusion dans `develop` a pu les regrouper, et les hachages livrés ne sont alors pas ceux de l'historique du dépôt.
 
 | Date (UTC) | Commit | Objet | Livraison |
 |---|---|---|---|

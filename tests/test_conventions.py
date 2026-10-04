@@ -539,8 +539,9 @@ def test_le_notebook_de_certification_ne_cite_plus_d_element_perime():
     assert not perimes, f"Éléments périmés dans les cellules {perimes}."
 
 
-def test_chaque_iteration_de_l_annexe_d_est_rattachee_a_une_boucle_du_cycle():
-    """Section 2 listed five loops while Annex D logged fifteen iterations, and labelled the
+def test_chaque_iteration_de_l_annexe_c_est_rattachee_a_une_boucle_du_cycle():
+    """Section 2 listed five loops while the iteration log (Annex C, formerly D) held fifteen
+    iterations, and labelled the
     modelling-to-framing loop "weak signal" although the real trigger was a too-good score
     (AUC 0.999, a leak). Every logged iteration now appears in the section 2 loop table."""
     import re
@@ -556,14 +557,14 @@ def test_chaque_iteration_de_l_annexe_d_est_rattachee_a_une_boucle_du_cycle():
         if (m := re.match(r"^\|[^|]+\|\s*([\d, ]+) —", ligne))
         for n in m.group(1).split(",")
     }
-    annexes = next(c.source for c in nb.cells if "### Annexe D" in c.source)
-    journal = annexes[annexes.index("### Annexe D") : annexes.index("### Annexe E")]
+    annexes = next(c.source for c in nb.cells if "### Annexe C" in c.source)
+    journal = annexes[annexes.index("### Annexe C") : annexes.index("### Annexe D")]
     iterations = {int(n) for n in re.findall(r"^\| (\d+) \|", journal, re.M)}
     assert iterations and rattachees == iterations, (
         f"Itérations non rattachées : {sorted(iterations - rattachees)} ; "
-        f"inconnues de l'Annexe D : {sorted(rattachees - iterations)}"
+        f"inconnues de l'Annexe C : {sorted(rattachees - iterations)}"
     )
-    assert "Annexe D" in cycle and "signal faible" in cycle
+    assert "Annexe C" in cycle and "signal faible" in cycle
 
 
 def test_le_notebook_n_affiche_pas_deux_fois_la_meme_information():
@@ -683,16 +684,14 @@ def test_le_paragraphe_10_decrit_la_chaine_ci_telle_qu_elle_tourne():
     texte = "".join(c.source for c in section)
     assert "Tests unitaires des fonctions de nettoyage" not in texte
     assert all(niveau in texte for niveau in ("pre-commit", "pre-push", "`qualite`", "`complet`"))
-    jointes = {nom for c in section for nom in c.get("attachments", {})}
-    assert {"ci_precommit.png", "ci_actions.png"} <= jointes
-    assert "attachment:ci_precommit.png" in texte and "attachment:ci_actions.png" in texte
+    assert _captures_affichees(section) >= {"ci_precommit.png", "ci_actions.png"}
     assert "docs/MODEL_CARD.md" in texte, "Le § 10 ne renvoie pas à la model card."
 
 
 def test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee():
     """Section 11 carries the architecture diagram (C7) - its cell was an empty comment until
-    04/10/2026 - and the captures that prove the platform ran, attached to the notebook so
-    that it stays readable on its own."""
+    04/10/2026 - and the captures that prove the platform ran, displayed as outputs so
+    that the notebook stays readable on its own, GitHub included."""
     import nbformat
 
     nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
@@ -702,18 +701,52 @@ def test_le_paragraphe_11_montre_l_architecture_et_la_plateforme_verifiee():
     section = nb.cells[debut:fin]
     assert any("```mermaid" in c.source for c in section if c.cell_type == "markdown")
     assert any("FancyBboxPatch" in c.source for c in section if c.cell_type == "code")
-    jointes = {nom for c in section for nom in c.get("attachments", {})}
     attendues = {
+        "v2_docs.png",
         "v2_ready.png",
         "v2_score.png",
         "v4_prometheus.png",
         "v5_grafana.png",
-        "v3_mlflow_pile.png",
+        "v3_mlflow.png",
         "v3_mlflow_local.png",
     }
-    assert attendues <= jointes, f"Captures absentes : {sorted(attendues - jointes)}"
-    citees = "".join(c.source for c in section)
-    assert all(f"attachment:{nom}" in citees for nom in attendues)
+    affichees = _captures_affichees(section)
+    assert attendues <= affichees, f"Captures absentes : {sorted(attendues - affichees)}"
+
+
+def _captures_affichees(cellules) -> set[str]:
+    """Captures of docs/captures/ that a code cell names and displays, byte for byte."""
+    import base64
+
+    affichees = set()
+    for c in cellules:
+        if c.cell_type != "code":
+            continue
+        images = [
+            base64.b64decode(o["data"]["image/png"])
+            for o in c.get("outputs", [])
+            if "image/png" in o.get("data", {})
+        ]
+        for nom in re.findall(r'"(\w+\.png)"', c.source):
+            fichier = RACINE / "docs" / "captures" / nom
+            if fichier.exists() and fichier.read_bytes() in images:
+                affichees.add(nom)
+    return affichees
+
+
+def test_aucune_image_du_notebook_n_est_jointe_a_une_cellule_de_texte():
+    """Until 04/10/2026 the captures were attached to Markdown cells, which GitHub does not
+    display: the reader saw none of them. Every capture of docs/captures/ is now a cell output."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    jointes = [
+        i for i, c in enumerate(nb.cells) if c.get("attachments") or "attachment:" in c.source
+    ]
+    assert not jointes, f"Images jointes à des cellules de texte : {jointes}"
+    toutes = {f.name for f in (RACINE / "docs" / "captures").glob("*.png")}
+    absentes = toutes - _captures_affichees(nb.cells)
+    assert not absentes, f"Captures non affichées : {sorted(absentes)}"
 
 
 def _section_certification(debut: str, fin: str) -> list:
@@ -847,33 +880,23 @@ def test_la_taille_des_sources_citee_est_celle_du_manifeste():
     assert not faux, f"Taille des sources fausse (manifeste : {taille}) : {faux}"
 
 
-def test_la_soutenance_de_l_annexe_c_tient_en_trente_minutes():
-    """Annex C planned a 30-minute defence whose durations added up to 32 (until 04/10/2026)."""
+def test_l_annexe_d_rattache_chaque_dossier_a_ses_tests():
+    """The code organisation annex (D, formerly E) showed "—" (no tests) for `modelisation/`
+    and `industrialisation/`, which have theirs, and an obsolete count of test files (until
+    04/10/2026)."""
     import nbformat
 
     nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
     annexes = next(c.source for c in nb.cells if c.source.startswith("## 15."))
-    annexe_c = annexes[annexes.index("### Annexe C") : annexes.index("### Annexe D")]
-    assert "30 minutes" in annexe_c
-    assert sum(int(m) for m in re.findall(r"^\| (\d+) min \|", annexe_c, re.M)) == 30
-
-
-def test_l_annexe_e_rattache_chaque_dossier_a_ses_tests():
-    """Annex E showed "—" (no tests) for `modelisation/` and `industrialisation/`, which have
-    theirs, and an obsolete count of test files (until 04/10/2026)."""
-    import nbformat
-
-    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
-    annexes = next(c.source for c in nb.cells if c.source.startswith("## 15."))
-    annexe_e = annexes[annexes.index("### Annexe E") :]
-    lignes = re.findall(r"^\| \d · [^|]+\| `(\w+)/` \| ([^|]+) \|", annexe_e, re.M)
+    annexe_d = annexes[annexes.index("### Annexe D") :]
+    lignes = re.findall(r"^\| \d · [^|]+\| `(\w+)/` \| ([^|]+) \|", annexe_d, re.M)
     assert len(lignes) == 7
     for dossier, tests in lignes:
         noms = re.findall(r"`(test_\w+\.py)`", tests)
         assert noms, f"Aucun fichier de tests cité pour {dossier}/."
         assert all((RACINE / "tests" / nom).exists() for nom in noms), noms
     nombre = len(list((RACINE / "tests").glob("test_*.py")))
-    assert f"({nombre} au total)" in annexe_e
+    assert f"({nombre} au total)" in annexe_d
 
 
 def test_chaque_element_du_registre_cite_par_le_notebook_existe():
@@ -891,3 +914,88 @@ def test_chaque_element_du_registre_cite_par_le_notebook_existe():
     cites = set(re.findall(r"\b[ED]-\d{2,3}\b", texte))
     assert {"D-06", "D-10", "D-11"} <= cites
     assert not cites - connus, f"Identifiants absents du registre : {sorted(cites - connus)}"
+
+
+def _lecture(debut: str) -> str:
+    """The certification notebook's cell starting with `debut`."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    return next(c.source for c in nb.cells if c.source.startswith(debut))
+
+
+def test_la_regle_du_9e_ne_confond_pas_seuil_et_valeur_nette():
+    """Section 9.E said the net expected value p x V x efficacy - cost is positive exactly when p
+    exceeds p* = cost / (cost + efficacy x V); algebra says p > cost / (efficacy x V). The
+    threshold is the section 8 rule, the ranking uses the net value (final re-check, 04/10/2026):
+    while the two criteria differ, the text does not merge them."""
+    import pandas as pd
+
+    from churn_saas.config import COUT_CONTACT_CSM_EUR, EFFICACITE_RETENTION
+    from churn_saas.evaluation import seuil_par_compte
+
+    valeur = pd.Series([500.0, 2_000.0, 20_000.0])
+    p = seuil_par_compte(valeur) + 1e-9
+    nette = p * valeur * EFFICACITE_RETENTION - COUT_CONTACT_CSM_EUR
+    if (nette < 0).any():
+        assert "est positive exactement quand" not in _lecture("### 9.E")
+
+
+def test_la_stabilite_de_la_liste_est_citee_en_part_de_comptes_communs():
+    """Section 9.E read a Jaccard index of 0.87 as "87 % of the same list"; two lists of equal
+    size sharing a share s of their accounts have a Jaccard index s / (2 - s)."""
+    import json
+
+    stabilite = json.loads(
+        (RACINE / "resultats" / "regle_decision.json").read_text(encoding="utf-8")
+    )["stabilite"]
+
+    def part(jaccard: float) -> int:
+        return round(200 * jaccard / (1 + jaccard))
+
+    lecture = _lecture("**Lecture.** Les seuils varient")
+    assert f"**{part(stabilite['jaccard_moyen'])} %** des comptes" in lecture
+    assert f"soit {part(stabilite['jaccard_minimum'])} %" in lecture
+
+
+def test_l_intervalle_de_calibration_du_test_est_cite_quand_il_depasse_l_objectif():
+    """The test calibration error, 0.036, is under the 0.05 objective but its 95 % interval
+    reaches 0.061; until 04/10/2026 sections 9.C and 12.A only said "under the objective"."""
+    import json
+
+    from churn_saas.config import SEUIL_ERREUR_CALIBRATION
+
+    finale = json.loads(
+        (RACINE / "resultats" / "evaluation_finale.json").read_text(encoding="utf-8")
+    )
+    borne = finale["intervalles_95"]["erreur de calibration"][1]
+    if borne > SEUIL_ERREUR_CALIBRATION:
+        cite = f"{borne:.3f}".replace(".", ",")
+        assert cite in _lecture("**Lecture.** Sur 1 000 comptes jamais vus")
+        assert cite in _lecture("**Lecture.** Sur le test, la PR-AUC")
+
+
+def test_le_paragraphe_10_ne_prete_au_flux_que_les_verdicts_qu_il_calcule():
+    """Section 10 credited the monthly flow with the M1 to M10 verdicts; it computes M5, M8 and
+    M9, the quarterly review the others (final re-check, 04/10/2026)."""
+    flux = (RACINE / "src" / "churn_saas" / "industrialisation" / "flux.py").read_text(
+        encoding="utf-8"
+    )
+    verdicts = sorted(set(re.findall(r'"(M\d+)_', flux)), key=lambda m: int(m[1:]))
+    texte = "".join(c.source for c in _section_certification("## 10.", "## 11."))
+    assert f"verdicts {', '.join(verdicts)} du flux" in texte
+
+
+def test_les_annexes_se_suivent_et_chaque_renvoi_trouve_la_sienne():
+    """On 04/10/2026 the defence-timing annex (C) was removed: the iteration log became C and
+    the code organisation D. Annex letters follow each other, every "Annexe X" quoted in the
+    notebook exists, and the cover page gives the repository's address."""
+    import nbformat
+
+    nb = nbformat.read(RACINE / "notebooks" / "cas_usage_churn_saas.ipynb", as_version=4)
+    texte = "\n".join(c.source for c in nb.cells)
+    lettres = re.findall(r"^### Annexe ([A-Z]) — ", texte, re.M)
+    assert lettres == ["A", "B", "C", "D"], lettres
+    assert set(re.findall(r"\bAnnexe ([A-Z])\b", texte)) <= set(lettres)
+    assert "### Annexe C — Journal des itérations" in texte
+    assert "https://github.com/air-jaja/ai4me" in nb.cells[0].source
