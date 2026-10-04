@@ -18,7 +18,9 @@ from pathlib import Path
 RACINE = Path(__file__).resolve().parents[1]
 
 
-def executer(entree: Path, sortie_dossier: Path = RACINE / "sorties"):
+def executer(
+    entree: Path, sortie_dossier: Path = RACINE / "sorties", historique: Path | None = None
+):
     sys.path.insert(0, str(RACINE / "src"))
     import pandas as pd
 
@@ -73,8 +75,15 @@ def main(argv: list[str] | None = None) -> int:
     analyseur.add_argument(
         "--entree", default=str(RACINE / "data" / "raw" / "churn_saas_complet.csv")
     )
+    analyseur.add_argument(
+        "--historique",
+        help="contacts passés exportés du CRM (voir docs/INTEGRATION_CRM.md)",
+    )
     arguments = analyseur.parse_args(argv)
-    liste, sortie = executer(Path(arguments.entree))
+    liste, sortie = executer(
+        Path(arguments.entree),
+        historique=Path(arguments.historique) if arguments.historique else None,
+    )
     a_contacter = liste[liste["Action recommandée"] == "À contacter ce mois"]
     print(f"{len(liste)} comptes, {len(a_contacter)} à contacter ce mois")
     print(f"-> {sortie.relative_to(RACINE)}")

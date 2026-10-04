@@ -28,14 +28,14 @@
     "champion évalué (5 copies calibrées)": {
       "PR-AUC (25 plis)": 0.7934,
       "erreur de calibration (25 plis)": 0.0298,
-      "un compte (ms)": 58.45,
-      "lot de 5 000 comptes (s)": 0.156
+      "un compte (ms)": 48.23,
+      "lot de 5 000 comptes (s)": 0.127
     },
     "modèle servi (une copie calibrée)": {
       "PR-AUC (25 plis)": 0.7933,
       "erreur de calibration (25 plis)": 0.0303,
-      "un compte (ms)": 16.12,
-      "lot de 5 000 comptes (s)": 0.056
+      "un compte (ms)": 9.9,
+      "lot de 5 000 comptes (s)": 0.031
     }
   },
   "equivalence": {
@@ -49,7 +49,7 @@
     "calibration conforme": true,
     "budget d'un compte respecté": true,
     "budget du lot respecté": true,
-    "accélération d'un compte": 3.6
+    "accélération d'un compte": 4.9
   },
   "test_du_champion_evalue": {
     "metriques": {
@@ -89,6 +89,6 @@
     "date": "2026-10-03 00:44"
   },
   "artefact": "models/churn_saas_servi_v1.1_20261003.joblib",
-  "date": "2026-10-03 19:45",
+  "date": "2026-10-03 16:56",
   "scores_echantillon_reference": "resultats/scores_echantillon_reference.csv"
 }

@@ -19,13 +19,14 @@ except ImportError:  # scoring, the list and the service must still import witho
         raise ImportError("SQLAlchemy absent : installer le groupe stockage.")
 
     construire_moteur = creer_schema = ecrire_scores = lire_derniers_scores = _stockage_absent
-from .liste import FORMULATIONS, LIBELLES, construire_liste, motif, tranche
+from .liste import FORMULATIONS, LIBELLES, construire_liste, motif, selectionner, tranche
 from .scoring import controler_lot, preparer, scorer_lot_mensuel
 from .service import reponse_scoring_unitaire
 
 __all__ = [
     # Operational list for the account managers (phase 10)
     "construire_liste",
+    "selectionner",
     "motif",
     "tranche",
     "LIBELLES",

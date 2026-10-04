@@ -264,6 +264,7 @@ OUTILS_ET_ARGUMENTS = {
     "liste_operationnelle.py": ["--help"],
     "livraison.py": ["--help"],
     "journal_modifications.py": ["--help"],
+    "retours_terrain.py": ["--help"],
     "selection_modele.py": ["--help"],
     "evaluation_finale.py": ["--help"],
     "modele_valeur_vie.py": ["--help"],

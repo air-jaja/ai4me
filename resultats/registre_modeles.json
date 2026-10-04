@@ -10,29 +10,5 @@
   "empreinte_entrainement": "f5556d76df1470d5f9dd7e33a2762a8f5448d710fd749901d511ccd94a281bc5",
   "empreinte_gold": "f97c430bcdfcd750bea4170413683f1cf6b7770a61e20b3e5fdbadfe060546f6",
   "commit": "fede8a8"
- },
- {
-  "nom": "churn_saas_servi",
-  "version": "1.1",
-  "date_entrainement": "2026-10-03",
-  "fichier": "churn_saas_servi_v1.1_20261003.joblib",
-  "fichier_sha256": "02798b5c12ce99e7df5f69e851e11f245a2888be3fb28a226d0330b715ac9861",
-  "famille": "regression_logistique",
-  "copies": 1,
-  "empreinte_entrainement": "1bdec226c82f4e4873638e477f6d9ca3076dcaa1fcab9dda486128e737176ca4",
-  "empreinte_gold": "f97c430bcdfcd750bea4170413683f1cf6b7770a61e20b3e5fdbadfe060546f6",
-  "commit": "e4d7a3c"
- },
- {
-  "nom": "valeur_vie_client",
-  "version": "1.0",
-  "date_entrainement": "2026-10-03",
-  "fichier": "valeur_vie_client_v1.0_20261003.joblib",
-  "fichier_sha256": "0e805f3d44da7458bf6405afbf61e886be38d4ba282313ff1e057c1d1af24e8a",
-  "famille": "foret_de_regression",
-  "copies": null,
-  "empreinte_entrainement": "1bb4f9a98481e5ce6da0efa8e83c37335fcf13d615752c22e5ef27fe9cab3d7e",
-  "empreinte_gold": "f97c430bcdfcd750bea4170413683f1cf6b7770a61e20b3e5fdbadfe060546f6",
-  "commit": "e4d7a3c"
  }
 ]

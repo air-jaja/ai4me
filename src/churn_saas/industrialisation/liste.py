@@ -13,6 +13,13 @@ import pandas as pd
 from ..config import CAPACITE_MENSUELLE
 from ..evaluation import appliquer_regle, contributions_lineaires
 
+# CRM integration defaults, validated by the project owner (03/10/2026). Kept here, not in
+# config.py: config.py belongs to every tool's identity, and a serving setting must not
+# invalidate the recorded results.
+CARENCE_MOIS = 2  # an account contacted less than 2 months ago is not proposed again...
+HAUSSE_REINTEGRATION = 0.5  # ...unless its expected gain rose by more than 50 %
+PART_GROUPE_TEMOIN = 0.10  # share of selected accounts randomly NOT contacted (control group)
+
 # Technical name -> label shown to the account manager (phase 10, point 3).
 LIBELLES = {
     "rang": "Priorité",
@@ -81,6 +88,67 @@ def motif(contributions: pd.Series, valeurs: pd.Series, n: int = 3) -> str:
     return " ; ".join(phrases).capitalize()
 
 
+def selectionner(
+    regle: pd.DataFrame,
+    identifiants: pd.Series,
+    capacite: int,
+    historique: pd.DataFrame | None,
+    date_liste: pd.Timestamp,
+    part_temoin: float,
+    graine: int,
+) -> tuple[pd.Series, pd.Series]:
+    """Action per account, and when it was last contacted (point 5 defaults).
+
+    1. Cool-down: an account contacted less than CARENCE_MOIS months ago is set aside,
+       unless its expected gain rose by more than HAUSSE_REINTEGRATION since that contact
+       or the CRM flags a critical event.
+    2. Selection: the most valuable eligible profitable accounts, enough to fill the
+       capacity once the control group is drawn.
+    3. Control group: PART_GROUPE_TEMOIN of the selected accounts, drawn at random with a
+       recorded seed, are NOT contacted - the only way to measure what contacting changes.
+    """
+    import numpy as np
+
+    action = pd.Series("Pas d'action", index=regle.index)
+    action[regle["rentable"]] = "En réserve (rentable, hors capacité)"
+    deja = pd.Series("Nouveau", index=regle.index)
+    eligibles = regle["rentable"].copy()
+    if historique is not None and len(historique):
+        dernier = (
+            historique.sort_values("date_contact")
+            .groupby("client_id")
+            .tail(1)
+            .set_index("client_id")
+        )
+        for indice, compte in identifiants.items():
+            if compte not in dernier.index:
+                continue
+            contact = dernier.loc[compte]
+            date_contact = pd.Timestamp(contact["date_contact"])
+            deja[indice] = f"Contacté le {date_contact.date().isoformat()}"
+            recent = date_contact > date_liste - pd.DateOffset(months=CARENCE_MOIS)
+            hausse = regle.loc[indice, "valeur_nette_eur"] > (1 + HAUSSE_REINTEGRATION) * float(
+                contact.get("gain_au_contact_eur", float("inf"))
+            )
+            evenement = bool(contact.get("evenement_critique", False))
+            if recent and not (hausse or evenement) and eligibles[indice]:
+                eligibles[indice] = False
+                action[indice] = "En carence (contacté récemment)"
+    candidats = regle.index[eligibles].tolist()  # regle is sorted by expected value
+    retenus = candidats[: round(capacite / (1 - part_temoin))]
+    generateur = np.random.default_rng(graine)
+    temoins = (
+        set(generateur.choice(retenus, size=round(part_temoin * len(retenus)), replace=False))
+        if retenus
+        else set()
+    )
+    for indice in retenus:
+        action[indice] = (
+            "Groupe témoin (pas de contact)" if indice in temoins else "À contacter ce mois"
+        )
+    return action, deja
+
+
 def construire_liste(
     modele,
     X: pd.DataFrame,
@@ -91,14 +159,18 @@ def construire_liste(
     version_modele: str,
     capacite: int = CAPACITE_MENSUELLE,
     genere_le: str | None = None,
+    historique: pd.DataFrame | None = None,
+    part_temoin: float = PART_GROUPE_TEMOIN,
+    graine: int = 0,
 ) -> pd.DataFrame:
     """One row per account, business labels, sorted by priority."""
     proba = pd.Series(modele.predict_proba(X)[:, 1], index=X.index)
     regle = appliquer_regle(proba, valeur, capacite)
     contributions, _ = contributions_lineaires(modele, X, fond)
-    action = pd.Series("Pas d'action", index=X.index)
-    action[regle["rentable"]] = "En réserve (rentable, hors capacité)"
-    action[regle["a_traiter"]] = "À contacter ce mois"
+    date_liste = pd.Timestamp(genere_le or pd.Timestamp.today().date())
+    action, deja = selectionner(
+        regle, identifiants, capacite, historique, date_liste, part_temoin, graine
+    )
     table = pd.DataFrame(
         {
             "rang": regle["rang"],
@@ -110,8 +182,8 @@ def construire_liste(
             "mrr_eur": mrr.round(0),
             "gain_eur": regle["valeur_nette_eur"].round(0),
             "motif": [motif(contributions.loc[i], X.loc[i]) for i in X.index],
-            "deja_contacte": "historique CRM à brancher",
-            "genere_le": genere_le or pd.Timestamp.today().date().isoformat(),
+            "deja_contacte": deja,
+            "genere_le": date_liste.date().isoformat(),
             "modele": version_modele,
         }
     ).sort_values("rang")
