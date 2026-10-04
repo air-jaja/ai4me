@@ -52,7 +52,7 @@ argumentée. C'est pourquoi ce document insiste autant sur les *pourquoi*.
 | **Client / commanditaire** | Direction Customer Success de l'éditeur *(cas d'usage pédagogique)* |
 | **Date de début** | 08/08/2026 |
 | **Échéance cible** | **30/09/2026** (gel des livrables) — remise 01/10/2026 |
-| **Statut global** | 🟡 En cours — phases 1 à 6 terminées (notebook de certification aligné jusqu'au § 8.D), 7 à 11 à exécuter |
+| **Statut global** | 🟢 Phases 1 à 11 terminées (la 11 démontrée sur lots simulés) ; notebook de certification aligné sur le code et les résultats (04/10) |
 | **Nature** | Exercice de certification. **Aucun déploiement réel** : les phases 10 et 11 sont conçues et documentées, pas mises en service. |
 
 **Légende statut** : `[ ]` à faire · `[~]` en cours · `[x]` terminé · `[—]` sans objet ici
@@ -507,7 +507,7 @@ complétée (9 itérations, dont 4 défauts silencieux) ; chiffres figés en non
 
 **Préalables faits le 02/10 (bloc 0).** Catalogue réduit à `plan` (gold : 26 colonnes, 25 variables
 explicatives) ; valeur vie client diagnostiquée — elle n'encode pas l'issue, la valeur observée évaluera la
-règle ; module `optimisation.py` et groupe de dépendances retirés ; source de la puissance du poste citée
+règle ; module `optimisation.py` retiré (le groupe de dépendances reste déclaré, inutilisé) ; source de la puissance du poste citée
 (i5-6300U : 15 W nominal, 25 W configurable) ; règle des leurres validée : retirés du modèle final après la
 sélection.
 
@@ -547,7 +547,7 @@ sur des données comportant beaucoup de catégories ; **PCA**, technique de comp
 car elle rend le modèle inexplicable, alors que les conseillers doivent comprendre pourquoi un compte est
 signalé ; **TimeSeriesSplit** — sans objet, les données ne forment pas une série chronologique.)*
 📦 **Artefacts** : section 7 du notebook · jeu de données préparé
-**Statut** : **en cours**
+**Statut** : **terminé** (02/10)
 
 ---
 
@@ -566,7 +566,7 @@ signalé ; **TimeSeriesSplit** — sans objet, les données ne forment pas une s
   `resultats/reference_baseline.json` (02/10)*
 
 **Résultat à porter en phase 7.** La régression logistique bat la règle métier sur les 25 plis, mais elle est
-**mal calibrée** (erreur 0,114, seuil 0,05) : la phase 7 calibrera le modèle retenu (registre, D-07).
+**mal calibrée** (erreur 0,114, seuil 0,05) : la phase 7 calibrera le modèle retenu (fait : § 9.B).
 
 **Comment on mesure.** Plusieurs indicateurs coexistent, chacun répondant à une question différente.
 
@@ -634,7 +634,8 @@ outils de vision par ordinateur (CNN, YOLO) sont sans objet : il n'y a pas d'ima
 
 🔧 **Outils** : scikit-learn · validation croisée stratifiée
 *(MLflow, outil de traçabilité des expérimentations, est **différé à la phase 10** : il tracera le modèle
-final ; en phase 5, les résultats tiennent dans les tableaux du notebook — arbitrage du 01/10.)*
+final ; en phase 5, les résultats tiennent dans les tableaux du notebook — arbitrage du 01/10. *Révisé le 04/10/2026 : retenu dès
+la phase 7, en magasin local ; serveur partagé différé, D-06.)*
 📦 **Artefacts** : sections 8 et 9 du notebook · modèle entraîné
 **Statut** : **terminé** (03/10) — explicabilité B6 : option C (contributions linéaires en production, SHAP pour l'analyse)
 
@@ -650,7 +651,7 @@ final ; en phase 5, les résultats tiennent dans les tableaux du notebook — ar
 - [x] Explorer la grille d'hyperparamètres définie — *régression : 14 combinaisons, grille plate (0,7931 à 0,7943) ; arbres : en phase 7*
 - [x] Surveiller le surapprentissage — *S1 à S5 : écarts ≤ 0,010, optimisme imbriqué −0,001, courbe 0,005, calibration 0,030*
 - [x] Documenter les paramètres retenus — *tableau complet, réglés et fixés, avec motif (choix méthodologiques)*
-- [x] Arbitrer entre performance et consommation de ressources — *P4 : régression servie en une copie calibrée (57 → ≈ 11 ms par compte), XGBoost non retenu (décision c)*
+- [x] Arbitrer entre performance et consommation de ressources — *P4 : régression servie en une copie calibrée (58,5 → 12 ms par compte au dernier relevé), XGBoost non retenu (décision c)*
 
 **Un choix volontairement sobre.** La grille de recherche est **restreinte** plutôt qu'exhaustive. Explorer
 des milliers de combinaisons consommerait beaucoup de calcul — donc d'énergie — pour un gain marginal. Cette
@@ -667,7 +668,7 @@ parcourt en quelques minutes. CodeCarbon, qui mesure l'empreinte carbone d'un ca
 l'appui** : les temps de calcul sont mesurés sur le poste de développement et convertis en énergie et en
 CO₂e — quelques minutes et quelques grammes pour toute la phase (`docs/06.SOBRIETE_calcul.md`) — arbitrages du 01/10.)*
 📦 **Artefacts** : section 9 du notebook · tableau des hyperparamètres
-**Statut** : **à faire**
+**Statut** : **terminé** (03/10)
 
 ---
 
@@ -726,7 +727,7 @@ variable à une prédiction individuelle — **option ouverte**)*
 
 - [x] Enregistrer le modèle dans un fichier rechargeable — *carte d'identité obligatoire (empreintes du fichier et des données), registre versionné*
 - [x] Recharger le modèle et l'appliquer à l'échantillon de test — *mêmes scores à 10⁻⁹, rechargé ou reconstruit*
-- [x] Produire la liste opérationnelle destinée aux conseillers — *libellés métier, motifs rédigés, carence, groupe témoin*
+- [x] Produire la liste opérationnelle destinée aux conseillers — *libellés métier, motifs rédigés, groupe témoin ; carence codée, non encore appliquée (D-11)*
 - [x] Décrire la chaîne de livraison automatisée
 - [x] Définir les règles de versioning
 - [x] Documenter les besoins d'intégration
@@ -744,11 +745,10 @@ entre-temps, le résultat n'est pas reproductible.
 **Le flux le plus souvent oublié** est le retour d'information : ce que le conseiller a fait, et si le
 client est finalement parti. Sans lui, on ne peut jamais mesurer si le dispositif fonctionne réellement.
 
-🔧 **Outils** : joblib *(enregistrement d'un modèle Python dans un fichier)* · esquisse d'interface de
-service · chaîne d'intégration continue décrite
-*(MLflow Model Registry, qui gère le passage d'un modèle du test à la production, est décrit comme cible mais
-non installé — le cas d'usage ne comporte pas d'environnement réel.)*
-📦 **Artefacts** : sections 10 et 11 du notebook · modèle enregistré · schéma d'architecture *(à produire)*
+🔧 **Outils** : joblib *(enregistrement d'un modèle Python dans un fichier)* · API FastAPI · registre et
+alias `champion` · MLflow en local (registre miroir) · flux Prefect · chaîne CI à deux jobs · pile Docker
+*(seule l'API y est démontrée ; serveur MLflow partagé, lot et suivi dans la pile différés : D-06, D-10, D-11)*
+📦 **Artefacts** : sections 10 et 11 du notebook · modèle enregistré · schéma d'architecture
 **Statut** : **terminé** (03/10) — model card version 1 (`docs/MODEL_CARD.md`, MIT, générée depuis les résultats) ; reste à confirmer avec le commanditaire : CRM, identifiants, retours (`docs/INTEGRATION_CRM.md`)
 
 ---
@@ -800,10 +800,10 @@ données réelles à la réception des issues de tous les comptes
 | Préparation | pandas, imputation médiane | Z-score, IQR *(les valeurs extrêmes sont réelles, pas des erreurs)* |
 | Feature engineering | ratios d'usage, `train_test_split`, mise à l'échelle | SMOTE/ADASYN *(fabriquent de faux clients)*, PCA *(détruit l'explicabilité)*, TimeSeriesSplit *(pas de série chronologique)* |
 | Baseline | scikit-learn, séparation stratifiée | — |
-| Entraînement | régression logistique, forêt aléatoire, validation croisée | CNN, YOLO, autoencodeur *(pas d'images)*, réseaux profonds *(trop peu de données)*, MLflow *(surdimensionné pour un notebook)* |
-| Optimisation | `GridSearchCV`, grille restreinte (44 combinaisons) · temps de calcul mesuré | Optuna *(espace trop petit pour en bénéficier)* · CodeCarbon *(mesure sans effet sur aucune décision, chiffrée)* |
-| Validation | matrice de confusion, ROC, précision-rappel, importance par permutation | SHAP *(option ouverte)* · exactitude *(trompeuse ici)* |
-| Déploiement | joblib, esquisse d'API, CI/CD décrite | MLflow Model Registry *(pas d'environnement réel)* |
+| Entraînement | régression logistique, forêt aléatoire, XGBoost, validation croisée, MLflow *(en local, à partir de la phase 7)* | CNN, YOLO, autoencodeur *(pas d'images)*, réseaux profonds *(trop peu de données)* |
+| Optimisation | `GridSearchCV`, grilles bornées (36, 24 et 14 combinaisons) · temps de calcul mesuré | Optuna *(espace trop petit pour en bénéficier)* · CodeCarbon *(mesure sans effet sur aucune décision, chiffrée)* |
+| Validation | matrice de confusion, ROC, précision-rappel, importance par permutation, contributions linéaires exactes, SHAP *(comparaison des modèles, § 9.F)* | exactitude *(trompeuse ici)* |
+| Déploiement | joblib, API FastAPI, alias `champion`, registre MLflow local, flux Prefect, CI à deux jobs, Docker | serveur MLflow partagé, serveur Prefect *(différés : D-06, D-10)* |
 | Suivi | PSI, Kolmogorov-Smirnov | — |
 
 **Un mot sur les outils écartés.** Un projet réussi n'est pas celui qui emploie le plus d'outils, mais celui

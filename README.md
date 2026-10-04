@@ -202,30 +202,30 @@ Détail complet et procédure de migration : `docs/00.ORGANISATION_CODE.md`.
 | **api** | fastapi, uvicorn | C6 | `--group api` |
 | **plateforme** | tous les groupes ci-dessus | — | `--group plateforme` |
 
-**Le notebook s'exécute avec les seules dépendances de base.** Aucun groupe de la
-plateforme n'est requis pour le rejouer : un correcteur peut le faire tourner sans
-installer la stack.
+**Rejouer le notebook demande la plateforme Python** (`make install-plateforme`) : le § 8.E
+refait la comparaison des candidats avec MLflow et XGBoost, le § 9.F appelle SHAP. La pile
+Docker, elle, n'est pas nécessaire. Le lire ne demande rien : ses sorties sont enregistrées.
 
 ### Décisions révisées
 
 Trois outils écartés au cadrage initial avaient été retenus le 26/09 ; les arbitrages du
-01/10, pris avant tout résultat de modélisation, en ont révisé deux à nouveau et différé un.
+01/10, pris avant tout résultat de modélisation, en ont révisé deux à nouveau et différé un,
+retenu ensuite en phase 7.
 Les revirements sont documentés plutôt que dissimulés — c'est une itération, consignée au
 registre et dans `docs/00.README_choix_methodologiques.md` § 7 bis.
 
 | Outil | 26/09 | 01/10 — décision et motif |
 |---|---|---|
-| Optuna | Retenu (TPE + élagage, 30 essais) | **Écarté.** L'espace compte 44 combinaisons : `GridSearchCV` est exhaustif en quelques minutes et donne les courbes de validation. Le module et le groupe de dépendances sont retirés le 02/10 |
+| Optuna | Retenu (TPE + élagage, 30 essais) | **Écarté.** L'espace compte 44 combinaisons : `GridSearchCV` est exhaustif en quelques minutes et donne les courbes de validation. Le module est retiré le 02/10 ; le groupe de dépendances `optimisation` reste déclaré, inutilisé |
 | CodeCarbon | Retenu | **Écarté, chiffres à l'appui.** Les temps de calcul sont mesurés sur le poste de développement (`make ressources`) et convertis en énergie et en CO₂e : quelques minutes et quelques grammes pour toute la phase 5, une mesure qui ne changerait aucune décision. Chiffrage : `docs/06.SOBRIETE_calcul.md` |
-| MLflow | Retenu | **Différé** à la phase 10, pour tracer le modèle final |
-| SHAP | Retenu | **À arbitrer** après le choix du modèle : une régression logistique s'explique sans lui |
+| MLflow | Retenu | **Différé** le 01/10, puis **retenu en phase 7** (bloc 7.0), en magasin local (`make mlflow`) ; le serveur de la pile Docker reste vide (D-06) |
+| SHAP | Retenu | **Option C (03/10)** : contributions linéaires exactes en production, SHAP réservé à la comparaison des modèles (§ 9.F) |
 
 **Toujours écartés**, et défendables comme tels :
 
 | Écarté | Motif |
 |---|---|
 | TensorFlow, OpenCV, YOLO | Aucune image ni donnée non structurée dans ce cas d'usage |
-| XGBoost | Une troisième famille n'apporte rien tant que les deux premières ne sont pas départagées |
 | DVC | Un seul instantané de données dans cet exercice ; le versioning est décrit au § 3 |
 | imbalanced-learn (SMOTE) | Fabrique des observations inexistantes sur des variables catégorielles nombreuses |
 
@@ -255,7 +255,7 @@ est du code, le modèle est une donnée versionnée séparément.
 
 ## Reproductibilité
 
-`uv.lock` fige la version exacte de chacune des 265 dépendances résolues, avec son empreinte
+`uv.lock` fige la version exacte de chacune des 267 dépendances résolues, avec son empreinte
 cryptographique.
 `uv sync --frozen` installe cet état sans le modifier, et échoue si le verrou ne correspond plus au
 `pyproject.toml` — c'est ce contrôle qui empêche un dépôt de dériver silencieusement.
